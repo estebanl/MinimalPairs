@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Phoneme Scorer Service
+  version: 1.0.0
+  description: Montreal Forced Aligner (MFA) & Wav2Vec 2.0 Goodness of Pronunciation (GOP) scoring API
+
+paths:
+  /v1/score/phoneme:
+    post:
+      summary: Evaluate phoneme quality using Goodness of Pronunciation (GOP)
+      operationId: scorePhoneme
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio_file
+                - target_transcript
+                - expected_ipa
+              properties:
+                audio_file:
+                  type: string
+                  format: binary
+                  description: 16kHz 16-bit mono PCM WAV file
+                target_transcript:
+                  type: string
+                  example: "sheep"
+                expected_ipa:
+                  type: string
+                  example: "ʃ iː p"
+      responses:
+        '200':
+          description: Successful evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhonemeScoringResponse'
+        '400':
+          description: Bad request or unsupported audio format
+        '500':
+          description: Alignment or scoring model failure
+
+components:
+  schemas:
+    PhonemeScore:
+      type: object
+      required:
+        - phoneme
+        - gop_score
+        - start_time
+        - end_time
+      properties:
+        phoneme:
+          type: string
+          example: "iː"
+        gop_score:
+          type: number
+          format: float
+          description: Goodness of Pronunciation score 0-100
+          example: 92.4
+        start_time:
+          type: number
+          format: float
+          description: Start time offset in seconds
+          example: 0.18
+        end_time:
+          type: number
+          format: float
+          description: End time offset in seconds
+          example: 0.36
+
+    PhonemeScoringResponse:
+      type: object
+      required:
+        - overall_score
+        - phonemes
+      properties:
+        overall_score:
+          type: number
+          format: float
+          description: Aggregate GOP score 0-100
+          example: 88.5
+        phonemes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhonemeScore'
