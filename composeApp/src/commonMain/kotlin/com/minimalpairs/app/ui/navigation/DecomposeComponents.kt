@@ -123,7 +123,12 @@ class DefaultRootComponent(
                 DefaultConfusionMatrixComponent(componentContext, confusionTracker, ::onBack)
             )
             is RootConfig.MeaningTrap -> RootChild.MeaningTrap(
-                DefaultMeaningTrapComponent(componentContext, ::onBack)
+                DefaultMeaningTrapComponent(
+                    componentContext = componentContext,
+                    confusionTracker = confusionTracker,
+                    scorerApi = scorerApi,
+                    onBackClicked = ::onBack
+                )
             )
             is RootConfig.Prosody -> RootChild.Prosody(
                 DefaultProsodyComponent(componentContext, ::onBack)
@@ -429,11 +434,124 @@ class DefaultConfusionMatrixComponent(
     override fun onBack() = onBackClicked()
 }
 
-// --- Meaning Trap & Prosody Blueprint Components ---
-interface MeaningTrapComponent { fun onBack() }
-class DefaultMeaningTrapComponent(componentContext: ComponentContext, private val onBackClicked: () -> Unit) :
-    MeaningTrapComponent, ComponentContext by componentContext { override fun onBack() = onBackClicked() }
+// --- Module 3: Meaning Trap Component ---
+data class MeaningTrapUiState(
+    val activeStory: com.minimalpairs.app.core.model.ComicStory,
+    val branch: com.minimalpairs.app.core.model.MeaningTrapBranch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
+    val isRecording: Boolean = false,
+    val gopScore: Float? = null,
+    val feedbackText: String = ""
+)
 
+interface MeaningTrapComponent {
+    val state: StateFlow<MeaningTrapUiState>
+    val availableStories: List<com.minimalpairs.app.core.model.ComicStory>
+    fun selectStory(storyId: String)
+    fun toggleRecording()
+    fun triggerSimulatedOutcome(isCorrect: Boolean)
+    fun resetCurrentStory()
+    fun onBack()
+}
+
+class DefaultMeaningTrapComponent(
+    componentContext: ComponentContext,
+    private val confusionTracker: PhonemeConfusionTracker,
+    private val scorerApi: PhonemeScorerApi,
+    private val onBackClicked: () -> Unit,
+    private val recorder: AudioRecorder = createAudioRecorder()
+) : MeaningTrapComponent, ComponentContext by componentContext {
+
+    override val availableStories: List<com.minimalpairs.app.core.model.ComicStory> =
+        com.minimalpairs.app.data.catalog.MeaningTrapCatalog.stories
+
+    private val scope = CoroutineScope(Dispatchers.Default)
+    private val accumulatedSamples = mutableListOf<Short>()
+
+    private val _state = MutableStateFlow(
+        MeaningTrapUiState(activeStory = availableStories.first())
+    )
+    override val state: StateFlow<MeaningTrapUiState> = _state.asStateFlow()
+
+    init {
+        scope.launch {
+            recorder.prepare()
+        }
+    }
+
+    override fun selectStory(storyId: String) {
+        val story = availableStories.firstOrNull { it.id == storyId } ?: return
+        _state.value = MeaningTrapUiState(activeStory = story)
+    }
+
+    override fun toggleRecording() {
+        scope.launch {
+            if (_state.value.isRecording) {
+                recorder.stop()
+                _state.value = _state.value.copy(isRecording = false)
+                val samples = accumulatedSamples.toShortArray()
+                if (samples.isNotEmpty()) {
+                    val currentStory = _state.value.activeStory
+                    val result = scorerApi.scoreAudio(
+                        samples,
+                        currentStory.intendedWord,
+                        currentStory.intendedIpa,
+                        currentStory.contrastId
+                    )
+                    val isSuccess = result.overallScore >= 70f
+                    applyEvaluationResult(isSuccess, result.overallScore)
+                }
+            } else {
+                accumulatedSamples.clear()
+                _state.value = _state.value.copy(
+                    isRecording = true,
+                    branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
+                    feedbackText = "Listening... Speak the phrase clearly!"
+                )
+                recorder.start { buffer ->
+                    accumulatedSamples.addAll(buffer.toList())
+                }
+            }
+        }
+    }
+
+    override fun triggerSimulatedOutcome(isCorrect: Boolean) {
+        applyEvaluationResult(isCorrect, if (isCorrect) 92.5f else 48.0f)
+    }
+
+    private fun applyEvaluationResult(isCorrect: Boolean, score: Float) {
+        val story = _state.value.activeStory
+        val targetPhoneme = story.intendedIpa.replace("/", "").trim().split(" ").firstOrNull { it.isNotEmpty() } ?: story.intendedIpa
+        val trapPhoneme = story.trapIpa.replace("/", "").trim().split(" ").firstOrNull { it.isNotEmpty() } ?: story.trapIpa
+
+        if (isCorrect) {
+            confusionTracker.recordTrial(targetPhoneme, targetPhoneme, true)
+            _state.value = _state.value.copy(
+                branch = com.minimalpairs.app.core.model.MeaningTrapBranch.INTENDED_SUCCESS,
+                gopScore = score,
+                feedbackText = "Splendid pronunciation! (${score.toInt()}% match for /${targetPhoneme}/)"
+            )
+        } else {
+            confusionTracker.recordTrial(targetPhoneme, trapPhoneme, false)
+            _state.value = _state.value.copy(
+                branch = com.minimalpairs.app.core.model.MeaningTrapBranch.TRAP_TRIGGERED,
+                gopScore = score,
+                feedbackText = "Oh no, you slipped into the Meaning Trap! (${score.toInt()}% match)"
+            )
+        }
+    }
+
+    override fun resetCurrentStory() {
+        _state.value = _state.value.copy(
+            branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
+            gopScore = null,
+            feedbackText = ""
+        )
+    }
+
+    override fun onBack() = onBackClicked()
+}
+
+// --- Module 4: Prosody Component ---
 interface ProsodyComponent { fun onBack() }
 class DefaultProsodyComponent(componentContext: ComponentContext, private val onBackClicked: () -> Unit) :
     ProsodyComponent, ComponentContext by componentContext { override fun onBack() = onBackClicked() }

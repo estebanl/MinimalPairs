@@ -1,0 +1,106 @@
+version: "1.0"
+
+stories:
+  - id: "sheep_vs_ship"
+    contrast_id: "i_vs_I"
+    title: "The Farmer's Fleet"
+    premise: "You are visiting a cozy countryside petting farm to adopt a fluffy companion."
+    intended_word: "sheep"
+    intended_ipa: "ʃ iː p"
+    trap_word: "ship"
+    trap_ipa: "ʃ ɪ p"
+    panels:
+      - index: 1
+        character: "Old Farmer Giles"
+        dialogue: "Welcome to Giles' Farm! What gentle creature would you like to adopt today?"
+        prompt_instruction: "Ask for a sheep: 'Can I have that sheep, please?'"
+      - index: 2
+        intended:
+          illustration_emoji: "🐑 🏡 ✨"
+          sound_effect: "BAAA! ❤️"
+          dialogue: "Splendid choice! Little Barnaby here will graze happily in your meadow."
+          outcome_description: "Success! Perfect /iː/ pronunciation. You adopted a happy sheep."
+        trap:
+          illustration_emoji: "🚢 💥 🚜 😱"
+          sound_effect: "HOOOORN! CRUNCH!"
+          dialogue: "A SHIP?! Good heavens, where am I going to dock an ocean freighter on dry pasture?!"
+          outcome_description: "Trap triggered! /ɪ/ was detected instead of /iː/. A 50,000-ton cargo vessel demolished the cornfield."
+    semantic_takeaway: "The difference between close front tense /iː/ and lax /ɪ/ is the difference between a 40kg barnyard animal and a 50,000-ton nautical vessel!"
+
+  - id: "pen_vs_pan"
+    contrast_id: "ae_vs_e"
+    title: "The Exam Frying Trap"
+    premise: "You sit down at the university examination hall, but your writing instrument is missing."
+    intended_word: "pen"
+    intended_ipa: "p e n"
+    trap_word: "pan"
+    trap_ipa: "p æ n"
+    panels:
+      - index: 1
+        character: "Strict Professor Smith"
+        dialogue: "The exam starts in two minutes. All students must have an ink utensil ready."
+        prompt_instruction: "Ask the proctor: 'Excuse me, could you lend me a pen?'"
+      - index: 2
+        intended:
+          illustration_emoji: "🖊️ 📝 🎓"
+          sound_effect: "CLICK!"
+          dialogue: "Certainly, here is a black ballpoint pen. Best of luck on your linguistics paper!"
+          outcome_description: "Success! Mid-front /e/ clearly produced. You passed the exam."
+        trap:
+          illustration_emoji: "🍳 🔥 🥓 😳"
+          sound_effect: "SIZZLE! CLANG!"
+          dialogue: "A PAN?! Why on earth would you need a heavy cast-iron skillet for a written exam?!"
+          outcome_description: "Trap triggered! Open /æ/ produced instead of /e/. The professor slams a frying pan on your desk."
+    semantic_takeaway: "Failing to narrow your jaw drop from open /æ/ (pan) to mid-front /e/ (pen) turns writing an essay into frying bacon!"
+
+  - id: "heart_vs_hut"
+    contrast_id: "a_vs_uh"
+    title: "The Valentine Shelter"
+    premise: "You are writing a romantic love poem to your sweetheart on Valentine's Day."
+    intended_word: "heart"
+    intended_ipa: "h ɑː t"
+    trap_word: "hut"
+    trap_ipa: "h ʌ t"
+    panels:
+      - index: 1
+        character: "Cupid's Florist"
+        dialogue: "What romantic message would you like engraved across the gold pendant?"
+        prompt_instruction: "Dictate: 'You hold the key to my heart.'"
+      - index: 2
+        intended:
+          illustration_emoji: "❤️ 🌹 💍"
+          sound_effect: "Awww! 💕"
+          dialogue: "How utterly poetic! 'Key to my heart' is engraved in fine italic script."
+          outcome_description: "Success! Deep open back /ɑː/ lengthened properly."
+        trap:
+          illustration_emoji: "🛖 🔨 🪵 🤨"
+          sound_effect: "THUD! THUMP!"
+          dialogue: "'Key to my HUT'?! Are you locking your sweetheart into a wooden shed in the woods?!"
+          outcome_description: "Trap triggered! Short central /ʌ/ produced. The florist engraves a dilapidated mud hut."
+    semantic_takeaway: "Open back /ɑː/ requires long duration and tongue retraction; shortening it into /ʌ/ turns romance into a shed!"
+
+  - id: "fool_vs_full"
+    contrast_id: "u_vs_uu"
+    title: "The Royal Banquet"
+    premise: "The Emperor's grand feast is ending and the waiter offers you a fifth slice of roast beef."
+    intended_word: "full"
+    intended_ipa: "f ʊ l"
+    trap_word: "fool"
+    trap_ipa: "f uː l"
+    panels:
+      - index: 1
+        character: "The Emperor's Butler"
+        dialogue: "Would your lordship care for another roasted boar tenderloin?"
+        prompt_instruction: "Decline politely: 'No thank you, I am completely full.'"
+      - index: 2
+        intended:
+          illustration_emoji: "🍷 🍽️ 👑"
+          sound_effect: "CLINK!"
+          dialogue: "Very good, my lord. We shall bring the digestifs shortly."
+          outcome_description: "Success! Lax near-close near-back /ʊ/ politely declined the dish."
+        trap:
+          illustration_emoji: "🃏 🎪 🤹 😡"
+          sound_effect: "GASP!"
+          dialogue: "'You are completely FOOL'?! Did you just insult his Majesty's court jester?!"
+          outcome_description: "Trap triggered! Tense close back /uː/ produced. Guards escort you to the dungeon."
+    semantic_takeaway: "Tensing lips and raising tongue to /uː/ turns satiation ('full') into an insult ('fool')!"
