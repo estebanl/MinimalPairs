@@ -34,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,10 @@ fun MeaningTrapScreen(
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
     val story = state.activeStory
+
+    LaunchedEffect(component) {
+        component.playPromptAudio()
+    }
 
     Scaffold(
         topBar = {
@@ -95,7 +100,9 @@ fun MeaningTrapScreen(
                 panelTitle = story.title,
                 characterName = story.promptCharacter,
                 speechBubbleText = story.promptDialogue,
-                subCaption = story.premise
+                subCaption = story.premise,
+                isPlayingAudio = state.isPlayingAudio,
+                onListenClick = component::playPromptAudio
             )
 
             Spacer(Modifier.height(14.dp))
@@ -109,12 +116,26 @@ fun MeaningTrapScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Your turn",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.accentInk
-                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Your turn",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.accentInk
+                        )
+                        OutlinedButton(
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                            onClick = component::playTargetPhraseAudio,
+                            enabled = !state.isPlayingAudio,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(if (state.isPlayingAudio) "Playing..." else "Hear phrase", fontSize = 12.sp)
+                        }
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = story.promptInstruction,
@@ -265,11 +286,25 @@ fun MeaningTrapScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
-                                    Text(
-                                        text = "${story.promptCharacter}:",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "${story.promptCharacter}:",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        OutlinedButton(
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                                            onClick = component::playOutcomeAudio,
+                                            enabled = !state.isPlayingAudio,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(if (state.isPlayingAudio) "Playing..." else "Listen", fontSize = 12.sp)
+                                        }
+                                    }
                                     Spacer(Modifier.height(4.dp))
                                     Text(
                                         text = "\"${outcome.dialogue}\"",
@@ -336,6 +371,8 @@ fun ComicPanelCard(
     characterName: String,
     speechBubbleText: String,
     subCaption: String,
+    isPlayingAudio: Boolean = false,
+    onListenClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = PracticeTheme.colors
@@ -350,20 +387,32 @@ fun ComicPanelCard(
         Column(modifier = Modifier.padding(16.dp)) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = panelTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.accentInk
-                )
-                Text(
-                    text = characterName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        text = panelTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.accentInk
+                    )
+                    Text(
+                        text = characterName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+                if (onListenClick != null) {
+                    OutlinedButton(
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                        onClick = onListenClick,
+                        enabled = !isPlayingAudio,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(if (isPlayingAudio) "Playing..." else "Listen", fontSize = 12.sp)
+                    }
+                }
             }
 
             Spacer(Modifier.height(6.dp))

@@ -22,6 +22,7 @@ import com.minimalpairs.app.core.model.DrillType
 import com.minimalpairs.app.core.model.MinimalPairWord
 import com.minimalpairs.app.core.model.PhoneticContrast
 import com.minimalpairs.app.core.model.PlaybackSpeed
+import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.data.remote.PhonemeScorerApi
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
@@ -221,11 +222,12 @@ class DefaultEarTrainerComponent(
             val isWord1 = currentState.targetWord == currentState.currentPair.word1
             val bounds = if (isWord1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
 
-            val baseSamples = FormantSynthesizer.synthesizeVowel(
-                f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
-                f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
-                durationMs = bounds.minDurationMs ?: 150
-            )
+            val baseSamples = ElevenLabsAudioRepository.loadWordPcm(currentState.targetWord)
+                ?: FormantSynthesizer.synthesizeVowel(
+                    f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
+                    f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
+                    durationMs = bounds.minDurationMs ?: 150
+                )
 
             // Apply 0.75x phase-vocoded / WSOLA pitch-preserving stretch if slow mode active
             val stretched = if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
@@ -439,6 +441,7 @@ data class MeaningTrapUiState(
     val activeStory: com.minimalpairs.app.core.model.ComicStory,
     val branch: com.minimalpairs.app.core.model.MeaningTrapBranch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
     val isRecording: Boolean = false,
+    val isPlayingAudio: Boolean = false,
     val gopScore: Float? = null,
     val feedbackText: String = ""
 )
@@ -447,6 +450,9 @@ interface MeaningTrapComponent {
     val state: StateFlow<MeaningTrapUiState>
     val availableStories: List<com.minimalpairs.app.core.model.ComicStory>
     fun selectStory(storyId: String)
+    fun playPromptAudio()
+    fun playTargetPhraseAudio()
+    fun playOutcomeAudio()
     fun toggleRecording()
     fun triggerSimulatedOutcome(isCorrect: Boolean)
     fun resetCurrentStory()
@@ -458,7 +464,8 @@ class DefaultMeaningTrapComponent(
     private val confusionTracker: PhonemeConfusionTracker,
     private val scorerApi: PhonemeScorerApi,
     private val onBackClicked: () -> Unit,
-    private val recorder: AudioRecorder = createAudioRecorder()
+    private val recorder: AudioRecorder = createAudioRecorder(),
+    private val audioPlayer: AudioPlayer = createAudioPlayer()
 ) : MeaningTrapComponent, ComponentContext by componentContext {
 
     override val availableStories: List<com.minimalpairs.app.core.model.ComicStory> =
@@ -481,6 +488,43 @@ class DefaultMeaningTrapComponent(
     override fun selectStory(storyId: String) {
         val story = availableStories.firstOrNull { it.id == storyId } ?: return
         _state.value = MeaningTrapUiState(activeStory = story)
+        playPromptAudio()
+    }
+
+    override fun playPromptAudio() {
+        scope.launch {
+            val storyId = _state.value.activeStory.id
+            val pcm = ElevenLabsAudioRepository.loadMeaningTrapPromptPcm(storyId) ?: return@launch
+            _state.value = _state.value.copy(isPlayingAudio = true)
+            audioPlayer.play(pcm) {
+                _state.value = _state.value.copy(isPlayingAudio = false)
+            }
+        }
+    }
+
+    override fun playTargetPhraseAudio() {
+        scope.launch {
+            val storyId = _state.value.activeStory.id
+            val pcm = ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId) ?: return@launch
+            _state.value = _state.value.copy(isPlayingAudio = true)
+            audioPlayer.play(pcm) {
+                _state.value = _state.value.copy(isPlayingAudio = false)
+            }
+        }
+    }
+
+    override fun playOutcomeAudio() {
+        val branch = _state.value.branch
+        if (branch == com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING) return
+        val isSuccess = branch == com.minimalpairs.app.core.model.MeaningTrapBranch.INTENDED_SUCCESS
+        scope.launch {
+            val storyId = _state.value.activeStory.id
+            val pcm = ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, isSuccess) ?: return@launch
+            _state.value = _state.value.copy(isPlayingAudio = true)
+            audioPlayer.play(pcm) {
+                _state.value = _state.value.copy(isPlayingAudio = false)
+            }
+        }
     }
 
     override fun toggleRecording() {
@@ -538,6 +582,7 @@ class DefaultMeaningTrapComponent(
                 feedbackText = "Oh no, you slipped into the Meaning Trap! (${score.toInt()}% match)"
             )
         }
+        playOutcomeAudio()
     }
 
     override fun resetCurrentStory() {
@@ -603,18 +648,23 @@ class DefaultProsodyComponent(
         scope.launch {
             _state.value = _state.value.copy(isPlayingReference = true)
             val pattern = _state.value.activePattern
-            val totalSamples = 16000 * 2 // 2 seconds
-            val syntheticSpeech = ShortArray(totalSamples)
-
-            for (i in 0 until totalSamples) {
-                val normT = i.toFloat() / totalSamples
-                val f0 = interpolateTargetF0(normT, pattern.referenceContour)
-                val phase = 2.0 * kotlin.math.PI * f0 * (i.toDouble() / 16000.0)
-                val s = (kotlin.math.sin(phase) * 12000.0).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-                syntheticSpeech[i] = s
+            val elevenLabsSpeech = ElevenLabsAudioRepository.loadProsodyPcm(pattern.id)
+            val speechSamples = if (elevenLabsSpeech != null && elevenLabsSpeech.isNotEmpty()) {
+                elevenLabsSpeech
+            } else {
+                val totalSamples = 16000 * 2 // 2 seconds fallback
+                val syntheticSpeech = ShortArray(totalSamples)
+                for (i in 0 until totalSamples) {
+                    val normT = i.toFloat() / totalSamples
+                    val f0 = interpolateTargetF0(normT, pattern.referenceContour)
+                    val phase = 2.0 * kotlin.math.PI * f0 * (i.toDouble() / 16000.0)
+                    val s = (kotlin.math.sin(phase) * 12000.0).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                    syntheticSpeech[i] = s
+                }
+                syntheticSpeech
             }
 
-            audioPlayer.play(syntheticSpeech) {
+            audioPlayer.play(speechSamples) {
                 _state.value = _state.value.copy(isPlayingReference = false)
             }
         }

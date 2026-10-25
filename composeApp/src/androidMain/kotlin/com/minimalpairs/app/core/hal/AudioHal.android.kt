@@ -25,7 +25,7 @@ class AndroidAudioRecorder : AudioRecorder {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var activeCallback: ((ShortArray) -> Unit)? = null
 
-    private val sampleRate = 16000
+    override val sampleRate: Int = 16000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
 

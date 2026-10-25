@@ -1,5 +1,10 @@
 package com.minimalpairs.app.core.hal
 
+import com.minimalpairs.app.core.dsp.WavCodec
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -9,6 +14,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import platform.AVFAudio.AVAudioPlayer
+import platform.AVFAudio.AVAudioSession
+import platform.AVFAudio.AVAudioSessionCategoryOptionDefaultToSpeaker
+import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
+import platform.AVFAudio.setActive
+import platform.Foundation.NSData
+import platform.Foundation.create
 
 class IosAudioRecorder : AudioRecorder {
     private val _state = MutableStateFlow(AudioRecorderState.UNINITIALIZED)
@@ -68,18 +80,56 @@ class IosAudioRecorder : AudioRecorder {
     }
 }
 
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class IosAudioPlayer : AudioPlayer {
     private var playing = false
+    private var activePlayer: AVAudioPlayer? = null
 
     override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+        if (samples.isEmpty()) {
+            onComplete()
+            return
+        }
+        stop()
         playing = true
-        val durationMs = (samples.size * 1000L) / 16000L
+
+        try {
+            val session = AVAudioSession.sharedInstance()
+            session.setCategory(
+                AVAudioSessionCategoryPlayAndRecord,
+                withOptions = AVAudioSessionCategoryOptionDefaultToSpeaker,
+                error = null
+            )
+            session.setActive(true, error = null)
+
+            val wavBytes = WavCodec.encodePcmToWav(samples)
+            val nsData = wavBytes.usePinned { pinned ->
+                NSData.create(
+                    bytes = pinned.addressOf(0),
+                    length = wavBytes.size.toULong()
+                )
+            }
+            val player = AVAudioPlayer(data = nsData, error = null)
+            activePlayer = player
+            player.prepareToPlay()
+            player.play()
+        } catch (_: Throwable) {
+            // Fall through to duration delay so tests/simulators without audio hardware still complete
+        }
+
+        val durationMs = ((samples.size * 1000L) / 16000L).coerceAtLeast(50L)
         delay(durationMs)
         playing = false
+        activePlayer = null
         onComplete()
     }
 
     override suspend fun stop() {
+        try {
+            activePlayer?.stop()
+        } catch (_: Throwable) {
+        }
+        activePlayer = null
         playing = false
     }
 
