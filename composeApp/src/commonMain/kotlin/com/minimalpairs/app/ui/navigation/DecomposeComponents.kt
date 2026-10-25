@@ -552,6 +552,136 @@ class DefaultMeaningTrapComponent(
 }
 
 // --- Module 4: Prosody Component ---
-interface ProsodyComponent { fun onBack() }
-class DefaultProsodyComponent(componentContext: ComponentContext, private val onBackClicked: () -> Unit) :
-    ProsodyComponent, ComponentContext by componentContext { override fun onBack() = onBackClicked() }
+data class ProsodyUiState(
+    val activePattern: com.minimalpairs.app.core.model.ProsodyPattern,
+    val isRecording: Boolean = false,
+    val isPlayingReference: Boolean = false,
+    val evaluation: com.minimalpairs.app.core.dsp.ProsodyEvaluation? = null
+)
+
+interface ProsodyComponent {
+    val state: StateFlow<ProsodyUiState>
+    val availablePatterns: List<com.minimalpairs.app.core.model.ProsodyPattern>
+    fun selectPattern(patternId: String)
+    fun playReferenceAudio()
+    fun toggleRecording()
+    fun triggerSimulatedProsody(isGoodMatch: Boolean)
+    fun resetEvaluation()
+    fun onBack()
+}
+
+class DefaultProsodyComponent(
+    componentContext: ComponentContext,
+    private val onBackClicked: () -> Unit,
+    private val recorder: AudioRecorder = createAudioRecorder(),
+    private val audioPlayer: AudioPlayer = createAudioPlayer()
+) : ProsodyComponent, ComponentContext by componentContext {
+
+    override val availablePatterns: List<com.minimalpairs.app.core.model.ProsodyPattern> =
+        com.minimalpairs.app.data.catalog.ProsodyCatalog.patterns
+
+    private val scope = CoroutineScope(Dispatchers.Default)
+    private val accumulatedSamples = mutableListOf<Short>()
+
+    private val _state = MutableStateFlow(
+        ProsodyUiState(activePattern = availablePatterns.first())
+    )
+    override val state: StateFlow<ProsodyUiState> = _state.asStateFlow()
+
+    init {
+        scope.launch {
+            recorder.prepare()
+        }
+    }
+
+    override fun selectPattern(patternId: String) {
+        val pattern = availablePatterns.firstOrNull { it.id == patternId } ?: return
+        _state.value = ProsodyUiState(activePattern = pattern)
+    }
+
+    override fun playReferenceAudio() {
+        scope.launch {
+            _state.value = _state.value.copy(isPlayingReference = true)
+            val pattern = _state.value.activePattern
+            val totalSamples = 16000 * 2 // 2 seconds
+            val syntheticSpeech = ShortArray(totalSamples)
+
+            for (i in 0 until totalSamples) {
+                val normT = i.toFloat() / totalSamples
+                val f0 = interpolateTargetF0(normT, pattern.referenceContour)
+                val phase = 2.0 * kotlin.math.PI * f0 * (i.toDouble() / 16000.0)
+                val s = (kotlin.math.sin(phase) * 12000.0).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                syntheticSpeech[i] = s
+            }
+
+            audioPlayer.play(syntheticSpeech) {
+                _state.value = _state.value.copy(isPlayingReference = false)
+            }
+        }
+    }
+
+    private fun interpolateTargetF0(normT: Float, contour: List<Pair<Float, Float>>): Float {
+        if (contour.isEmpty()) return 180f
+        if (normT <= contour.first().first) return contour.first().second
+        if (normT >= contour.last().first) return contour.last().second
+        for (i in 0 until contour.size - 1) {
+            val p1 = contour[i]
+            val p2 = contour[i + 1]
+            if (normT in p1.first..p2.first) {
+                val span = (p2.first - p1.first).coerceAtLeast(1e-4f)
+                val alpha = (normT - p1.first) / span
+                return p1.second + alpha * (p2.second - p1.second)
+            }
+        }
+        return contour.first().second
+    }
+
+    override fun toggleRecording() {
+        scope.launch {
+            if (_state.value.isRecording) {
+                recorder.stop()
+                _state.value = _state.value.copy(isRecording = false)
+                val samples = accumulatedSamples.toShortArray()
+                if (samples.isNotEmpty()) {
+                    val frames = com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples)
+                    val eval = com.minimalpairs.app.core.dsp.PitchTracker.evaluateProsody(
+                        frames,
+                        _state.value.activePattern.referenceContour
+                    )
+                    _state.value = _state.value.copy(evaluation = eval)
+                }
+            } else {
+                accumulatedSamples.clear()
+                _state.value = _state.value.copy(isRecording = true, evaluation = null)
+                recorder.start { buffer ->
+                    accumulatedSamples.addAll(buffer.toList())
+                }
+            }
+        }
+    }
+
+    override fun triggerSimulatedProsody(isGoodMatch: Boolean) {
+        val pattern = _state.value.activePattern
+        val sampleFrames = mutableListOf<com.minimalpairs.app.core.dsp.PitchFrame>()
+        val totalSteps = 100
+        for (i in 0..totalSteps) {
+            val t = i / 100f
+            val targetF0 = interpolateTargetF0(t, pattern.referenceContour)
+            val userF0 = if (isGoodMatch) targetF0 + (kotlin.random.Random.nextFloat() * 10f - 5f)
+            else 160f + (kotlin.random.Random.nextFloat() * 10f)
+            sampleFrames.add(com.minimalpairs.app.core.dsp.PitchFrame(timeSeconds = t * 1.8f, f0Hz = userF0, isVoiced = true))
+        }
+
+        val eval = com.minimalpairs.app.core.dsp.PitchTracker.evaluateProsody(
+            sampleFrames,
+            pattern.referenceContour
+        )
+        _state.value = _state.value.copy(evaluation = eval)
+    }
+
+    override fun resetEvaluation() {
+        _state.value = _state.value.copy(evaluation = null)
+    }
+
+    override fun onBack() = onBackClicked()
+}

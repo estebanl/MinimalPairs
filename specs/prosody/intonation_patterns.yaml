@@ -1,0 +1,137 @@
+version: "1.0"
+
+patterns:
+  - id: "ship_or_sheep_question"
+    sentence_text: "Is that a ship or a sheep?"
+    contrast_id: "i_vs_I"
+    pattern_type: "ALTERNATIVE_QUESTION"
+    description: "Rise on the first alternative ('ship' ↗), followed by a decisive fall on the second ('sheep' ↘)."
+    syllables:
+      - text: "Is"
+        is_stressed: false
+        ipa: "ɪz"
+      - text: "that"
+        is_stressed: false
+        ipa: "ðæt"
+      - text: "a"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "ship"
+        is_stressed: true
+        ipa: "ʃɪp"
+        target_f0_hz: 240
+      - text: "or"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "a"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "sheep"
+        is_stressed: true
+        ipa: "ʃiːp"
+        target_f0_hz: 160
+    reference_contour:
+      # (normalized_time 0.0 to 1.0, f0_hz)
+      - [0.00, 180]
+      - [0.20, 195]
+      - [0.45, 255] # Peak rise on 'ship'
+      - [0.60, 200]
+      - [0.75, 210]
+      - [1.00, 140] # Terminal fall on 'sheep'
+    weak_forms:
+      - word: "a"
+        weak_ipa: "ə"
+        note: "Reduced to schwa /ə/, under 70ms."
+      - word: "or"
+        weak_ipa: "ə"
+        note: "Reduced before consonants."
+    linking_features:
+      - rule: "Consonant-to-vowel link: 'Is that a' -> /ɪz-ðæ-tə/"
+
+  - id: "pen_and_pan_statement"
+    sentence_text: "He bought a pen and a pan."
+    contrast_id: "ae_vs_e"
+    pattern_type: "LIST_INTONATION"
+    description: "Continuing rise on the first item ('pen' ↗), terminal fall on the last ('pan' ↘)."
+    syllables:
+      - text: "He"
+        is_stressed: false
+        ipa: "hi"
+      - text: "bought"
+        is_stressed: true
+        ipa: "bɔːt"
+        target_f0_hz: 200
+      - text: "a"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "pen"
+        is_stressed: true
+        ipa: "pen"
+        target_f0_hz: 230
+      - text: "and"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ən"
+      - text: "a"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "pan"
+        is_stressed: true
+        ipa: "pæn"
+        target_f0_hz: 145
+    reference_contour:
+      - [0.00, 175]
+      - [0.25, 210]
+      - [0.50, 235] # Rise on 'pen'
+      - [0.65, 185]
+      - [0.80, 195]
+      - [1.00, 135] # Fall on 'pan'
+    weak_forms:
+      - word: "and"
+        weak_ipa: "ən"
+        note: "Drop 'd', reduce vowel to schwa."
+      - word: "a"
+        weak_ipa: "ə"
+    linking_features:
+      - rule: "Linking /d/ to schwa in 'and a' -> /ə-nə/"
+
+  - id: "full_you_fool"
+    sentence_text: "Are you full, you fool?"
+    contrast_id: "u_vs_uu"
+    pattern_type: "POLITE_INQUIRY_VS_TAG"
+    description: "Rising inflection on 'full' (yes/no question), falling tag on 'fool'."
+    syllables:
+      - text: "Are"
+        is_stressed: false
+        is_weak_form: true
+        ipa: "ə"
+      - text: "you"
+        is_stressed: false
+        ipa: "jʊ"
+      - text: "full"
+        is_stressed: true
+        ipa: "fʊl"
+        target_f0_hz: 245
+      - text: "you"
+        is_stressed: false
+        ipa: "jʊ"
+      - text: "fool"
+        is_stressed: true
+        ipa: "fuːl"
+        target_f0_hz: 150
+    reference_contour:
+      - [0.00, 170]
+      - [0.25, 190]
+      - [0.50, 250] # High rise on 'full'
+      - [0.70, 190]
+      - [1.00, 140] # Low fall on 'fool'
+    weak_forms:
+      - word: "are"
+        weak_ipa: "ə"
+    linking_features:
+      - rule: "Smooth glide from vowel to vowel: 'Are you' -> /ə-juː/"
