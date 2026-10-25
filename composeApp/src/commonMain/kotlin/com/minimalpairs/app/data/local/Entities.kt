@@ -1,5 +1,6 @@
 package com.minimalpairs.app.data.local
 
+import androidx.room3.ConstructedBy
 import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Entity
@@ -8,6 +9,7 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -84,8 +86,13 @@ interface TrialDao {
     entities = [Sm2CardEntity::class, ConfusionMatrixEntryEntity::class, TrialRecordEntity::class],
     version = 1
 )
+@ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sm2Dao(): Sm2Dao
     abstract fun confusionDao(): ConfusionDao
     abstract fun trialDao(): TrialDao
 }
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
+
