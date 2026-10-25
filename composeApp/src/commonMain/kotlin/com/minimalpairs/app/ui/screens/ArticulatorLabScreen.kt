@@ -28,11 +28,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.ui.components.ArticulatoryBiofeedbackCard
+import com.minimalpairs.app.ui.components.SagittalVocalTractView
 import com.minimalpairs.app.ui.components.VowelTrapezoidPlot
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.theme.LabAmber
@@ -107,14 +113,48 @@ fun ArticulatorLabScreen(
                 )
             }
 
+            Spacer(Modifier.height(10.dp))
+
+            var visualMode by remember { mutableStateOf(0) }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                FilterChip(
+                    selected = visualMode == 0,
+                    onClick = { visualMode = 0 },
+                    label = { Text("📊 Vowel Trapezoid") },
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                FilterChip(
+                    selected = visualMode == 1,
+                    onClick = { visualMode = 1 },
+                    label = { Text("👅 Oral Cavity (Sagittal)") }
+                )
+            }
+
             Spacer(Modifier.height(14.dp))
 
-            // 2D Vowel Trapezoid with live coordinates
-            VowelTrapezoidPlot(
-                contrast = state.contrast,
-                liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
-                liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
-            )
+            val currentBounds = if (state.isTargetPhoneme1) state.contrast.boundsPhoneme1 else state.contrast.boundsPhoneme2
+            val targetMidF1 = (currentBounds.f1MinHz + currentBounds.f1MaxHz) / 2f
+            val targetMidF2 = (currentBounds.f2MinHz + currentBounds.f2MaxHz) / 2f
+
+            if (visualMode == 0) {
+                VowelTrapezoidPlot(
+                    contrast = state.contrast,
+                    liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
+                    liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
+                )
+            } else {
+                SagittalVocalTractView(
+                    targetF1 = targetMidF1,
+                    targetF2 = targetMidF2,
+                    actualF1 = if (state.liveF1 > 0f) state.liveF1 else null,
+                    actualF2 = if (state.liveF2 > 0f) state.liveF2 else null,
+                    lipApertureRatio = state.contrast.visualIndicators.lipApertureRatio
+                )
+            }
 
             Spacer(Modifier.height(14.dp))
 
