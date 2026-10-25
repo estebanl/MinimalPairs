@@ -1,0 +1,352 @@
+<div id="mp-concept" aria-label="Minimal Pairs design concept">
+  <div class="mp-preview-bar">
+    <div><strong>Minimal Pairs</strong><span>Visual concept · simulated audio &amp; progress</span></div>
+    <label>Appearance<select id="mp-appearance"><option value="system">System</option><option value="light" selected>Light</option><option value="dark">Dark</option></select></label>
+  </div>
+  <div class="mp-stage viz-dotted-background">
+    <div class="mp-phone" aria-label="iPhone learning experience">
+      <div class="mp-app-content">
+        <div class="mp-status" aria-hidden="true"><span>9:41</span><span class="mp-status-icons"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+        <section id="mp-home" aria-label="Listen home">
+          <header class="mp-home-header"><div class="mp-wordmark"><span class="mp-brand"><i data-lucide="audio-lines" aria-hidden="true"></i></span>minimal pairs</div><span class="mp-kicker">A LITTLE PRACTICE. A CLEARER VOICE.</span><h1>Hear the<br>difference.</h1><p>Small sounds. New confidence.</p></header>
+          <div class="mp-home-body">
+            <article class="mp-feature">
+              <div class="mp-feature-heading"><span class="mp-eyebrow">START WITH A SOUND</span><i data-lucide="headphones" aria-hidden="true"></i></div>
+              <div class="mp-feature-pair"><div><strong>Ship</strong><span>/ɪ/</span></div><span class="mp-pair-divider" aria-hidden="true"></span><div><strong>Sheep</strong><span>/iː/</span></div></div>
+              <div class="mp-sound-lines" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <p>Two familiar words.<br>One small difference to listen for.</p>
+              <button type="button" class="mp-primary cursor-interaction" data-start="0">Start listening<i data-lucide="arrow-right" aria-hidden="true"></i></button>
+            </article>
+            <div class="mp-section-heading"><h2>Keep exploring</h2><span>Same sounds, new words</span></div>
+            <div class="mp-pair-list">
+              <button type="button" class="mp-pair-row cursor-interaction" data-start="1"><span class="mp-pair-symbol" aria-hidden="true">iː</span><span><strong>Feet <span class="mp-slash">/</span> Fit</strong><small>/iː/ &amp; /ɪ/</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+              <button type="button" class="mp-pair-row cursor-interaction" data-start="2"><span class="mp-pair-symbol" aria-hidden="true">ɪ</span><span><strong>Seat <span class="mp-slash">/</span> Sit</strong><small>/iː/ &amp; /ɪ/</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+            </div>
+            <p class="mp-reassurance"><i data-lucide="leaf" aria-hidden="true"></i>Go at your pace. Every listen counts.</p>
+          </div>
+        </section>
+        <section id="mp-drill" aria-label="Listening exercise" hidden>
+          <header class="mp-drill-header"><button type="button" class="mp-icon-button cursor-interaction" id="mp-back" aria-label="Back to Listen"><i data-lucide="arrow-left" aria-hidden="true"></i></button><span>Listening practice</span><span class="mp-header-spacer" aria-hidden="true"></span></header>
+          <div class="mp-drill-body">
+            <div class="mp-trial-label"><span id="mp-pair-label">SHIP / SHEEP</span><span id="mp-round">Pair 1 of 3</span></div>
+            <div class="mp-progress" role="progressbar" aria-label="Sample practice progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><span></span></div>
+            <h1>Which word<br>did you hear?</h1><p class="mp-drill-intro">Listen closely. Then choose a word.</p>
+            <div class="mp-listen-area"><button type="button" id="mp-replay" class="mp-play cursor-interaction" aria-label="Replay sample prompt"><i data-lucide="volume-2" aria-hidden="true"></i></button><span id="mp-play-label" aria-live="polite">Tap to listen again</span><button type="button" id="mp-speed" class="mp-speed cursor-interaction" aria-pressed="false">Normal speed · 1×</button></div>
+            <div class="mp-answers"><button type="button" id="mp-answer-a" class="mp-answer cursor-interaction" data-answer="0"><strong>Ship</strong><span>/ɪ/</span><small class="mp-answer-status"></small></button><button type="button" id="mp-answer-b" class="mp-answer cursor-interaction" data-answer="1"><strong>Sheep</strong><span>/iː/</span><small class="mp-answer-status"></small></button></div>
+            <div id="mp-feedback" class="mp-feedback" aria-live="polite"></div>
+            <button type="button" id="mp-next" class="mp-primary cursor-interaction" hidden>Next pair<i data-lucide="arrow-right" aria-hidden="true"></i></button>
+            <button type="button" id="mp-tips" class="mp-tips cursor-interaction"><i data-lucide="lightbulb" aria-hidden="true"></i>Sound tips</button>
+            <p id="mp-encouragement" class="mp-drill-note">Take your time. You can listen more than once.</p>
+          </div>
+        </section>
+        <nav id="mp-navigation" class="mp-navigation" aria-label="Main navigation">
+          <button type="button" class="mp-nav-item mp-active cursor-interaction" aria-current="page" id="mp-listen-tab"><i data-lucide="headphones" aria-hidden="true"></i><span>Listen</span></button>
+          <button type="button" class="mp-nav-item" disabled aria-label="Speak, outside this concept"><i data-lucide="mic" aria-hidden="true"></i><span>Speak</span></button>
+          <button type="button" class="mp-nav-item" disabled aria-label="Progress, outside this concept"><i data-lucide="chart-no-axes-column-increasing" aria-hidden="true"></i><span>Progress</span></button>
+          <button type="button" class="mp-nav-item" disabled aria-label="Stories, outside this concept"><i data-lucide="messages-square" aria-hidden="true"></i><span>Stories</span></button>
+          <button type="button" class="mp-nav-item" disabled aria-label="Rhythm, outside this concept"><i data-lucide="audio-lines" aria-hidden="true"></i><span>Rhythm</span></button>
+        </nav>
+        <div class="mp-home-indicator" aria-hidden="true"></div>
+      </div>
+      <div id="mp-scrim" hidden></div>
+      <dialog id="mp-tip-sheet" aria-labelledby="mp-tip-title" aria-modal="true">
+        <div class="mp-sheet-handle" aria-hidden="true"></div>
+        <div class="mp-sheet-heading"><div><span class="mp-eyebrow">A SMALL ADJUSTMENT</span><h2 id="mp-tip-title">Feel the difference.</h2></div><button type="button" class="mp-icon-button cursor-interaction" id="mp-close-tips" aria-label="Close sound tips"><i data-lucide="x" aria-hidden="true"></i></button></div>
+        <p class="mp-tip-intro">Both sounds sit near the front of your mouth. Notice how your tongue relaxes.</p>
+        <div class="mp-vowel-chart" role="img" aria-label="Schematic tongue position: the vowel in sheep is higher and farther forward than the vowel in ship. Positions are illustrative, not measurements.">
+          <span class="mp-chart-top">FRONT OF MOUTH</span>
+          <svg viewBox="0 0 300 150" class="mp-vowel-svg" aria-hidden="true"><path d="M35 25H270L245 125H100Z" class="mp-trapezoid"/><path d="M68 38L116 76" class="mp-vowel-connection"/><circle cx="68" cy="38" r="7" class="mp-vowel-one"/><circle cx="116" cy="76" r="7" class="mp-vowel-two"/><text x="86" y="36">/iː/ · sheep</text><text x="134" y="82">/ɪ/ · ship</text></svg>
+          <span class="mp-chart-caption">Tongue position · illustrative</span>
+        </div>
+        <div class="mp-tip-row"><strong>/ɪ/</strong><div><h3>Ship: short &amp; relaxed</h3><p>Relax your tongue slightly lower. Keep the sound brief.</p></div></div>
+        <div class="mp-tip-row"><strong>/iː/</strong><div><h3>Sheep: high &amp; sustained</h3><p>Lift your tongue a little higher and toward the front. Hold the sound a little longer.</p></div></div>
+        <button type="button" id="mp-got-it" class="mp-primary cursor-interaction">Back to listening<i data-lucide="arrow-right" aria-hidden="true"></i></button>
+      </dialog>
+    </div>
+  </div>
+  <div class="mp-preview-footer"><span id="mp-demo-note">Preview includes Listen and sound tips. Other tabs are shown for context.</span></div>
+</div>
+<style>
+  #mp-concept { --mp-bg: light-dark(#f7f6f2,#181e1c); --mp-surface: light-dark(#ffffff,#242c28); --mp-text: light-dark(#202b28,#eff4ef); --mp-muted: light-dark(#596961,#b1beb6); --mp-accent: #FAFA33; --mp-on-accent: #202b28; --mp-accent-ink: light-dark(#62620a,#FAFA33); --mp-tint: light-dark(#f5f5d9,#343421); --mp-line: light-dark(#dce1da,#3f4c44); --mp-success: light-dark(#216443,#a1dbb4); --mp-success-bg: light-dark(#eaf2e9,#263e2c); --mp-wrong: light-dark(#8c4e2a,#f0b58c); --mp-wrong-bg: light-dark(#faf0e7,#403026); --mp-font-scale: 1; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color: var(--mp-text); color-scheme: inherit; }
+  #mp-concept *, #mp-concept *::before, #mp-concept *::after { box-sizing: border-box; }
+  #mp-concept [hidden] { display:none !important; }
+  #mp-concept h1,#mp-concept h2,#mp-concept h3,#mp-concept p { margin:0; }
+  #mp-concept button,#mp-concept select { font-family:inherit; }
+  #mp-concept button { -webkit-tap-highlight-color:transparent; }
+  #mp-concept button:disabled { cursor:default; }
+  #mp-concept button:focus-visible,#mp-concept select:focus-visible { outline:3px solid var(--mp-accent-ink); outline-offset:4px; }
+  #mp-concept .mp-preview-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; padding:8px 96px 18px 4px; }
+  #mp-concept .mp-preview-bar strong { display:block; font-size:14px; font-weight:600; }
+  #mp-concept .mp-preview-bar span { display:block; font-size:12px; color:var(--mp-muted); margin-top:4px; }
+  #mp-concept .mp-preview-bar label { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--mp-muted); }
+  #mp-concept .mp-preview-bar select { min-height:44px; border:1px solid var(--mp-line); border-radius:10px; color:var(--mp-text); background:var(--mp-surface); padding:0 10px; font-size:14px; }
+  #mp-concept .mp-stage { padding:24px 12px; display:flex; justify-content:center; border-radius:20px; }
+  #mp-concept .mp-phone { color-scheme:light; width:100%; max-width:390px; min-width:0; position:relative; border:1px solid var(--mp-line); border-radius:36px; background:var(--mp-bg); box-shadow:0 16px 44px light-dark(#273c2914,#00000035); overflow:hidden; font-size:calc(17px * var(--mp-font-scale)); line-height:1.45; }
+  #mp-concept .mp-app-content { min-height:790px; display:flex; flex-direction:column; }
+  #mp-concept .mp-status { display:flex; align-items:center; justify-content:space-between; padding:17px 26px 10px; font-size:14px; font-weight:600; }
+  #mp-concept .mp-status-icons { display:flex; align-items:center; gap:5px; }
+  #mp-concept .mp-status-icons svg { width:15px; height:15px; }
+  #mp-concept .mp-status-icons svg:last-child { width:21px; }
+  #mp-concept .mp-home-header { padding:14px 24px 24px; }
+  #mp-concept .mp-wordmark { display:flex; align-items:center; gap:8px; font-size:calc(16px * var(--mp-font-scale)); font-weight:650; letter-spacing:-.4px; margin-bottom:30px; }
+  #mp-concept .mp-brand { width:28px; height:28px; border-radius:9px; background:var(--mp-accent); color:var(--mp-on-accent); display:grid; place-items:center; }
+  #mp-concept .mp-brand svg { width:18px; height:18px; }
+  #mp-concept .mp-kicker { display:block; font-size:calc(11px * var(--mp-font-scale)); letter-spacing:1.25px; font-weight:650; color:var(--mp-muted); margin-bottom:10px; }
+  #mp-concept h1 { font-size:calc(32px * var(--mp-font-scale)); font-weight:650; letter-spacing:-1.2px; line-height:1.14; }
+  #mp-concept .mp-home-header p { margin-top:10px; font-size:calc(15px * var(--mp-font-scale)); color:var(--mp-muted); }
+  #mp-concept .mp-home-body { padding:0 20px; }
+  #mp-concept .mp-feature { border-radius:24px; padding:22px; background:var(--mp-tint); }
+  #mp-concept .mp-feature-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--mp-accent-ink); }
+  #mp-concept .mp-feature-heading svg { width:20px; height:20px; flex:none; }
+  #mp-concept .mp-eyebrow { font-size:calc(11px * var(--mp-font-scale)); letter-spacing:1.3px; font-weight:700; }
+  #mp-concept .mp-feature-pair { display:flex; align-items:center; justify-content:space-around; gap:10px; margin-top:19px; }
+  #mp-concept .mp-feature-pair div { text-align:center; min-width:0; }
+  #mp-concept .mp-feature-pair strong { display:block; font-size:calc(30px * var(--mp-font-scale)); font-weight:600; letter-spacing:-1px; }
+  #mp-concept .mp-feature-pair div span { font-size:calc(16px * var(--mp-font-scale)); color:var(--mp-muted); }
+  #mp-concept .mp-pair-divider { height:43px; width:1px; background:var(--mp-line); flex:none; }
+  #mp-concept .mp-sound-lines { display:flex; align-items:center; justify-content:center; gap:4px; height:35px; margin:12px 0; color:var(--mp-accent-ink); opacity:.65; }
+  #mp-concept .mp-sound-lines span { width:3px; height:5px; border-radius:3px; background:currentColor; }
+  #mp-concept .mp-sound-lines span:nth-child(3n) { height:15px; }
+  #mp-concept .mp-sound-lines span:nth-child(4n) { height:26px; }
+  #mp-concept .mp-sound-lines span:nth-child(5n) { height:20px; }
+  #mp-concept .mp-feature p { text-align:center; color:var(--mp-muted); font-size:calc(14px * var(--mp-font-scale)); line-height:1.5; margin-bottom:18px; }
+  #mp-concept .mp-primary { width:100%; min-height:52px; padding:13px 17px; display:flex; justify-content:center; align-items:center; gap:12px; border:0; border-radius:15px; background:var(--mp-accent); color:var(--mp-on-accent); font-size:calc(16px * var(--mp-font-scale)); font-weight:600; line-height:1.4; }
+  #mp-concept .mp-primary svg { width:18px; height:18px; flex:none; }
+  #mp-concept .mp-primary:hover { filter:brightness(.95); }
+  #mp-concept .mp-section-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:4px 8px; margin:26px 2px 11px; }
+  #mp-concept h2 { font-size:calc(17px * var(--mp-font-scale)); font-weight:650; letter-spacing:-.3px; }
+  #mp-concept .mp-section-heading>span { font-size:calc(11px * var(--mp-font-scale)); color:var(--mp-muted); }
+  #mp-concept .mp-pair-list { background:var(--mp-surface); border-radius:18px; padding:0 14px; }
+  #mp-concept .mp-pair-row { width:100%; display:flex; align-items:center; gap:12px; min-height:78px; padding:12px 0; color:var(--mp-text); border:0; background:transparent; text-align:left; }
+  #mp-concept .mp-pair-row+.mp-pair-row { border-top:1px solid var(--mp-line); }
+  #mp-concept .mp-pair-row>:last-child { margin-left:auto; width:17px; height:17px; color:var(--mp-muted); flex:none; }
+  #mp-concept .mp-pair-row strong { display:block; font-size:calc(16px * var(--mp-font-scale)); font-weight:600; }
+  #mp-concept .mp-slash { color:var(--mp-muted); font-weight:400; margin:0 3px; }
+  #mp-concept .mp-pair-row small { display:block; font-size:calc(13px * var(--mp-font-scale)); color:var(--mp-muted); margin-top:2px; }
+  #mp-concept .mp-pair-symbol { display:grid; place-items:center; width:40px; height:42px; border-radius:12px; background:var(--mp-bg); color:var(--mp-accent-ink); font-size:20px; font-weight:500; flex:none; }
+  #mp-concept .mp-reassurance { display:flex; justify-content:center; align-items:center; gap:7px; font-size:calc(11px * var(--mp-font-scale)); color:var(--mp-muted); padding:21px 0; }
+  #mp-concept .mp-reassurance svg { width:14px; height:14px; flex:none; }
+  #mp-concept .mp-navigation { display:grid; grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) minmax(0,1fr) minmax(0,1.1fr); gap:2px; padding:9px 8px 3px; margin-top:auto; background:var(--mp-surface); border-top:1px solid var(--mp-line); }
+  #mp-concept .mp-nav-item { border:0; background:transparent; color:var(--mp-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:52px; padding:5px 0; font-size:calc(11px * var(--mp-font-scale)); }
+  #mp-concept .mp-nav-item svg { width:21px; height:21px; }
+  #mp-concept .mp-nav-item.mp-active { color:var(--mp-on-accent); background:var(--mp-accent); border-radius:12px; font-weight:650; }
+  #mp-concept .mp-home-indicator { width:112px; height:4px; border-radius:4px; background:var(--mp-text); margin:12px auto 8px; opacity:.8; }
+  #mp-concept .mp-drill-header { padding:6px 16px 18px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  #mp-concept .mp-drill-header>span { font-size:calc(14px * var(--mp-font-scale)); font-weight:500; }
+  #mp-concept .mp-header-spacer { width:44px; flex:none; }
+  #mp-concept .mp-icon-button { display:grid; place-items:center; width:44px; height:44px; flex:none; padding:10px; border:0; border-radius:50%; color:var(--mp-text); background:transparent; }
+  #mp-concept .mp-icon-button svg { width:22px; height:22px; }
+  #mp-concept #mp-drill { flex:1; }
+  #mp-concept .mp-drill-body { padding:0 24px 30px; }
+  #mp-concept .mp-trial-label { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:calc(11px * var(--mp-font-scale)); color:var(--mp-muted); }
+  #mp-concept #mp-pair-label { letter-spacing:1px; font-weight:650; }
+  #mp-concept .mp-progress { height:4px; background:light-dark(#666952,#3f4c44); border-radius:4px; margin:12px 0 31px; }
+  #mp-concept .mp-progress>span { display:block; height:100%; width:0; background:var(--mp-accent); border-radius:4px; transition:width .2s ease; }
+  #mp-concept .mp-drill-body h1 { text-align:center; }
+  #mp-concept .mp-drill-intro { font-size:calc(14px * var(--mp-font-scale)); text-align:center; color:var(--mp-muted); margin-top:12px; }
+  #mp-concept .mp-listen-area { display:flex; flex-direction:column; align-items:center; padding:29px 0 27px; }
+  #mp-concept .mp-play { width:96px; height:96px; border-radius:50%; display:grid; place-items:center; border:0; color:var(--mp-on-accent); background:var(--mp-accent); box-shadow:0 0 0 10px #fafa3326; }
+  #mp-concept .mp-play svg { width:33px; height:33px; }
+  #mp-concept .mp-play.mp-playing { background:var(--mp-accent); color:var(--mp-on-accent); }
+  #mp-concept #mp-play-label { font-size:calc(13px * var(--mp-font-scale)); color:var(--mp-muted); margin-top:19px; }
+  #mp-concept .mp-speed { min-height:44px; margin-top:6px; background:transparent; border:0; font-size:calc(13px * var(--mp-font-scale)); color:var(--mp-accent-ink); padding:8px 14px; font-weight:500; }
+  #mp-concept .mp-answers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  #mp-concept .mp-answer { min-width:0; min-height:126px; border:1px solid var(--mp-line); border-radius:19px; background:var(--mp-surface); color:var(--mp-text); padding:17px 8px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  #mp-concept .mp-answer strong { font-size:calc(25px * var(--mp-font-scale)); letter-spacing:-.7px; font-weight:600; }
+  #mp-concept .mp-answer>span { color:var(--mp-muted); font-size:calc(15px * var(--mp-font-scale)); margin-top:3px; }
+  #mp-concept .mp-answer-status { min-height:18px; font-size:calc(11px * var(--mp-font-scale)); margin-top:6px; font-weight:600; }
+  #mp-concept .mp-answer.mp-correct { border:2px solid var(--mp-success); background:var(--mp-success-bg); }
+  #mp-concept .mp-answer.mp-incorrect { border:2px solid var(--mp-wrong); background:var(--mp-wrong-bg); }
+  #mp-concept .mp-correct .mp-answer-status { color:var(--mp-success); }
+  #mp-concept .mp-incorrect .mp-answer-status { color:var(--mp-wrong); }
+  #mp-concept .mp-feedback:empty { display:none; }
+  #mp-concept .mp-feedback { padding:18px 2px; display:flex; gap:9px; align-items:flex-start; }
+  #mp-concept .mp-feedback svg { width:20px; height:20px; flex:none; margin-top:3px; }
+  #mp-concept .mp-feedback strong { display:block; font-size:calc(16px * var(--mp-font-scale)); }
+  #mp-concept .mp-feedback p { font-size:calc(13px * var(--mp-font-scale)); color:var(--mp-muted); margin-top:4px; }
+  #mp-concept .mp-feedback[data-result="correct"] { color:var(--mp-success); }
+  #mp-concept .mp-feedback[data-result="incorrect"] { color:var(--mp-wrong); }
+  #mp-concept .mp-tips { display:flex; align-items:center; justify-content:center; gap:7px; border:0; background:transparent; color:var(--mp-accent-ink); font-size:calc(14px * var(--mp-font-scale)); font-weight:500; min-height:48px; margin:14px auto 0; padding:10px 16px; }
+  #mp-concept .mp-tips svg { width:17px; height:17px; }
+  #mp-concept .mp-drill-note { text-align:center; font-size:calc(12px * var(--mp-font-scale)); color:var(--mp-muted); margin:7px 0 0; }
+  #mp-concept #mp-scrim { position:absolute; inset:0; background:#0a1b1766; z-index:2; }
+  #mp-concept #mp-tip-sheet { position:absolute; inset:auto 0 0; width:100%; max-width:100%; margin:0; padding:10px 23px 26px; border:0; border-radius:28px 28px 0 0; background:var(--mp-surface); color:var(--mp-text); z-index:3; box-shadow:0 -8px 30px #102a1814; }
+  #mp-concept #mp-tip-sheet:not([open]) { display:none; }
+  #mp-concept .mp-sheet-handle { width:34px; height:4px; margin:0 auto 17px; border-radius:3px; background:var(--mp-line); }
+  #mp-concept .mp-sheet-heading { display:flex; justify-content:space-between; align-items:center; gap:4px; }
+  #mp-concept .mp-sheet-heading .mp-eyebrow { color:var(--mp-accent-ink); }
+  #mp-concept .mp-sheet-heading h2 { font-size:calc(24px * var(--mp-font-scale)); line-height:1.2; margin-top:6px; letter-spacing:-.7px; }
+  #mp-concept .mp-tip-intro { font-size:calc(14px * var(--mp-font-scale)); color:var(--mp-muted); margin:14px 0 18px; }
+  #mp-concept .mp-vowel-chart { background:var(--mp-bg); border-radius:18px; padding:15px 12px 12px; }
+  #mp-concept .mp-chart-top,#mp-concept .mp-chart-caption { display:block; font-size:calc(11px * var(--mp-font-scale)); color:var(--mp-muted); }
+  #mp-concept .mp-chart-top { letter-spacing:1px; padding-left:17px; }
+  #mp-concept .mp-chart-caption { text-align:center; }
+  #mp-concept .mp-vowel-svg { display:block; width:100%; height:auto; }
+  #mp-concept .mp-trapezoid { fill:none; stroke:var(--mp-line); stroke-width:1.5; }
+  #mp-concept .mp-vowel-connection { fill:none; stroke:var(--mp-muted); stroke-width:1.5; stroke-dasharray:3 4; }
+  #mp-concept .mp-vowel-one { fill:var(--mp-accent); stroke:var(--mp-accent-ink); stroke-width:1.5; }
+  #mp-concept .mp-vowel-two { fill:var(--mp-bg); stroke:var(--mp-accent-ink); stroke-width:2.5; }
+  #mp-concept .mp-vowel-svg text { font:14px -apple-system,BlinkMacSystemFont,sans-serif; fill:var(--mp-text); }
+  #mp-concept .mp-tip-row { display:flex; gap:13px; margin:19px 0; }
+  #mp-concept .mp-tip-row>strong { color:var(--mp-accent-ink); min-width:33px; font-size:calc(19px * var(--mp-font-scale)); font-weight:500; }
+  #mp-concept .mp-tip-row h3 { font-size:calc(15px * var(--mp-font-scale)); font-weight:600; }
+  #mp-concept .mp-tip-row p { font-size:calc(13px * var(--mp-font-scale)); color:var(--mp-muted); margin-top:4px; }
+  #mp-concept .mp-preview-footer { padding:14px 4px 3px; font-size:12px; line-height:1.5; color:var(--mp-muted); text-align:center; }
+  @media(max-width:380px) { #mp-concept .mp-stage { padding:15px 0; } #mp-concept .mp-phone { border-radius:26px; } #mp-concept .mp-home-header { padding-left:20px; padding-right:20px; } #mp-concept .mp-home-body { padding:0 14px; } #mp-concept .mp-feature { padding:19px 16px; } #mp-concept .mp-drill-body { padding-left:18px; padding-right:18px; } #mp-concept .mp-section-heading { align-items:flex-start; flex-direction:column; } }
+  @media(prefers-reduced-motion:reduce) { #mp-concept .mp-progress>span { transition:none; } }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('mp-concept');
+  const el = id => root.querySelector('#mp-' + id);
+  const pairs = [
+    { words:['Ship','Sheep'], sounds:['ɪ','iː'], correct:0 },
+    { words:['Feet','Fit'], sounds:['iː','ɪ'], correct:0 },
+    { words:['Seat','Sit'], sounds:['iː','ɪ'], correct:1 }
+  ];
+  const state = { screen:'home', index:0, answer:null, slow:false, appearance:'light', textScale:1 };
+  let playing = false;
+  let playbackTimer;
+  const icons = () => { if (globalThis.lucide) globalThis.lucide.createIcons({ attrs: { width:20, height:20 } }); };
+  function save() {
+    if (window.openai?.setWidgetState) window.openai.setWidgetState({ modelContent:{ design:'Calm and polished', accent:'#FAFA33', appearance:state.appearance }, privateContent:{...state} }).catch(() => {});
+  }
+  function applyAppearance() {
+    root.querySelector('.mp-phone').style.colorScheme = state.appearance === 'system' ? 'light dark' : state.appearance;
+    root.style.setProperty('--mp-font-scale', state.textScale);
+    el('appearance').value = state.appearance;
+  }
+  function stopPlayback() {
+    clearTimeout(playbackTimer);
+    playing = false;
+    el('replay').classList.remove('mp-playing');
+    el('play-label').textContent = 'Tap to listen again';
+  }
+  function render() {
+    const pair = pairs[state.index];
+    const answered = state.answer !== null;
+    el('home').hidden = state.screen !== 'home';
+    el('drill').hidden = state.screen !== 'drill';
+    el('navigation').hidden = state.screen !== 'home';
+    el('pair-label').textContent = pair.words.join(' / ').toUpperCase();
+    el('round').textContent = `Pair ${state.index + 1} of ${pairs.length}`;
+    const completed = state.index + (answered ? 1 : 0);
+    const progress = root.querySelector('.mp-progress');
+    progress.setAttribute('aria-valuenow', String(completed));
+    progress.firstElementChild.style.width = `${completed / pairs.length * 100}%`;
+    el('speed').textContent = state.slow ? 'Slower speed · 0.75×' : 'Normal speed · 1×';
+    el('speed').setAttribute('aria-pressed', String(state.slow));
+    [el('answer-a'),el('answer-b')].forEach((button,i) => {
+      button.querySelector('strong').textContent = pair.words[i];
+      button.querySelector('span').textContent = `/${pair.sounds[i]}/`;
+      button.querySelector('small').textContent = answered ? (i === pair.correct ? '✓ Correct word' : i === state.answer ? '× Your choice' : '') : '';
+      button.classList.toggle('mp-correct', answered && i === pair.correct);
+      button.classList.toggle('mp-incorrect', answered && i === state.answer && i !== pair.correct);
+      button.disabled = answered;
+      button.setAttribute('aria-label', `${pair.words[i]}, /${pair.sounds[i]}/${answered && i === pair.correct ? ', correct word' : answered && i === state.answer ? ', your choice, incorrect' : ''}`);
+    });
+    el('feedback').replaceChildren();
+    if (answered) {
+      const correct = state.answer === pair.correct;
+      el('feedback').dataset.result = correct ? 'correct' : 'incorrect';
+      const icon = document.createElement('i');
+      icon.setAttribute('data-lucide', correct ? 'circle-check' : 'circle-help');
+      icon.setAttribute('aria-hidden','true');
+      const copy = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = correct ? 'You heard it.' : `This one was “${pair.words[pair.correct].toLowerCase()}.”`;
+      const description = document.createElement('p');
+      description.textContent = correct ? `“${pair.words[pair.correct]}” has the /${pair.sounds[pair.correct]}/ sound. Nicely noticed.` : 'Small differences take practice. Open sound tips and listen again.';
+      copy.append(title,description);
+      el('feedback').append(icon,copy);
+    }
+    el('next').hidden = !answered;
+    el('next').firstChild.textContent = state.index === pairs.length - 1 ? 'Back to Listen' : 'Next pair';
+    el('encouragement').hidden = answered;
+    el('demo-note').textContent = state.screen === 'home' ? 'Preview includes Listen and sound tips. Other tabs are shown for context.' : `Visual prototype · no audio plays. Sample prompt: “${pair.words[pair.correct].toLowerCase()}.” Progress is illustrative.`;
+    applyAppearance();
+    icons();
+  }
+  function closeTips(restoreFocus = true) {
+    el('tip-sheet').removeAttribute('open');
+    el('scrim').hidden = true;
+    root.querySelector('.mp-app-content').inert = false;
+    root.querySelector('.mp-phone').style.minHeight = '';
+    if (restoreFocus && state.screen === 'drill') el('tips').focus({preventScroll:true});
+  }
+  function openTips() {
+    stopPlayback();
+    el('scrim').hidden = false;
+    el('tip-sheet').setAttribute('open','');
+    root.querySelector('.mp-app-content').inert = true;
+    root.querySelector('.mp-phone').style.minHeight = `${el('tip-sheet').offsetHeight + 90}px`;
+    el('close-tips').focus({preventScroll:true});
+  }
+  function goHome() {
+    stopPlayback(); closeTips(false);
+    state.screen = 'home'; state.answer = null;
+    render(); save();
+    root.querySelector('[data-start="0"]').focus({preventScroll:true});
+  }
+  root.querySelectorAll('[data-start]').forEach(button => button.addEventListener('click', () => {
+    stopPlayback(); state.screen = 'drill'; state.index = Number(button.dataset.start); state.answer = null;
+    render(); save(); el('replay').focus({preventScroll:true});
+  }));
+  root.querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => {
+    if (state.answer !== null) return;
+    stopPlayback(); state.answer = Number(button.dataset.answer); render(); save();
+    el('next').focus({preventScroll:true});
+  }));
+  el('next').addEventListener('click', () => {
+    if (state.index === pairs.length - 1) { goHome(); return; }
+    stopPlayback(); state.index++; state.answer = null; render(); save(); el('replay').focus({preventScroll:true});
+  });
+  el('back').addEventListener('click',goHome);
+  el('listen-tab').addEventListener('click',goHome);
+  el('replay').addEventListener('click', () => {
+    if (playing) return;
+    playing = true;
+    el('replay').classList.add('mp-playing');
+    el('play-label').textContent = 'Playing sample…';
+    playbackTimer = setTimeout(stopPlayback, state.slow ? 1600 : 1200);
+  });
+  el('speed').addEventListener('click', () => { stopPlayback(); state.slow = !state.slow; render(); save(); });
+  el('tips').addEventListener('click',openTips);
+  el('close-tips').addEventListener('click',() => closeTips());
+  el('got-it').addEventListener('click',() => closeTips());
+  el('scrim').addEventListener('click',() => closeTips());
+  el('tip-sheet').addEventListener('keydown',event => {
+    if (event.key === 'Escape') { event.preventDefault(); closeTips(); }
+    if (event.key === 'Tab') {
+      const first = el('close-tips'); const last = el('got-it');
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  el('appearance').addEventListener('change',event => { state.appearance = event.target.value; applyAppearance(); save(); });
+  function restore(saved) {
+    const value = saved?.privateContent;
+    if (!value || typeof value !== 'object') return;
+    stopPlayback(); closeTips(false);
+    state.screen = value.screen === 'drill' ? 'drill' : 'home';
+    state.index = Number.isInteger(value.index) && value.index >= 0 && value.index < pairs.length ? value.index : 0;
+    state.answer = value.answer === 0 || value.answer === 1 ? value.answer : null;
+    state.slow = value.slow === true;
+    state.appearance = ['light','dark','system'].includes(value.appearance) ? value.appearance : 'light';
+    state.textScale = typeof value.textScale === 'number' ? Math.min(1.4,Math.max(1,value.textScale)) : 1;
+  }
+  restore(window.openai?.widgetState);
+  render();
+  window.addEventListener('openai:set_globals', event => {
+    if (event.detail?.globals?.widgetState) { restore(event.detail.globals.widgetState); render(); }
+  });
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container:root.querySelector('.mp-phone'), onChange:() => {
+      applyAppearance();
+      if (el('tip-sheet').hasAttribute('open')) root.querySelector('.mp-phone').style.minHeight = `${el('tip-sheet').offsetHeight + 90}px`;
+      save();
+    }});
+    tweak.addSlider(state,'textScale',{label:'Text size',min:1,max:1.4,step:.1});
+  }
+})();
+</script>

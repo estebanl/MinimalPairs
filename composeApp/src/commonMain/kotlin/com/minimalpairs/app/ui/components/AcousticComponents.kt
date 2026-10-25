@@ -2,7 +2,6 @@ package com.minimalpairs.app.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,16 +26,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.model.PhoneticBounds
 import com.minimalpairs.app.core.model.PhoneticContrast
 import com.minimalpairs.app.core.model.VisualIndicators
-import com.minimalpairs.app.ui.theme.LabAmber
-import com.minimalpairs.app.ui.theme.LabCyan
-import com.minimalpairs.app.ui.theme.LabGreen
+import com.minimalpairs.app.ui.theme.PracticeTheme
 
 /**
  * 2D IPA Vowel Trapezoid Formant Plot (F1 vertical vs F2 horizontal, standard phonetic inversion).
@@ -48,31 +43,31 @@ fun VowelTrapezoidPlot(
     liveF2: Float? = null,
     modifier: Modifier = Modifier
         .fillMaxWidth()
-        .height(260.dp)
 ) {
+    val colors = PracticeTheme.colors
+    val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 4.dp
+        color = scheme.surface,
+        tonalElevation = 0.dp
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Acoustic Vowel Trapezoid (F1 vs F2)",
+                    text = "Where the sounds sit",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(10.dp).background(LabCyan, RoundedCornerShape(5.dp)))
+                    Box(modifier = Modifier.size(10.dp).background(colors.accentInk, RoundedCornerShape(5.dp)))
                     Spacer(Modifier.width(4.dp))
                     Text("/${contrast.phoneme1}/", style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.width(10.dp))
-                    Box(modifier = Modifier.size(10.dp).background(LabAmber, RoundedCornerShape(5.dp)))
+                    Box(modifier = Modifier.size(10.dp).background(colors.warning, RoundedCornerShape(5.dp)))
                     Spacer(Modifier.width(4.dp))
                     Text("/${contrast.phoneme2}/", style = MaterialTheme.typography.labelSmall)
                 }
@@ -80,7 +75,7 @@ fun VowelTrapezoidPlot(
 
             Spacer(Modifier.height(8.dp))
 
-            Canvas(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                 val w = size.width
                 val h = size.height
 
@@ -91,7 +86,7 @@ fun VowelTrapezoidPlot(
                 fun mapY(f1: Float): Float = ((f1 - 200f) / (950f - 200f)) * h
 
                 // Grid lines
-                val gridColor = Color.Gray.copy(alpha = 0.2f)
+                val gridColor = scheme.outlineVariant
                 val dashEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
 
                 listOf(300f, 500f, 700f).forEach { f1Grid ->
@@ -103,19 +98,19 @@ fun VowelTrapezoidPlot(
                     drawLine(gridColor, Offset(x, 0f), Offset(x, h), strokeWidth = 1f, pathEffect = dashEffect)
                 }
 
-                // Region 1 (Phoneme 1 - Cyan)
-                drawAcousticRegion(contrast.boundsPhoneme1, ::mapX, ::mapY, LabCyan)
+                // Region 1 (Phoneme 1)
+                drawAcousticRegion(contrast.boundsPhoneme1, ::mapX, ::mapY, colors.accentInk)
 
-                // Region 2 (Phoneme 2 - Amber)
-                drawAcousticRegion(contrast.boundsPhoneme2, ::mapX, ::mapY, LabAmber)
+                // Region 2 (Phoneme 2)
+                drawAcousticRegion(contrast.boundsPhoneme2, ::mapX, ::mapY, colors.warning)
 
                 // Live User Coordinate (Green / White glowing dot)
                 if (liveF1 != null && liveF2 != null && liveF1 in 150f..1100f && liveF2 in 700f..3000f) {
                     val userX = mapX(liveF2).coerceIn(4f, w - 4f)
                     val userY = mapY(liveF1).coerceIn(4f, h - 4f)
 
-                    drawCircle(LabGreen.copy(alpha = 0.4f), radius = 14f, center = Offset(userX, userY))
-                    drawCircle(LabGreen, radius = 7f, center = Offset(userX, userY))
+                    drawCircle(colors.success.copy(alpha = 0.4f), radius = 14f, center = Offset(userX, userY))
+                    drawCircle(colors.success, radius = 7f, center = Offset(userX, userY))
                     drawCircle(Color.White, radius = 3f, center = Offset(userX, userY))
                 }
             }
@@ -124,8 +119,8 @@ fun VowelTrapezoidPlot(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Front (F2 High)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                Text("Back (F2 Low)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text("Front (F2 High)", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                Text("Back (F2 Low)", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             }
         }
     }
@@ -174,29 +169,30 @@ fun ArticulatoryBiofeedbackCard(
     phoneme2: String,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
+    val colors = PracticeTheme.colors
+    val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        color = scheme.surface
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Articulatory Biofeedback & Vocal Tract",
+                text = "Mouth position reference",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(10.dp))
 
             // Lip Aperture
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Lip Aperture Ratio",
+                    text = "Lip opening",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = scheme.onSurfaceVariant
                 )
                 Text(
                     text = "${(indicators.lipApertureRatio * 100).toInt()}% (${if (indicators.lipApertureRatio < 0.25f) "Spread / Unrounded" else "Open / Rounded"})",
@@ -208,22 +204,21 @@ fun ArticulatoryBiofeedbackCard(
             LinearProgressIndicator(
                 progress = { indicators.lipApertureRatio.coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = LabCyan,
-                trackColor = MaterialTheme.colorScheme.surface
+                color = colors.accentInk,
+                trackColor = scheme.surface
             )
 
             Spacer(Modifier.height(14.dp))
 
             // Jaw Drop
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Target Jaw Drop",
+                    text = "Jaw opening",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = scheme.onSurfaceVariant
                 )
                 Text(
                     text = "${indicators.jawDropMinMm.toInt()} – ${indicators.jawDropMaxMm.toInt()} mm",
@@ -235,8 +230,8 @@ fun ArticulatoryBiofeedbackCard(
             LinearProgressIndicator(
                 progress = { (indicators.jawDropMaxMm / 30f).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = LabAmber,
-                trackColor = MaterialTheme.colorScheme.surface
+                color = colors.warning,
+                trackColor = scheme.surface
             )
         }
     }

@@ -1,7 +1,6 @@
 package com.minimalpairs.app.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,15 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.minimalpairs.app.ui.theme.LabAmber
-import com.minimalpairs.app.ui.theme.LabCyan
-import com.minimalpairs.app.ui.theme.LabGreen
+import com.minimalpairs.app.ui.theme.PracticeTheme
 
 /**
  * Renders an anatomical Sagittal Oral Cavity Cross-Section comparing
@@ -41,37 +37,37 @@ fun SagittalVocalTractView(
     lipApertureRatio: Float = 0.15f,
     modifier: Modifier = Modifier
         .fillMaxWidth()
-        .height(260.dp)
 ) {
+    val colors = PracticeTheme.colors
+    val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 4.dp
+        color = scheme.surface,
+        tonalElevation = 0.dp
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Oral Cavity & Tongue Posture (Sagittal)",
+                    text = "Tongue position",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Target", color = LabCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text("Target", color = colors.accentInk, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     if (actualF1 != null && actualF2 != null) {
                         Spacer(Modifier.padding(horizontal = 6.dp))
-                        Text("You", color = LabGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("You", color = colors.success, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            Canvas(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                 val w = size.width
                 val h = size.height
 
@@ -87,12 +83,12 @@ fun SagittalVocalTractView(
                 }
                 drawPath(
                     path = palatePath,
-                    color = Color.LightGray.copy(alpha = 0.6f),
+                    color = scheme.outline,
                     style = Stroke(width = 4f)
                 )
 
                 // Jaw & Teeth landmarks
-                drawCircle(Color.LightGray.copy(alpha = 0.5f), radius = 5f, center = Offset(w * 0.25f, h * 0.32f)) // Upper incisor
+                drawCircle(scheme.outline, radius = 5f, center = Offset(w * 0.25f, h * 0.32f)) // Upper incisor
 
                 // Tongue Height is inversely proportional to F1 (Low F1 = High Tongue)
                 // Tongue Backness is proportional to F2 (High F2 = Front Tongue)
@@ -108,7 +104,7 @@ fun SagittalVocalTractView(
                     return Offset(tongueX, tongueY)
                 }
 
-                // 1. Draw Target Tongue Silhouette (Cyan)
+                // 1. Draw Target Tongue Silhouette (reference)
                 val targetPeak = calculateTonguePeak(targetF1, targetF2)
                 val targetTonguePath = Path().apply {
                     moveTo(w * 0.22f, h * 0.72f) // Lower teeth / mandible base
@@ -126,17 +122,17 @@ fun SagittalVocalTractView(
 
                 drawPath(
                     path = targetTonguePath,
-                    color = LabCyan.copy(alpha = 0.35f),
+                    color = colors.accentInk.copy(alpha = 0.35f),
                     style = Stroke(width = 8f)
                 )
                 drawPath(
                     path = targetTonguePath,
-                    color = LabCyan,
+                    color = colors.accentInk,
                     style = Stroke(width = 3f)
                 )
-                drawCircle(LabCyan, radius = 6f, center = targetPeak)
+                drawCircle(colors.accentInk, radius = 6f, center = targetPeak)
 
-                // 2. Draw Actual User Tongue Silhouette (Green / Amber)
+                // 2. Draw Actual User Tongue Silhouette (measured)
                 if (actualF1 != null && actualF2 != null && actualF1 > 150f && actualF2 > 700f) {
                     val userPeak = calculateTonguePeak(actualF1, actualF2)
                     val userTonguePath = Path().apply {
@@ -155,19 +151,19 @@ fun SagittalVocalTractView(
 
                     drawPath(
                         path = userTonguePath,
-                        color = LabGreen.copy(alpha = 0.5f),
+                        color = colors.success.copy(alpha = 0.5f),
                         style = Stroke(width = 8f)
                     )
                     drawPath(
                         path = userTonguePath,
-                        color = LabGreen,
+                        color = colors.success,
                         style = Stroke(width = 3f)
                     )
-                    drawCircle(LabGreen, radius = 6f, center = userPeak)
+                    drawCircle(colors.success, radius = 6f, center = userPeak)
 
                     // Dashed alignment error vector from user peak to target peak
                     drawLine(
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = scheme.onSurface.copy(alpha = 0.7f),
                         start = userPeak,
                         end = targetPeak,
                         strokeWidth = 2f,
@@ -178,7 +174,7 @@ fun SagittalVocalTractView(
                 // Lip Aperture Visualizer at mouth opening (front left)
                 val lipOpeningH = (h * 0.12f * lipApertureRatio.coerceIn(0.1f, 0.6f)).coerceAtLeast(8f)
                 drawLine(
-                    color = LabAmber,
+                    color = colors.warning,
                     start = Offset(w * 0.14f, h * 0.32f),
                     end = Offset(w * 0.14f, h * 0.32f + lipOpeningH),
                     strokeWidth = 5f
@@ -189,8 +185,8 @@ fun SagittalVocalTractView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Lips / Teeth (Front)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                Text("Pharynx (Back)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text("Lips / Teeth (Front)", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                Text("Pharynx (Back)", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             }
         }
     }

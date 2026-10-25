@@ -1,337 +1,187 @@
 package com.minimalpairs.app.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.minimalpairs.app.core.model.DrillType
 import com.minimalpairs.app.core.model.PlaybackSpeed
 import com.minimalpairs.app.ui.components.ArticulatoryBiofeedbackCard
+import com.minimalpairs.app.ui.components.PracticeIcon
+import com.minimalpairs.app.ui.components.PracticeTopBar
 import com.minimalpairs.app.ui.components.VowelTrapezoidPlot
 import com.minimalpairs.app.ui.navigation.EarTrainerComponent
-import com.minimalpairs.app.ui.theme.LabAmber
-import com.minimalpairs.app.ui.theme.LabCyan
-import com.minimalpairs.app.ui.theme.LabGreen
-import com.minimalpairs.app.ui.theme.LabRed
+import com.minimalpairs.app.ui.theme.PracticeTheme
+import kotlin.time.TimeSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EarTrainerScreen(
-    component: EarTrainerComponent,
-    modifier: Modifier = Modifier
-) {
+fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifier) {
     val state by component.state.collectAsState()
-    var trialStartTime by remember(state.targetWord) { mutableLongStateOf(0L) }
+    var trialStarted by remember(component) { mutableStateOf(TimeSource.Monotonic.markNow()) }
+    var showTips by remember(component) { mutableStateOf(false) }
+    val answered = state.lastResultCorrect != null
+    val ink = PracticeTheme.colors.accentInk
+    val success = PracticeTheme.colors.success
+    val warning = PracticeTheme.colors.warning
 
-    LaunchedEffect(state.targetWord) {
-        trialStartTime = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeMilliseconds
-        component.playPrompt()
-    }
+    // nextTrial already starts playback, including when the same word is drawn again.
+    LaunchedEffect(component) { component.playPrompt() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "/${state.contrast.phoneme1}/ vs /${state.contrast.phoneme2}/ Ear Trainer",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Mode: ${state.drillType.name.replace("_", " ")} | Mastery: ${(state.sm2State.masteryScore * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = component::onBack) {
-                        Text("←", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    }
-                },
-                actions = {
-                    FilterChip(
-                        selected = state.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC,
-                        onClick = {
-                            val next = if (state.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC)
-                                PlaybackSpeed.NORMAL else PlaybackSpeed.SLOW_DIAGNOSTIC
-                            component.setPlaybackSpeed(next)
-                        },
-                        label = { Text(state.playbackSpeed.label) }
-                    )
-                }
-            )
-        },
-        modifier = modifier
-    ) { padding ->
+    Scaffold(topBar = { PracticeTopBar("Listening practice", onBack = component::onBack) }, modifier = modifier) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Mastery Progress Indicator
+            Text("/${state.contrast.phoneme1}/  &  /${state.contrast.phoneme2}/", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Text("Sound mastery · ${(state.sm2State.masteryScore * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             LinearProgressIndicator(
-                progress = { state.sm2State.masteryScore },
-                modifier = Modifier.fillMaxWidth().height(6.dp),
-                color = LabCyan,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                progress = { state.sm2State.masteryScore.coerceIn(0f, 1f) },
+                color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(4.dp)
             )
-
+            Spacer(Modifier.height(30.dp))
+            Text("Which word\ndid you hear?", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
-
-            // 3-Failure Slow-Mo Diagnostic Trigger Banner
-            AnimatedVisibility(visible = state.showFormantHint || state.consecutiveFailures >= 3) {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = LabAmber.copy(alpha = 0.2f)
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("⚠️", fontSize = 18.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "Slow-Motion Diagnostic Triggered",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = LabAmber
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "3 consecutive misses detected. Playback automatically slowed to 0.75x phase-vocoded to preserve acoustic pitch. View the Formant visualizer below for articulatory cues.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        FilledTonalButton(
-                            onClick = { /* Bottom sheet opened below */ },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = LabAmber.copy(alpha = 0.4f)
-                            )
-                        ) {
-                            Text("Open Formant Visualizer Hint", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Audio Playback Trigger Button
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(110.dp)
-                    .background(
-                        if (state.isPlayingAudio) LabCyan.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
-                        CircleShape
-                    )
-                    .border(
-                        3.dp,
-                        if (state.isPlayingAudio) LabCyan else MaterialTheme.colorScheme.primary,
-                        CircleShape
-                    )
-                    .clickable { component.playPrompt() }
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = if (state.isPlayingAudio) "🔊" else "▶",
-                        fontSize = 32.sp
-                    )
-                    Text(
-                        text = if (state.isPlayingAudio) "Playing" else "Listen",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Tap to replay (${state.playbackSpeed.label})",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Drill Options
-            Text(
-                text = "Which word did you hear?",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                OptionCard(
-                    word = state.currentPair.word1,
-                    phoneme = state.contrast.phoneme1,
-                    isSelected = state.lastResultCorrect != null && state.currentPair.word1 == state.targetWord,
-                    isWrong = state.lastResultCorrect == false && state.currentPair.word1 != state.targetWord,
-                    onClick = {
-                        val now = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeMilliseconds
-                        val latencySec = ((now - trialStartTime) / 1000f).coerceAtLeast(0.1f)
-                        component.onSelectAnswer(state.currentPair.word1, latencySec)
-                    },
-                    modifier = Modifier.weight(1f)
+            Text("Listen closely. Then choose a word.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(28.dp))
+            FilledIconButton(
+                onClick = component::playPrompt, enabled = !state.isPlayingAudio,
+                shape = CircleShape, modifier = Modifier.size(96.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primaryContainer, disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-
-                OptionCard(
-                    word = state.currentPair.word2,
-                    phoneme = state.contrast.phoneme2,
-                    isSelected = state.lastResultCorrect != null && state.currentPair.word2 == state.targetWord,
-                    isWrong = state.lastResultCorrect == false && state.currentPair.word2 != state.targetWord,
-                    onClick = {
-                        val now = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeMilliseconds
-                        val latencySec = ((now - trialStartTime) / 1000f).coerceAtLeast(0.1f)
-                        component.onSelectAnswer(state.currentPair.word2, latencySec)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Feedback & Next Trial Button
-            AnimatedVisibility(visible = state.lastResultCorrect != null) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 20.dp)
-                ) {
-                    Text(
-                        text = state.feedbackMessage,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = if (state.lastResultCorrect == true) LabGreen else LabRed,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = component::nextTrial,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Next Pair →", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // Inline Formant Visualizer & Articulator Biofeedback
-            VowelTrapezoidPlot(contrast = state.contrast)
+            ) { PracticeIcon(PracticeIcon.Listen, if (state.isPlayingAudio) "Playing" else "Replay sound", Modifier.size(34.dp)) }
             Spacer(Modifier.height(14.dp))
-            ArticulatoryBiofeedbackCard(
-                indicators = state.contrast.visualIndicators,
-                phoneme1 = state.contrast.phoneme1,
-                phoneme2 = state.contrast.phoneme2
-            )
-            Spacer(Modifier.height(24.dp))
+            Text(if (state.isPlayingAudio) "Playing…" else "Tap to listen again", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(
+                onClick = { component.setPlaybackSpeed(if (state.playbackSpeed == PlaybackSpeed.NORMAL) PlaybackSpeed.SLOW_DIAGNOSTIC else PlaybackSpeed.NORMAL) },
+                colors = ButtonDefaults.textButtonColors(contentColor = ink)
+            ) { Text(if (state.playbackSpeed == PlaybackSpeed.NORMAL) "Normal speed · 1×" else "Slower speed · 0.75×") }
+            Spacer(Modifier.height(18.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(state.currentPair.word1 to state.contrast.phoneme1, state.currentPair.word2 to state.contrast.phoneme2).forEach { (word, sound) ->
+                    OptionCard(
+                        word = word, phoneme = sound,
+                        isSelected = answered && word == state.targetWord,
+                        isWrong = state.lastResultCorrect == false && word != state.targetWord,
+                        enabled = !answered,
+                        onClick = { component.onSelectAnswer(word, (trialStarted.elapsedNow().inWholeMilliseconds / 1000f).coerceAtLeast(.1f)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            if (answered) {
+                val correct = state.lastResultCorrect == true
+                Column(Modifier.fillMaxWidth().padding(top = 20.dp).semantics { liveRegion = LiveRegionMode.Polite }) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        PracticeIcon(if (correct) PracticeIcon.Check else PracticeIcon.Tips)
+                        Text(if (correct) "You heard it." else "This one was “${state.targetWord}.”", style = MaterialTheme.typography.titleMedium, color = if (correct) success else warning, modifier = Modifier.weight(1f))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(if (correct) "“${state.targetWord}” has the /${state.targetPhoneme}/ sound. Nicely noticed." else "Small differences take practice. Try the sound tips and listen again.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(18.dp))
+                    Button(onClick = { trialStarted = TimeSource.Monotonic.markNow(); component.nextTrial() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        Text("Next pair", Modifier.weight(1f), textAlign = TextAlign.Center)
+                        PracticeIcon(PracticeIcon.Forward)
+                    }
+                }
+            }
+            if (state.showFormantHint) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth().padding(top = 18.dp)) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Let's take it a little slower.", style = MaterialTheme.typography.titleSmall)
+                        Text("Playback has slowed to help you hear the difference. Sound tips can help, too.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            TextButton(onClick = { showTips = true }, colors = ButtonDefaults.textButtonColors(contentColor = ink), modifier = Modifier.padding(top = 14.dp)) {
+                PracticeIcon(PracticeIcon.Tips, modifier = Modifier.size(20.dp))
+                Text("Sound tips", Modifier.padding(start = 8.dp))
+            }
+            if (!answered) Text("Take your time. You can listen more than once.", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    if (showTips) {
+        ModalBottomSheet(
+            onDismissRequest = { showTips = false; component.dismissFormantHint() },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Feel the difference.", style = MaterialTheme.typography.headlineSmall)
+                Text(soundTip(state.contrast.id), style = MaterialTheme.typography.bodyLarge)
+                VowelTrapezoidPlot(state.contrast)
+                ArticulatoryBiofeedbackCard(state.contrast.visualIndicators, state.contrast.phoneme1, state.contrast.phoneme2)
+                Button(onClick = { showTips = false; component.dismissFormantHint() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Back to listening") }
+            }
         }
     }
 }
 
+private fun soundTip(contrastId: String): String = when (contrastId) {
+    "i_vs_I" -> "For “sheep,” lift your tongue toward the front and hold the sound a little longer. For “ship,” relax your tongue slightly lower and keep the sound short."
+    "ae_vs_e" -> "Open your jaw a little more for “bad.” For “bed,” bring your jaw slightly closer and keep your tongue near the front."
+    "a_vs_uh" -> "For “heart,” open your mouth and hold the vowel longer. The vowel in “hut” is shorter and more relaxed."
+    "u_vs_uu" -> "Both sounds use rounded lips. For “fool,” round them more and hold the sound longer. For “full,” relax them and keep it short."
+    "o_vs_or" -> "Keep your lips rounded. The vowel in “cot” is more open and shorter; the vowel in “caught” is usually held longer."
+    "e_vs_I" -> "For “pen,” let your jaw open a little more. For “pin,” lift your tongue slightly higher. Both sounds stay near the front."
+    else -> "Replay both sounds slowly. Notice how your tongue, lips, and jaw change position."
+}
+
 @Composable
-fun OptionCard(
-    word: String,
-    phoneme: String,
-    isSelected: Boolean,
-    isWrong: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val borderColor = when {
-        isSelected -> LabGreen
-        isWrong -> LabRed
-        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-    }
-
-    val bgColor = when {
-        isSelected -> LabGreen.copy(alpha = 0.15f)
-        isWrong -> LabRed.copy(alpha = 0.15f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = bgColor,
-        modifier = modifier
-            .height(110.dp)
-            .border(2.dp, borderColor, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+fun OptionCard(word: String, phoneme: String, isSelected: Boolean, isWrong: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val resultColor = when { isSelected -> PracticeTheme.colors.success; isWrong -> PracticeTheme.colors.warning; else -> MaterialTheme.colorScheme.outlineVariant }
+    val background = if (isSelected || isWrong) resultColor.copy(alpha = .1f) else MaterialTheme.colorScheme.surface
+    Card(
+        onClick = onClick, enabled = enabled,
+        colors = CardDefaults.cardColors(containerColor = background, disabledContainerColor = background, disabledContentColor = MaterialTheme.colorScheme.onSurface),
+        border = BorderStroke(if (isSelected || isWrong) 2.dp else 1.dp, resultColor),
+        modifier = modifier.heightIn(min = 126.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Text(
-                text = word,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "/$phoneme/",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(word.replaceFirstChar { it.uppercaseChar() }, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text("/$phoneme/", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (isSelected || isWrong) Text(if (isSelected) "✓ Correct word" else "× Your choice", style = MaterialTheme.typography.labelSmall, color = resultColor, textAlign = TextAlign.Center)
         }
     }
 }

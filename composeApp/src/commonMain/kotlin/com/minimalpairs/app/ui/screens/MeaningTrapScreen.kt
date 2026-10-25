@@ -3,24 +3,21 @@ package com.minimalpairs.app.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -30,30 +27,27 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.model.MeaningTrapBranch
+import com.minimalpairs.app.ui.components.PracticeDetails
+import com.minimalpairs.app.ui.components.PracticeIcon
+import com.minimalpairs.app.ui.components.PracticeTopBar
 import com.minimalpairs.app.ui.navigation.MeaningTrapComponent
-import com.minimalpairs.app.ui.theme.LabAmber
-import com.minimalpairs.app.ui.theme.LabCyan
-import com.minimalpairs.app.ui.theme.LabGreen
-import com.minimalpairs.app.ui.theme.LabRed
+import com.minimalpairs.app.ui.theme.PracticeTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,28 +55,14 @@ fun MeaningTrapScreen(
     component: MeaningTrapComponent,
     modifier: Modifier = Modifier
 ) {
+    val colors = PracticeTheme.colors
+    val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
     val story = state.activeStory
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("The Meaning Trap", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text(
-                            text = "Interactive Comic Dialogues: ${story.title}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = component::onBack) {
-                        Text("←", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            )
+            PracticeTopBar("Stories", onBack = component::onBack)
         },
         modifier = modifier
     ) { padding ->
@@ -90,7 +70,7 @@ fun MeaningTrapScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -112,7 +92,7 @@ fun MeaningTrapScreen(
 
             // Comic Panel 1: Setting & Prompt
             ComicPanelCard(
-                panelTitle = "Panel 1: The Encounter",
+                panelTitle = story.title,
                 characterName = story.promptCharacter,
                 speechBubbleText = story.promptDialogue,
                 subCaption = story.premise
@@ -124,16 +104,16 @@ fun MeaningTrapScreen(
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    containerColor = scheme.primaryContainer
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Your Turn to Speak:",
+                        text = "Your turn",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = colors.accentInk
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -142,40 +122,40 @@ fun MeaningTrapScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = "Target word: ",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = scheme.onSurfaceVariant
                         )
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = LabCyan.copy(alpha = 0.2f),
+                            color = colors.accentInk.copy(alpha = 0.2f),
                             modifier = Modifier.padding(horizontal = 4.dp)
                         ) {
                             Text(
                                 text = "${story.intendedWord} /${story.intendedIpa}/",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = LabCyan,
+                                color = colors.accentInk,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                         Text(
-                            text = " vs Trap: ",
+                            text = "Instead of: ",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = scheme.onSurfaceVariant
                         )
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = LabAmber.copy(alpha = 0.2f),
+                            color = colors.warning.copy(alpha = 0.2f),
                             modifier = Modifier.padding(horizontal = 4.dp)
                         ) {
                             Text(
                                 text = "${story.trapWord} /${story.trapIpa}/",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = LabAmber,
+                                color = colors.warning,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -191,13 +171,13 @@ fun MeaningTrapScreen(
                 onClick = component::toggleRecording,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRec) LabRed else LabCyan,
-                    contentColor = if (isRec) Color.White else Color.Black
+                    containerColor = if (isRec) scheme.error else scheme.primary,
+                    contentColor = if (isRec) scheme.onError else scheme.onPrimary
                 ),
-                modifier = Modifier.fillMaxWidth().height(52.dp)
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
             ) {
                 Text(
-                    text = if (isRec) "■ Stop & Evaluate Pronunciation" else "🎤 Record Spoken Response",
+                    text = if (isRec) "Stop and review" else "Record your reply",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
@@ -205,25 +185,31 @@ fun MeaningTrapScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Test Simulation Buttons (for fast iteration and exploring both branches)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { component.triggerSimulatedOutcome(true) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp)
+            PracticeDetails("Explore example endings") {
+                    Text("These examples are simulated; record your voice for personal feedback.", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                // Test Simulation Buttons (for fast iteration and exploring both branches)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Test Intended (/${story.intendedIpa}/)", fontSize = 12.sp)
+                    OutlinedButton(
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                        onClick = { component.triggerSimulatedOutcome(true) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Intended sound (/${story.intendedIpa}/)", fontSize = 12.sp)
+                    }
+                    OutlinedButton(
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                        onClick = { component.triggerSimulatedOutcome(false) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Other sound (/${story.trapIpa}/)", fontSize = 12.sp)
+                    }
                 }
-                OutlinedButton(
-                    onClick = { component.triggerSimulatedOutcome(false) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Trigger Trap (/${story.trapIpa}/)", fontSize = 12.sp)
-                }
+
             }
 
             // Comic Panel 2: Branching Narrative Consequence
@@ -239,13 +225,13 @@ fun MeaningTrapScreen(
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSuccess) LabGreen.copy(alpha = 0.15f) else LabRed.copy(alpha = 0.15f)
+                            containerColor = if (isSuccess) colors.success.copy(alpha = 0.15f) else scheme.error.copy(alpha = 0.15f)
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(
                                 2.dp,
-                                if (isSuccess) LabGreen else LabRed,
+                                if (isSuccess) colors.success else scheme.error,
                                 RoundedCornerShape(16.dp)
                             )
                     ) {
@@ -258,7 +244,7 @@ fun MeaningTrapScreen(
                                 text = outcome.soundEffect,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Black,
-                                color = if (isSuccess) LabGreen else LabRed
+                                color = if (isSuccess) colors.success else scheme.error
                             )
                             Spacer(Modifier.height(8.dp))
 
@@ -274,8 +260,8 @@ fun MeaningTrapScreen(
                             // Character Speech Bubble
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                tonalElevation = 3.dp,
+                                color = scheme.surface,
+                                tonalElevation = 0.dp,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
@@ -313,10 +299,10 @@ fun MeaningTrapScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("💡", fontSize = 18.sp)
+                                PracticeIcon(PracticeIcon.Tips)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Phonetic & Semantic Takeaway",
+                                    text = "What changed?",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -332,7 +318,7 @@ fun MeaningTrapScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Try This Scenario Again")
+                                Text("Try the story again")
                             }
                         }
                     }
@@ -352,29 +338,31 @@ fun ComicPanelCard(
     subCaption: String,
     modifier: Modifier = Modifier
 ) {
+    val colors = PracticeTheme.colors
+    val scheme = MaterialTheme.colorScheme
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = scheme.surface
         ),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = panelTitle,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = colors.accentInk
                 )
                 Text(
                     text = characterName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = scheme.onSurfaceVariant
                 )
             }
 
@@ -382,7 +370,7 @@ fun ComicPanelCard(
             Text(
                 text = subCaption,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = scheme.onSurfaceVariant
             )
 
             Spacer(Modifier.height(12.dp))
@@ -390,8 +378,8 @@ fun ComicPanelCard(
             // Speech Bubble
             Surface(
                 shape = RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
+                color = scheme.surface,
+                tonalElevation = 0.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
