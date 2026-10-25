@@ -38,7 +38,7 @@ import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.ui.components.ArticulatoryBiofeedbackCard
 import com.minimalpairs.app.ui.components.PracticeDetails
 import com.minimalpairs.app.ui.components.PracticeTopBar
-import com.minimalpairs.app.ui.components.SagittalVocalTractView
+import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
 import com.minimalpairs.app.ui.components.VowelTrapezoidPlot
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.theme.PracticeTheme
@@ -110,10 +110,6 @@ fun ArticulatorLabScreen(
 
             Spacer(Modifier.height(14.dp))
 
-            val currentBounds = if (state.isTargetPhoneme1) state.contrast.boundsPhoneme1 else state.contrast.boundsPhoneme2
-            val targetMidF1 = (currentBounds.f1MinHz + currentBounds.f1MaxHz) / 2f
-            val targetMidF2 = (currentBounds.f2MinHz + currentBounds.f2MaxHz) / 2f
-
             if (visualMode == 0) {
                 VowelTrapezoidPlot(
                     contrast = state.contrast,
@@ -121,12 +117,11 @@ fun ArticulatorLabScreen(
                     liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
                 )
             } else {
-                SagittalVocalTractView(
-                    targetF1 = targetMidF1,
-                    targetF2 = targetMidF2,
-                    actualF1 = if (state.liveF1 > 0f) state.liveF1 else null,
-                    actualF2 = if (state.liveF2 > 0f) state.liveF2 else null,
-                    lipApertureRatio = state.contrast.visualIndicators.lipApertureRatio
+                MouthPositionReferenceCard(
+                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                    exampleWord = state.contrast.pairs.first().let {
+                        if (state.isTargetPhoneme1) it.word1 else it.word2
+                    }
                 )
             }
 
