@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.local.TrialRecordEntity
 import com.minimalpairs.app.data.local.Sm2CardEntity
 import com.minimalpairs.app.data.progress.*
@@ -43,6 +44,11 @@ class ProgressScreenTest {
                     fun descendants(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::descendants)
                     fun nodes() = scene.semanticsOwners.flatMap { descendants(it.rootSemanticsNode) }
                     fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
+                    fun click(label: String) {
+                        nodes().first { it.text() == label && it.config.contains(SemanticsActions.OnClick) }
+                            .config[SemanticsActions.OnClick].action!!.invoke()
+                        settle()
+                    }
                     settle()
                     assertTrue(nodes().any { it.text() == "Loading your progress…" })
                     component.state.value = ProgressState(loading = false, error = "1 answer hasn't been saved.", pendingAnswers = 1, canRetrySave = true)
@@ -66,6 +72,9 @@ class ProgressScreenTest {
                     )), listOf(Sm2CardEntity("i_vs_I", 0, 1, 2.3f, .47f, 1000)))
                     settle()
                     assertTrue(nodes().any { it.text() == "0% accuracy" })
+                    assertFalse(nodes().any { it.text() == "0-day streak" })
+                    assertFalse(nodes().any { it.text() == "Recent accuracy" })
+                    click("Show daily activity")
                     assertTrue(nodes().any { it.text() == "0-day streak" })
                     assertTrue(nodes().any { it.text() == "Longest streak: 1 day" })
                     assertEquals(7, nodes().count {
@@ -83,6 +92,8 @@ class ProgressScreenTest {
                     val practice = nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text().startsWith("Practice ") }
                     practice.config[SemanticsActions.OnClick].action!!.invoke()
                     assertEquals("i_vs_I", selected)
+                    click("Hide daily activity")
+                    assertFalse(nodes().any { it.text() == "0-day streak" })
                     val directory = File("build/reports/progress").apply { mkdirs() }
                     scene.render(++frame * 16_666_667L).use { image ->
                         image.encodeToData()!!.use { data -> File(directory, "progress.png").writeBytes(data.bytes) }
@@ -94,6 +105,8 @@ class ProgressScreenTest {
                         )
                     }, emptyList())
                     settle()
+                    click("Show accuracy trends")
+                    click("Show practice history")
                     assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
                     assertTrue(nodes().any { it.text() == "No reviews due" })
                     assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
@@ -105,6 +118,22 @@ class ProgressScreenTest {
                         .config[SemanticsActions.OnClick].action!!.invoke()
                     settle()
                     assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
+                    click("Hide practice history")
+                    assertEquals(0, nodes().count { it.text() == "Correct · sheep" })
+                    assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
+                    val contrasts = ListeningContrastsCatalog.defaultContrasts.take(5)
+                    component.state.value = summarizeProgress(contrasts.map { contrast ->
+                        val pair = contrast.pairs.first()
+                        TrialRecordEntity(contrastId = contrast.id, targetWord = pair.word1, selectedWord = pair.word1,
+                            isCorrect = true, latencyMs = 1000, drillType = "FORCED_CHOICE", timestampEpochMs = 1000)
+                    }, emptyList())
+                    settle()
+                    fun practiceButtons() = nodes().filter { it.config.contains(SemanticsActions.OnClick) && it.text().startsWith("Practice ") }
+                    assertEquals(3, practiceButtons().size)
+                    click("Show all 5 contrasts")
+                    assertEquals(5, practiceButtons().size)
+                    click("Show fewer contrasts")
+                    assertEquals(3, practiceButtons().size)
                 } finally { scene.close() }
             } catch (error: Throwable) { failure = error }
         }

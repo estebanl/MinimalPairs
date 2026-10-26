@@ -17,9 +17,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.progress.reviewDueAt
 import com.minimalpairs.app.data.progress.reviewTiming
@@ -43,6 +47,8 @@ fun ConfusionMatrixScreen(
 ) {
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
+    var showAllContrasts by rememberSaveable { mutableStateOf(false) }
+    val practicedContrasts = state.contrasts.filter { ListeningContrastsCatalog.getContrastById(it.contrastId) != null }
     Scaffold(topBar = { PracticeTopBar("Progress", onBack = component::onBack) }, modifier = modifier) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -88,15 +94,14 @@ fun ConfusionMatrixScreen(
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("${state.accuracy}% accuracy", style = MaterialTheme.typography.headlineMedium)
                         Text("Answers: ${state.attempts} · Contrasts practiced: ${state.contrasts.size}")
+                        Text("Current streak: ${state.activity.currentStreak} ${if (state.activity.currentStreak == 1) "day" else "days"}", style = MaterialTheme.typography.bodyMedium)
                         Text("Accuracy is the share of listening answers you got right.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 ReviewsDueCard(state.reviews, state.nowEpochMs, component::practiceContrast)
-                PracticeActivityCard(state.activity)
-                AccuracyTrendCard(state.trend)
                 Text("Practice next", style = MaterialTheme.typography.titleLarge)
                 Text("Your lowest-accuracy contrasts come first. Small samples can change quickly.", style = MaterialTheme.typography.bodyMedium)
-                state.contrasts.forEach { progress ->
+                practicedContrasts.take(if (showAllContrasts) practicedContrasts.size else 3).forEach { progress ->
                     val contrast = ListeningContrastsCatalog.getContrastById(progress.contrastId)
                     if (contrast != null) {
                         Card(modifier = Modifier.fillMaxWidth()) {
@@ -115,9 +120,24 @@ fun ConfusionMatrixScreen(
                         }
                     }
                 }
+                if (practicedContrasts.size > 3) {
+                    TextButton(onClick = { showAllContrasts = !showAllContrasts }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text(if (showAllContrasts) "Show fewer contrasts" else "Show all ${practicedContrasts.size} contrasts")
+                    }
+                }
                 Text("Mastery estimates use answer speed and repeated success to plan reviews. They are separate from accuracy.", style = MaterialTheme.typography.bodySmall)
-                SoundConfusionMatrix(state.contrasts, component::practiceContrast)
-                PracticeHistory(state.recentTrials)
+                ProgressDetailSection("Daily activity", "Your last seven days and longest streak.") {
+                    PracticeActivityCard(state.activity)
+                }
+                ProgressDetailSection("Accuracy trends", "Compare your latest answers with earlier practice.") {
+                    AccuracyTrendCard(state.trend)
+                }
+                ProgressDetailSection("Sound patterns", "See which sounds you recognize and mix up.") {
+                    SoundConfusionMatrix(state.contrasts, component::practiceContrast)
+                }
+                ProgressDetailSection("Practice history", "Review your latest listening answers.") {
+                    PracticeHistory(state.recentTrials)
+                }
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Keep listening") }
             }
         }
