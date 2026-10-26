@@ -1,0 +1,271 @@
+package com.minimalpairs.app.ui.navigation
+
+import com.arkivanov.decompose.DefaultComponentContext
+import com.arkivanov.essenty.lifecycle.LifecycleRegistry
+import com.arkivanov.essenty.lifecycle.destroy
+import com.arkivanov.essenty.lifecycle.resume
+import com.arkivanov.essenty.lifecycle.stop
+import com.minimalpairs.app.core.hal.AudioPlayer
+import com.minimalpairs.app.core.model.PlaybackSpeed
+import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
+import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
+import com.minimalpairs.app.domain.srs.Sm2State
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class EarTrainerComponentTest {
+    @Test
+    fun playbackIsExplicitAndAnswersAreGuarded() = runTest {
+        withTrainer {
+            val initial = state
+            assertEquals(0, audio.callbacks.size)
+            component.onSelectAnswer(initial.targetWord)
+            component.nextTrial()
+            assertEquals(initial, state)
+
+            component.playPrompt()
+            component.playPrompt()
+            component.setPlaybackSpeed(PlaybackSpeed.SLOW_DIAGNOSTIC)
+            component.onSelectAnswer(initial.targetWord)
+            runCurrent()
+            assertEquals(1, audio.callbacks.size)
+            assertTrue(state.isPlayingAudio)
+            assertFalse(state.hasPlayedPrompt)
+            assertEquals(PlaybackSpeed.NORMAL, state.playbackSpeed)
+            assertNull(state.lastResultCorrect)
+
+            finishPlayback()
+            component.onSelectAnswer("not an option")
+            assertNull(state.lastResultCorrect)
+            component.onSelectAnswer(initial.targetWord.uppercase())
+            val answered = state
+            component.onSelectAnswer(otherWord)
+            assertEquals(answered, state)
+            assertEquals(initial.targetWord, state.selectedWord)
+            assertEquals(true, state.lastResultCorrect)
+            assertEquals(1, tracker.getConfusionCount(initial.targetPhoneme, initial.targetPhoneme))
+        }
+    }
+
+    @Test
+    fun wrongAnswerRecordsActualSelectionAndTriggersSlowModeAfterThreeMisses() = runTest {
+        withTrainer {
+            repeat(3) {
+                component.playPrompt()
+                runCurrent()
+                finishPlayback()
+                val wrongWord = otherWord
+                component.onSelectAnswer(wrongWord)
+                assertEquals(wrongWord, state.selectedWord)
+                assertEquals(false, state.lastResultCorrect)
+                if (it < 2) component.nextTrial()
+            }
+            assertTrue(state.showFormantHint)
+            assertEquals(PlaybackSpeed.SLOW_DIAGNOSTIC, state.playbackSpeed)
+            component.setPlaybackSpeed(PlaybackSpeed.NORMAL)
+            assertEquals(PlaybackSpeed.NORMAL, state.playbackSpeed)
+            component.dismissFormantHint()
+            assertFalse(state.showFormantHint)
+        }
+    }
+
+    @Test
+    fun timerStartsAfterPlaybackAndIgnoresDuplicateCompletion() = runTest {
+        withTrainer {
+            advanceTimeBy(60_000)
+            component.playPrompt()
+            runCurrent()
+            advanceTimeBy(5_000)
+            finishPlayback()
+            advanceTimeBy(2_000)
+            finishPlayback() // A late duplicate must not restart the timer.
+            component.onSelectAnswer(state.targetWord)
+            assertEquals(ModifiedSm2Engine.review(Sm2State(), 4), state.sm2State)
+        }
+    }
+
+    @Test
+    fun replayDoesNotResetTimerAndCannotChangeAnAnsweredTrial() = runTest {
+        withTrainer {
+            component.playPrompt()
+            runCurrent()
+            finishPlayback()
+            advanceTimeBy(4_000)
+            component.playPrompt()
+            runCurrent()
+            component.onSelectAnswer(state.targetWord)
+            assertNull(state.lastResultCorrect)
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            assertEquals(ModifiedSm2Engine.review(Sm2State(), 3), state.sm2State)
+
+            val result = state
+            component.playPrompt()
+            runCurrent()
+            component.nextTrial()
+            assertEquals(result.selectedWord, state.selectedWord)
+            finishPlayback()
+            assertEquals(result, state)
+        }
+    }
+
+    @Test
+    fun repeatedWordStillRequiresNewPlaybackAndIgnoresOldCallback() = runTest {
+        withTrainer {
+            component.playPrompt()
+            runCurrent()
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            val previous = state
+            component.nextTrial()
+            assertEquals(previous.currentPair, state.currentPair)
+            assertEquals(previous.targetWord, state.targetWord)
+            assertFalse(state.hasPlayedPrompt)
+            assertNull(state.selectedWord)
+            assertNull(state.lastResultCorrect)
+            assertNull(state.playbackError)
+            assertEquals(1, audio.callbacks.size)
+            component.playPrompt()
+            runCurrent()
+            audio.callbacks.first().invoke()
+            runCurrent()
+            assertTrue(state.isPlayingAudio)
+            assertFalse(state.hasPlayedPrompt)
+            finishPlayback()
+            assertTrue(state.hasPlayedPrompt)
+        }
+    }
+
+    @Test
+    fun loadingAndPlaybackFailuresCanBeRetried() = runTest {
+        withTrainer {
+            failLoading = true
+            component.playPrompt()
+            runCurrent()
+            assertNotNull(state.playbackError)
+            assertFalse(state.isPlayingAudio)
+            assertFalse(state.hasPlayedPrompt)
+            assertEquals(0, audio.callbacks.size)
+
+            failLoading = false
+            audio.failPlayback = true
+            component.playPrompt()
+            assertNull(state.playbackError)
+            runCurrent()
+            assertNotNull(state.playbackError)
+            assertFalse(state.hasPlayedPrompt)
+
+            audio.failPlayback = false
+            component.playPrompt()
+            runCurrent()
+            finishPlayback()
+            assertNull(state.playbackError)
+            assertTrue(state.hasPlayedPrompt)
+        }
+    }
+
+    @Test
+    fun backStopsPlaybackAndIgnoresLateCompletion() = runTest {
+        withTrainer {
+            component.playPrompt()
+            runCurrent()
+            component.onBack()
+            component.onBack()
+            runCurrent()
+            finishPlayback()
+            component.playPrompt()
+            assertEquals(1, backCount)
+            assertTrue(audio.stopCount > 0)
+            assertFalse(state.isPlayingAudio)
+            assertFalse(state.hasPlayedPrompt)
+            assertEquals(1, audio.callbacks.size)
+        }
+    }
+
+    @Test
+    fun lifecycleStopCancelsPlaybackAndAllowsExplicitReplayOnReturn() = runTest {
+        withTrainer {
+            component.playPrompt()
+            runCurrent()
+            lifecycle.stop()
+            runCurrent()
+            finishPlayback()
+            assertFalse(state.hasPlayedPrompt)
+            assertFalse(state.isPlayingAudio)
+            assertTrue(audio.stopCount > 0)
+            lifecycle.resume()
+            component.playPrompt()
+            runCurrent()
+            finishPlayback()
+            assertTrue(state.hasPlayedPrompt)
+            lifecycle.destroy()
+            runCurrent()
+            component.playPrompt()
+            assertFalse(state.isPlayingAudio)
+        }
+    }
+
+    private suspend fun TestScope.withTrainer(block: suspend Fixture.() -> Unit) {
+        val fixture = Fixture(this)
+        try {
+            fixture.block()
+        } finally {
+            fixture.lifecycle.destroy()
+            runCurrent()
+        }
+    }
+
+    private class Fixture(private val testScope: TestScope) {
+        val lifecycle = LifecycleRegistry().apply { resume() }
+        val audio = FakeAudioPlayer()
+        val tracker = PhonemeConfusionTracker()
+        var backCount = 0
+        var failLoading = false
+        val component = DefaultEarTrainerComponent(
+            componentContext = DefaultComponentContext(lifecycle),
+            contrastId = "i_vs_I",
+            confusionTracker = tracker,
+            onBackClicked = { backCount++ },
+            audioPlayer = audio,
+            dispatcher = StandardTestDispatcher(testScope.testScheduler),
+            audioDispatcher = StandardTestDispatcher(testScope.testScheduler),
+            timeSource = testScope.testScheduler.timeSource,
+            random = object : Random() { override fun nextBits(bitCount: Int) = 0 },
+            loadWordPcm = {
+                check(!failLoading)
+                ShortArray(1600)
+            }
+        )
+        val state get() = component.state.value
+        val otherWord get() = if (state.targetWord == state.currentPair.word1) state.currentPair.word2 else state.currentPair.word1
+
+        fun finishPlayback() {
+            audio.callbacks.last().invoke()
+            testScope.runCurrent()
+        }
+    }
+
+    private class FakeAudioPlayer : AudioPlayer {
+        val callbacks = mutableListOf<() -> Unit>()
+        var failPlayback = false
+        var stopCount = 0
+        override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+            check(!failPlayback)
+            callbacks += onComplete
+        }
+        override suspend fun stop() { stopCount++ }
+        override fun isPlaying() = false
+    }
+}

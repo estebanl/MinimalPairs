@@ -9,6 +9,8 @@ import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
+import com.arkivanov.essenty.lifecycle.doOnDestroy
+import com.arkivanov.essenty.lifecycle.doOnStop
 import com.minimalpairs.app.core.dsp.FormantSynthesizer
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
 import com.minimalpairs.app.core.dsp.MaskingNoiseMixer
@@ -31,14 +33,24 @@ import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 // --- Navigation Stack Configurations ---
 @Serializable
@@ -170,6 +182,9 @@ data class EarTrainerUiState(
     val consecutiveFailures: Int = 0,
     val showFormantHint: Boolean = false,
     val isPlayingAudio: Boolean = false,
+    val hasPlayedPrompt: Boolean = false,
+    val selectedWord: String? = null,
+    val playbackError: String? = null,
     val lastResultCorrect: Boolean? = null,
     val feedbackMessage: String = "",
     val sm2State: Sm2State = Sm2State()
@@ -178,7 +193,7 @@ data class EarTrainerUiState(
 interface EarTrainerComponent {
     val state: StateFlow<EarTrainerUiState>
     fun playPrompt()
-    fun onSelectAnswer(chosenWord: String, latencySeconds: Float)
+    fun onSelectAnswer(chosenWord: String)
     fun setPlaybackSpeed(speed: PlaybackSpeed)
     fun dismissFormantHint()
     fun nextTrial()
@@ -190,21 +205,41 @@ class DefaultEarTrainerComponent(
     contrastId: String,
     private val confusionTracker: PhonemeConfusionTracker,
     private val onBackClicked: () -> Unit,
-    private val audioPlayer: AudioPlayer = createAudioPlayer()
+    private val audioPlayer: AudioPlayer = createAudioPlayer(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val timeSource: TimeSource = TimeSource.Monotonic,
+    private val random: Random = Random.Default,
+    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
 ) : EarTrainerComponent, ComponentContext by componentContext {
 
     private val contrast = VowelContrastsCatalog.getContrastById(contrastId)
         ?: VowelContrastsCatalog.defaultContrasts.first()
 
     private val progression = DrillProgressionManager()
-    private val scope = CoroutineScope(Dispatchers.Default)
+    // UI actions and playback completions are serialized on the main dispatcher.
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private var playbackJob: Job? = null
+    private var stopJob: Job? = null
+    private var playbackGeneration = 0L
+    private var answerStartedAt: TimeMark? = null
+    private var closed = false
 
     private val _state = MutableStateFlow(createInitialState())
     override val state: StateFlow<EarTrainerUiState> = _state.asStateFlow()
 
+    init {
+        lifecycle.doOnStop { stopPlayback() }
+        lifecycle.doOnDestroy {
+            closed = true
+            stopPlayback()
+            scope.cancel()
+        }
+    }
+
     private fun createInitialState(): EarTrainerUiState {
-        val initialPair = contrast.pairs.random()
-        val isWord1 = Random.nextBoolean()
+        val initialPair = contrast.pairs.random(random)
+        val isWord1 = random.nextBoolean()
         val targetWord = if (isWord1) initialPair.word1 else initialPair.word2
         val targetPhoneme = if (isWord1) contrast.phoneme1 else contrast.phoneme2
         return EarTrainerUiState(
@@ -216,43 +251,63 @@ class DefaultEarTrainerComponent(
     }
 
     override fun playPrompt() {
-        scope.launch {
-            _state.value = _state.value.copy(isPlayingAudio = true)
-            val currentState = _state.value
-            val isWord1 = currentState.targetWord == currentState.currentPair.word1
-            val bounds = if (isWord1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
+        if (closed || _state.value.isPlayingAudio) return
+        val currentState = _state.value
+        val generation = ++playbackGeneration
+        _state.value = currentState.copy(isPlayingAudio = true, playbackError = null)
+        playbackJob = scope.launch {
+            try {
+                stopJob?.join()
+                val isWord1 = currentState.targetWord == currentState.currentPair.word1
+                val bounds = if (isWord1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
+                val finalSamples = withContext(audioDispatcher) {
+                    val baseSamples = loadWordPcm(currentState.targetWord)
+                        ?: FormantSynthesizer.synthesizeVowel(
+                            f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
+                            f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
+                            durationMs = bounds.minDurationMs ?: 150
+                        )
+                    val stretched = if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
+                        TimeStretchProcessor.process(baseSamples, 0.75f)
+                    } else {
+                        baseSamples
+                    }
+                    if (currentState.drillType == DrillType.MASKING_NOISE) {
+                        MaskingNoiseMixer.mix(stretched, snrDb = 8.0f)
+                    } else {
+                        stretched
+                    }
+                }
 
-            val baseSamples = ElevenLabsAudioRepository.loadWordPcm(currentState.targetWord)
-                ?: FormantSynthesizer.synthesizeVowel(
-                    f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
-                    f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
-                    durationMs = bounds.minDurationMs ?: 150
-                )
-
-            // Apply 0.75x phase-vocoded / WSOLA pitch-preserving stretch if slow mode active
-            val stretched = if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
-                TimeStretchProcessor.process(baseSamples, 0.75f)
-            } else {
-                baseSamples
-            }
-
-            // Apply Masking Noise if in MASKING_NOISE drill mode
-            val finalSamples = if (currentState.drillType == DrillType.MASKING_NOISE) {
-                MaskingNoiseMixer.mix(stretched, snrDb = 8.0f)
-            } else {
-                stretched
-            }
-
-            audioPlayer.play(finalSamples) {
-                _state.value = _state.value.copy(isPlayingAudio = false)
+                ensureActive()
+                audioPlayer.play(finalSamples) {
+                    scope.launch completion@{
+                        if (closed || generation != playbackGeneration || !_state.value.isPlayingAudio) return@completion
+                        if (!_state.value.hasPlayedPrompt) answerStartedAt = timeSource.markNow()
+                        _state.value = _state.value.copy(isPlayingAudio = false, hasPlayedPrompt = true)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (!closed && generation == playbackGeneration) {
+                    _state.value = _state.value.copy(
+                        isPlayingAudio = false,
+                        playbackError = "Couldn't play the word. Try again."
+                    )
+                }
             }
         }
     }
 
-    override fun onSelectAnswer(chosenWord: String, latencySeconds: Float) {
+    override fun onSelectAnswer(chosenWord: String) {
         val current = _state.value
-        val isCorrect = chosenWord.equals(current.targetWord, ignoreCase = true)
-        val chosenPhoneme = if (chosenWord == current.currentPair.word1) contrast.phoneme1 else contrast.phoneme2
+        if (closed || !current.hasPlayedPrompt || current.isPlayingAudio || current.lastResultCorrect != null) return
+        val selectedWord = listOf(current.currentPair.word1, current.currentPair.word2)
+            .firstOrNull { it.equals(chosenWord, ignoreCase = true) } ?: return
+        val latencySeconds = ((answerStartedAt ?: return).elapsedNow().inWholeMilliseconds / 1000f).coerceAtLeast(.1f)
+        val isCorrect = selectedWord == current.targetWord
+        val chosenPhoneme = if (selectedWord == current.currentPair.word1) contrast.phoneme1 else contrast.phoneme2
 
         // Record trial in confusion tracker
         confusionTracker.recordTrial(current.targetPhoneme, chosenPhoneme, isCorrect)
@@ -266,6 +321,7 @@ class DefaultEarTrainerComponent(
         val nextDrill = progression.resolveDrillType(nextSm2.masteryScore)
 
         _state.value = current.copy(
+            selectedWord = selectedWord,
             lastResultCorrect = isCorrect,
             feedbackMessage = if (isCorrect) "Excellent! Correctly identified: /${current.targetPhoneme}/"
             else "Notice the difference: Target was /${current.targetPhoneme}/",
@@ -278,6 +334,7 @@ class DefaultEarTrainerComponent(
     }
 
     override fun setPlaybackSpeed(speed: PlaybackSpeed) {
+        if (closed || _state.value.isPlayingAudio) return
         progression.setSpeedManual(speed)
         _state.value = _state.value.copy(playbackSpeed = speed)
     }
@@ -288,8 +345,11 @@ class DefaultEarTrainerComponent(
     }
 
     override fun nextTrial() {
-        val nextPair = contrast.pairs.random()
-        val isWord1 = Random.nextBoolean()
+        if (closed || _state.value.lastResultCorrect == null || _state.value.isPlayingAudio) return
+        ++playbackGeneration
+        answerStartedAt = null
+        val nextPair = contrast.pairs.random(random)
+        val isWord1 = random.nextBoolean()
         val targetWord = if (isWord1) nextPair.word1 else nextPair.word2
         val targetPhoneme = if (isWord1) contrast.phoneme1 else contrast.phoneme2
 
@@ -297,13 +357,39 @@ class DefaultEarTrainerComponent(
             currentPair = nextPair,
             targetWord = targetWord,
             targetPhoneme = targetPhoneme,
+            hasPlayedPrompt = false,
+            selectedWord = null,
+            playbackError = null,
             lastResultCorrect = null,
             feedbackMessage = ""
         )
-        playPrompt()
     }
 
-    override fun onBack() = onBackClicked()
+    private fun stopPlayback() {
+        ++playbackGeneration
+        playbackJob?.cancel()
+        playbackJob = null
+        _state.value = _state.value.copy(isPlayingAudio = false)
+        // Cleanup must finish even when the component's lifecycle scope is cancelled.
+        if (stopJob?.isActive != true) {
+            stopJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                withContext(NonCancellable) {
+                    try {
+                        audioPlayer.stop()
+                    } catch (_: Exception) {
+                        // Leaving must still work if the device has lost its audio session.
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onBack() {
+        if (closed) return
+        closed = true
+        stopPlayback()
+        onBackClicked()
+    }
 }
 
 // --- Articulator Lab Component ---

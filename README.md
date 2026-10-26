@@ -11,6 +11,7 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 
 ## Documentation & Deployment
 
+- Run on connected iOS device: [`./scripts/run_on_device.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/run_on_device.sh) (defaults to connected iPhone `esteban.lopez`).
 - [TestFlight Publishing Guide](file:///Users/estebanlopez/dev/MinimalPairs/docs/TESTFLIGHT_PUBLISHING.md) — Comprehensive guide and CLI workflow for building and distributing to Apple TestFlight.
 - Automated TestFlight script: [`./scripts/publish_testflight.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/publish_testflight.sh).
 

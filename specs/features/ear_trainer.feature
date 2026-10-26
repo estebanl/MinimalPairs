@@ -9,17 +9,39 @@ Feature: Ear Trainer Minimal Pair Discrimination
     And the audio playback speed is set to "1.0x"
 
   Scenario: Successful identification of target minimal pair sound
-    Given an audio prompt plays the target word "ship"
-    When the user selects option "ship" within "3.0" seconds
+    Given the user taps "Play word" and the target word "ship" finishes playing
+    When the user selects option "ship" within "3.0" seconds of playback completing
     Then the system records a successful discrimination trial
     And the confidence weight for phoneme "/ɪ/" in SM-2 is increased
     And visual positive reinforcement is displayed on screen
+
+  Scenario: Listening begins only when requested
+    Given a new question is displayed
+    Then no audio plays automatically
+    And both word choices are disabled
+    When the user taps "Play word"
+    Then word choices remain disabled until playback completes
+    And the user can replay the word without resetting response timing
+
+  Scenario: Continue after reviewing an answer
+    Given the user has answered a question
+    Then the correct word and the user's choice are identified with text and icons
+    And the answer cannot be submitted again
+    When the user taps "Next word"
+    Then the question returns to the top with a "Play word" control
+    And playback and answer selection reset even if the same word is chosen again
+
+  Scenario: Technical guidance is optional
+    When the user opens "Sound tips"
+    Then plain-language listening guidance is displayed
+    And phonetic notation, mastery, and diagrams appear only after opening "More details"
 
   Scenario: Slow-motion diagnostic playback trigger
     Given the user has failed the target contrast "/iː/ vs /ɪ/" "3" consecutive times
     When the next trial starts
     Then the audio playback speed automatically adjusts to "0.75x" phase-vocoded
-    And a visual hint pointing to formant visualizers is rendered
+    And a short explanation is displayed beside the playback speed controls
+    And formant visualizers remain available under "Sound tips" and "More details"
 
   Scenario: Adaptive drill progression from Forced Choice to ABX
     Given the user achieves a mastery score above "0.7" on contrast "/iː/ vs /ɪ/"
