@@ -23,6 +23,17 @@ Feature: Ear Trainer Minimal Pair Discrimination
     Then word choices remain disabled until playback completes
     And the user can replay the word without resetting response timing
 
+  Scenario: Practice uses complete spoken words
+    When the user taps "Play word"
+    Then the complete target word recording is played, including its consonants
+    And slow playback processes the complete word recording
+
+  Scenario: Word audio is unavailable
+    Given the target word recording is missing or empty
+    When the user taps "Play word"
+    Then a retry error is displayed and word choices remain disabled
+    And no isolated vowel is substituted for the word
+
   Scenario: Continue after reviewing an answer
     Given the user has answered a question
     Then the correct word and the user's choice are identified with text and icons
@@ -35,6 +46,18 @@ Feature: Ear Trainer Minimal Pair Discrimination
     When the user opens "Sound tips"
     Then plain-language listening guidance is displayed
     And phonetic notation, mastery, and diagrams appear only after opening "More details"
+
+  Scenario: Compare both words after answering
+    Given the user has not answered the current question
+    Then neither word option offers audio playback
+    And comparison playback requests are ignored even after the prompt has played
+    When the user submits an answer
+    Then each word option displays its own play button
+    And either complete word can be replayed at the selected speed without masking noise
+    And only one recording can play at a time
+    And comparison playback does not change the answer or score
+    When the user taps "Next word"
+    Then both comparison buttons are hidden again
 
   Scenario: Slow-motion diagnostic playback trigger
     Given the user has failed the target contrast "/iː/ vs /ɪ/" "3" consecutive times

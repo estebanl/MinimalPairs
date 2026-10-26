@@ -46,6 +46,7 @@ class EarTrainerScreenTest {
             "answerable" to answerable,
             "correct" to correct,
             "incorrect" to answerable.copy(selectedWord = wrongWord, lastResultCorrect = false),
+            "comparing" to correct.copy(isPlayingAudio = true, playingOptionWord = wrongWord),
             "slow" to answerable.copy(playbackSpeed = PlaybackSpeed.SLOW_DIAGNOSTIC, showFormantHint = true),
             "retry" to ready.copy(playbackError = "Couldn't play the word. Try again.")
         )
@@ -66,13 +67,21 @@ class EarTrainerScreenTest {
                             assertTrue(feedback.boundsInRoot.height > 0f, "Feedback must scroll into view")
                             assertTrue(feedback.boundsInRoot.bottom <= next.boundsInRoot.top, "Next must not obscure feedback")
                         }
-                        val words = listOf(state.currentPair.word1, state.currentPair.word2).map { word ->
-                            harness.button(word.replaceFirstChar(Char::uppercaseChar), exact = false)
-                        }
-                        val shouldEnable = state.hasPlayedPrompt && !state.isPlayingAudio && state.lastResultCorrect == null
-                        words.forEach { assertEquals(!shouldEnable, it.config.contains(SemanticsProperties.Disabled)) }
-                        if (name == "ready" && configuration.name != "large-text") {
-                            assertTrue(words.all { it.boundsInRoot.height >= 48f })
+                        for (word in listOf(state.currentPair.word1, state.currentPair.word2)) {
+                            if (state.lastResultCorrect != null) {
+                                val play = harness.button(if (state.playingOptionWord == word) "Playing…" else "Play $word")
+                                assertEquals(state.isPlayingAudio, play.config.contains(SemanticsProperties.Disabled))
+                                // Feedback scrolls into view; measure the full target, not its clipped viewport bounds.
+                                assertTrue(play.size.height >= 48, "${configuration.name}: Play $word must have a 48dp target")
+                            } else {
+                                assertFalse(harness.nodes().any { it.text() == "Play $word" })
+                                val option = harness.button(word.replaceFirstChar(Char::uppercaseChar), exact = false)
+                                val shouldEnable = state.hasPlayedPrompt && !state.isPlayingAudio
+                                assertEquals(!shouldEnable, option.config.contains(SemanticsProperties.Disabled))
+                                if (name == "ready" && configuration.name != "large-text") {
+                                    assertTrue(option.boundsInRoot.height >= 48f)
+                                }
+                            }
                         }
                     }
                 }
@@ -89,6 +98,35 @@ class EarTrainerScreenTest {
                     harness.capture("details")
                 }
             }
+        }
+    }
+
+    @Test
+    fun comparisonControlsAppearOnlyAfterAnsweringAndPlayTheirOwnWord() = onUiThread {
+        Harness(Configuration("comparison", 430, 820), false, initialState()).use { harness ->
+            val ready = initialState()
+            val options = listOf(ready.currentPair.word1, ready.currentPair.word2)
+            harness.settle()
+            options.forEach { word -> assertFalse(harness.nodes().any { it.text() == "Play $word" }) }
+            harness.component.state.value = ready.copy(hasPlayedPrompt = true)
+            harness.settle()
+            options.forEach { word -> assertFalse(harness.nodes().any { it.text() == "Play $word" }) }
+            harness.click(ready.currentPair.word2.replaceFirstChar(Char::uppercaseChar))
+            harness.settle()
+            for (word in options) {
+                harness.click("Play $word")
+                harness.settle()
+                assertEquals(word, harness.component.playedOptions.last())
+                assertTrue(harness.button("Playing…").config.contains(SemanticsProperties.Disabled))
+                assertTrue(harness.button("Next word").config.contains(SemanticsProperties.Disabled))
+                val other = options.first { it != word }
+                assertTrue(harness.button("Play $other").config.contains(SemanticsProperties.Disabled))
+                harness.component.state.value = harness.component.state.value.copy(isPlayingAudio = false, playingOptionWord = null)
+                harness.settle()
+            }
+            harness.click("Next word")
+            harness.settle()
+            options.forEach { word -> assertFalse(harness.nodes().any { it.text() == "Play $word" }) }
         }
     }
 
@@ -175,7 +213,12 @@ class EarTrainerScreenTest {
     private class PreviewComponent(initial: EarTrainerUiState) : EarTrainerComponent {
         override val state = MutableStateFlow(initial)
         var playCount = 0
+        val playedOptions = mutableListOf<String>()
         override fun playPrompt() { playCount++; state.value = state.value.copy(isPlayingAudio = true) }
+        override fun playOption(word: String) {
+            playedOptions += word
+            state.value = state.value.copy(isPlayingAudio = true, playingOptionWord = word)
+        }
         override fun onSelectAnswer(chosenWord: String) {
             state.value = state.value.copy(selectedWord = chosenWord, lastResultCorrect = chosenWord == state.value.targetWord)
         }

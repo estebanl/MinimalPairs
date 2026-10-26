@@ -182,6 +182,7 @@ data class EarTrainerUiState(
     val consecutiveFailures: Int = 0,
     val showFormantHint: Boolean = false,
     val isPlayingAudio: Boolean = false,
+    val playingOptionWord: String? = null,
     val hasPlayedPrompt: Boolean = false,
     val selectedWord: String? = null,
     val playbackError: String? = null,
@@ -193,6 +194,7 @@ data class EarTrainerUiState(
 interface EarTrainerComponent {
     val state: StateFlow<EarTrainerUiState>
     fun playPrompt()
+    fun playOption(word: String)
     fun onSelectAnswer(chosenWord: String)
     fun setPlaybackSpeed(speed: PlaybackSpeed)
     fun dismissFormantHint()
@@ -251,28 +253,38 @@ class DefaultEarTrainerComponent(
     }
 
     override fun playPrompt() {
+        playWord(_state.value.targetWord, isComparison = false)
+    }
+
+    override fun playOption(word: String) {
+        val current = _state.value
+        if (current.lastResultCorrect == null) return
+        val option = listOf(current.currentPair.word1, current.currentPair.word2)
+            .firstOrNull { it.equals(word, ignoreCase = true) } ?: return
+        playWord(option, isComparison = true)
+    }
+
+    private fun playWord(word: String, isComparison: Boolean) {
         if (closed || _state.value.isPlayingAudio) return
         val currentState = _state.value
         val generation = ++playbackGeneration
-        _state.value = currentState.copy(isPlayingAudio = true, playbackError = null)
+        _state.value = currentState.copy(
+            isPlayingAudio = true,
+            playingOptionWord = word.takeIf { isComparison },
+            playbackError = null
+        )
         playbackJob = scope.launch {
             try {
                 stopJob?.join()
-                val isWord1 = currentState.targetWord == currentState.currentPair.word1
-                val bounds = if (isWord1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
                 val finalSamples = withContext(audioDispatcher) {
-                    val baseSamples = loadWordPcm(currentState.targetWord)
-                        ?: FormantSynthesizer.synthesizeVowel(
-                            f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
-                            f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
-                            durationMs = bounds.minDurationMs ?: 150
-                        )
+                    val baseSamples = loadWordPcm(word)
+                    check(baseSamples != null && baseSamples.isNotEmpty()) { "Whole-word audio is unavailable" }
                     val stretched = if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
                         TimeStretchProcessor.process(baseSamples, 0.75f)
                     } else {
                         baseSamples
                     }
-                    if (currentState.drillType == DrillType.MASKING_NOISE) {
+                    if (!isComparison && currentState.drillType == DrillType.MASKING_NOISE) {
                         MaskingNoiseMixer.mix(stretched, snrDb = 8.0f)
                     } else {
                         stretched
@@ -283,8 +295,12 @@ class DefaultEarTrainerComponent(
                 audioPlayer.play(finalSamples) {
                     scope.launch completion@{
                         if (closed || generation != playbackGeneration || !_state.value.isPlayingAudio) return@completion
-                        if (!_state.value.hasPlayedPrompt) answerStartedAt = timeSource.markNow()
-                        _state.value = _state.value.copy(isPlayingAudio = false, hasPlayedPrompt = true)
+                        if (!isComparison && !_state.value.hasPlayedPrompt) answerStartedAt = timeSource.markNow()
+                        _state.value = _state.value.copy(
+                            isPlayingAudio = false,
+                            playingOptionWord = null,
+                            hasPlayedPrompt = _state.value.hasPlayedPrompt || !isComparison
+                        )
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -293,7 +309,9 @@ class DefaultEarTrainerComponent(
                 if (!closed && generation == playbackGeneration) {
                     _state.value = _state.value.copy(
                         isPlayingAudio = false,
-                        playbackError = "Couldn't play the word. Try again."
+                        playingOptionWord = null,
+                        playbackError = if (isComparison) "Couldn't play “$word”. Try again."
+                        else "Couldn't play the word. Try again."
                     )
                 }
             }
@@ -358,6 +376,7 @@ class DefaultEarTrainerComponent(
             targetWord = targetWord,
             targetPhoneme = targetPhoneme,
             hasPlayedPrompt = false,
+            playingOptionWord = null,
             selectedWord = null,
             playbackError = null,
             lastResultCorrect = null,
@@ -369,7 +388,7 @@ class DefaultEarTrainerComponent(
         ++playbackGeneration
         playbackJob?.cancel()
         playbackJob = null
-        _state.value = _state.value.copy(isPlayingAudio = false)
+        _state.value = _state.value.copy(isPlayingAudio = false, playingOptionWord = null)
         // Cleanup must finish even when the component's lifecycle scope is cancelled.
         if (stopJob?.isActive != true) {
             stopJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {

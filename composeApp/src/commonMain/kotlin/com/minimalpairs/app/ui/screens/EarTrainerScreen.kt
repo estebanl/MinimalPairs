@@ -129,6 +129,7 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                 Spacer(Modifier.height(10.dp))
                 Text(
                     when {
+                        state.playingOptionWord != null -> "Listen to “${state.playingOptionWord}”."
                         state.isPlayingAudio -> "Listen to the word."
                         answered -> "Listen again, or try the next word."
                         state.hasPlayedPrompt -> "Choose the word you heard."
@@ -147,8 +148,8 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                     PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(28.dp))
                     Text(
                         when {
-                            state.isPlayingAudio -> "Playing…"
-                            state.playbackError != null -> "Try again"
+                            state.isPlayingAudio && state.playingOptionWord == null -> "Playing…"
+                            state.playbackError != null && !answered -> "Try again"
                             state.hasPlayedPrompt -> "Play again"
                             else -> "Play word"
                         },
@@ -202,6 +203,10 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                             isWrong = answered && word == state.selectedWord && word != state.targetWord,
                             enabled = state.hasPlayedPrompt && !state.isPlayingAudio && !answered,
                             onClick = { component.onSelectAnswer(word) },
+                            showPlayback = answered,
+                            playbackEnabled = !state.isPlayingAudio,
+                            isPlaying = state.playingOptionWord == word,
+                            onPlay = { component.playOption(word) },
                             modifier = optionModifier
                         )
                     }
@@ -300,6 +305,10 @@ private fun OptionCard(
     isWrong: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
+    showPlayback: Boolean,
+    playbackEnabled: Boolean,
+    isPlaying: Boolean,
+    onPlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val resultColor = when {
@@ -308,15 +317,12 @@ private fun OptionCard(
         else -> MaterialTheme.colorScheme.outlineVariant
     }
     val background = if (isCorrect || isWrong) resultColor.copy(alpha = .1f) else MaterialTheme.colorScheme.surface
-    Card(
-        onClick = onClick, enabled = enabled,
-        colors = CardDefaults.cardColors(
-            containerColor = background, disabledContainerColor = background,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        border = BorderStroke(if (isCorrect || isWrong) 2.dp else 1.dp, resultColor),
-        modifier = modifier.heightIn(min = 88.dp)
-    ) {
+    val colors = CardDefaults.cardColors(
+        containerColor = background, disabledContainerColor = background,
+        disabledContentColor = MaterialTheme.colorScheme.onSurface
+    )
+    val border = BorderStroke(if (isCorrect || isWrong) 2.dp else 1.dp, resultColor)
+    val content: @Composable () -> Unit = {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -329,6 +335,29 @@ private fun OptionCard(
                     Text(if (isCorrect) "Correct answer" else "Your choice", style = MaterialTheme.typography.labelLarge, color = resultColor)
                 }
             }
+            if (showPlayback) {
+                TextButton(
+                    onClick = onPlay,
+                    enabled = playbackEnabled,
+                    colors = ButtonDefaults.textButtonColors(contentColor = PracticeTheme.colors.accentInk),
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(20.dp))
+                    Text(
+                        if (isPlaying) "Playing…" else "Play $word",
+                        modifier = Modifier.padding(start = 8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
+    }
+    if (showPlayback) {
+        Card(colors = colors, border = border, modifier = modifier.heightIn(min = 88.dp)) { content() }
+    } else {
+        Card(
+            onClick = onClick, enabled = enabled,
+            colors = colors, border = border, modifier = modifier.heightIn(min = 88.dp)
+        ) { content() }
     }
 }

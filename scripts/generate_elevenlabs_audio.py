@@ -7,7 +7,7 @@ or from `ELEVENLABS` / `ELEVENLABS_API_KEY` environment variables).
 Usage:
     doppler run --project minimal-pairs --config dev -- python3 scripts/generate_elevenlabs_audio.py
     # or directly (auto-invokes doppler if env var is not set):
-    python3 scripts/generate_elevenlabs_audio.py [--force]
+    python3 scripts/generate_elevenlabs_audio.py [--force] [--words-only]
 """
 
 import argparse
@@ -53,73 +53,75 @@ VOICES = {
 }
 
 # 58 Unique Minimal Pair Words across all 6 contrasts in VowelContrastsCatalog
-# Words with explicit IPA overrides use `eleven_flash_v2_5` with SSML <phoneme> tags to ensure
-# crisp phonetic contrast (e.g. preventing the cot/caught merger in American English).
+# Use Flash v2 with CMU Arpabet tags, which ElevenLabs recommends over IPA for v2.
+# Keep IPA as the human-readable pronunciation reference and explicit CMU vowels to
+# preserve contrasts such as cot/caught in the American tutor voice.
+# https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices
 MINIMAL_PAIR_WORDS = [
     # 1. i_vs_I (/iː/ vs /ɪ/)
-    {"word": "sheep", "ipa": "ʃiːp"},
-    {"word": "ship", "ipa": "ʃɪp"},
-    {"word": "feet", "ipa": "fiːt"},
-    {"word": "fit", "ipa": "fɪt"},
-    {"word": "seat", "ipa": "siːt"},
-    {"word": "sit", "ipa": "sɪt"},
-    {"word": "leak", "ipa": "liːk"},
-    {"word": "lick", "ipa": "lɪk"},
-    {"word": "cheeks", "ipa": "tʃiːks"},
-    {"word": "chicks", "ipa": "tʃɪks"},
+    {"word": "sheep", "ipa": "ʃiːp", "cmu": "SH IY1 P"},
+    {"word": "ship", "ipa": "ʃɪp", "cmu": "SH IH1 P"},
+    {"word": "feet", "ipa": "fiːt", "cmu": "F IY1 T"},
+    {"word": "fit", "ipa": "fɪt", "cmu": "F IH1 T"},
+    {"word": "seat", "ipa": "siːt", "cmu": "S IY1 T"},
+    {"word": "sit", "ipa": "sɪt", "cmu": "S IH1 T"},
+    {"word": "leak", "ipa": "liːk", "cmu": "L IY1 K"},
+    {"word": "lick", "ipa": "lɪk", "cmu": "L IH1 K"},
+    {"word": "cheeks", "ipa": "tʃiːks", "cmu": "CH IY1 K S"},
+    {"word": "chicks", "ipa": "tʃɪks", "cmu": "CH IH1 K S"},
     # 2. ae_vs_e (/æ/ vs /e/)
-    {"word": "bad", "ipa": "bæd"},
-    {"word": "bed", "ipa": "bɛd"},
-    {"word": "man", "ipa": "mæn"},
-    {"word": "men", "ipa": "mɛn"},
-    {"word": "pan", "ipa": "pæn"},
-    {"word": "pen", "ipa": "pɛn"},
-    {"word": "sad", "ipa": "sæd"},
-    {"word": "said", "ipa": "sɛd"},
-    {"word": "cattle", "ipa": "ˈkætəl"},
-    {"word": "kettle", "ipa": "ˈkɛtəl"},
+    {"word": "bad", "ipa": "bæd", "cmu": "B AE1 D"},
+    {"word": "bed", "ipa": "bɛd", "cmu": "B EH1 D"},
+    {"word": "man", "ipa": "mæn", "cmu": "M AE1 N"},
+    {"word": "men", "ipa": "mɛn", "cmu": "M EH1 N"},
+    {"word": "pan", "ipa": "pæn", "cmu": "P AE1 N"},
+    {"word": "pen", "ipa": "pɛn", "cmu": "P EH1 N"},
+    {"word": "sad", "ipa": "sæd", "cmu": "S AE1 D"},
+    {"word": "said", "ipa": "sɛd", "cmu": "S EH1 D"},
+    {"word": "cattle", "ipa": "ˈkætəl", "cmu": "K AE1 T AH0 L"},
+    {"word": "kettle", "ipa": "ˈkɛtəl", "cmu": "K EH1 T AH0 L"},
     # 3. a_vs_uh (/ɑː/ vs /ʌ/)
-    {"word": "heart", "ipa": "hɑːɹt"},
-    {"word": "hut", "ipa": "hʌt"},
-    {"word": "calm", "ipa": "kɑːm"},
-    {"word": "come", "ipa": "kʌm"},
-    {"word": "dark", "ipa": "dɑːɹk"},
-    {"word": "duck", "ipa": "dʌk"},
-    {"word": "march", "ipa": "mɑːɹtʃ"},
-    {"word": "much", "ipa": "mʌtʃ"},
-    {"word": "barn", "ipa": "bɑːɹn"},
-    {"word": "bun", "ipa": "bʌn"},
+    {"word": "heart", "ipa": "hɑːɹt", "cmu": "HH AA1 R T"},
+    {"word": "hut", "ipa": "hʌt", "cmu": "HH AH1 T"},
+    {"word": "calm", "ipa": "kɑːm", "cmu": "K AA1 M"},
+    {"word": "come", "ipa": "kʌm", "cmu": "K AH1 M"},
+    {"word": "dark", "ipa": "dɑːɹk", "cmu": "D AA1 R K"},
+    {"word": "duck", "ipa": "dʌk", "cmu": "D AH1 K"},
+    {"word": "march", "ipa": "mɑːɹtʃ", "cmu": "M AA1 R CH"},
+    {"word": "much", "ipa": "mʌtʃ", "cmu": "M AH1 CH"},
+    {"word": "barn", "ipa": "bɑːɹn", "cmu": "B AA1 R N"},
+    {"word": "bun", "ipa": "bʌn", "cmu": "B AH1 N"},
     # 4. u_vs_uu (/ʊ/ vs /uː/)
-    {"word": "full", "ipa": "fʊl"},
-    {"word": "fool", "ipa": "fuːl"},
-    {"word": "pull", "ipa": "pʊl"},
-    {"word": "pool", "ipa": "puːl"},
-    {"word": "look", "ipa": "lʊk"},
-    {"word": "luke", "ipa": "luːk"},
-    {"word": "soot", "ipa": "sʊt"},
-    {"word": "suit", "ipa": "suːt"},
-    {"word": "stood", "ipa": "stʊd"},
-    {"word": "stewed", "ipa": "stuːd"},
+    {"word": "full", "ipa": "fʊl", "cmu": "F UH1 L"},
+    {"word": "fool", "ipa": "fuːl", "cmu": "F UW1 L"},
+    {"word": "pull", "ipa": "pʊl", "cmu": "P UH1 L"},
+    {"word": "pool", "ipa": "puːl", "cmu": "P UW1 L"},
+    {"word": "look", "ipa": "lʊk", "cmu": "L UH1 K"},
+    {"word": "luke", "ipa": "luːk", "cmu": "L UW1 K"},
+    {"word": "soot", "ipa": "sʊt", "cmu": "S UH1 T"},
+    {"word": "suit", "ipa": "suːt", "cmu": "S UW1 T"},
+    {"word": "stood", "ipa": "stʊd", "cmu": "S T UH1 D"},
+    {"word": "stewed", "ipa": "stuːd", "cmu": "S T UW1 D"},
     # 5. o_vs_or (/ɑː/ vs /ɔː/)
-    {"word": "cot", "ipa": "kɑːt"},
-    {"word": "caught", "ipa": "kɔːt"},
-    {"word": "shot", "ipa": "ʃɑːt"},
-    {"word": "short", "ipa": "ʃɔːɹt"},
-    {"word": "pot", "ipa": "pɑːt"},
-    {"word": "port", "ipa": "pɔːɹt"},
-    {"word": "spot", "ipa": "spɑːt"},
-    {"word": "sport", "ipa": "spɔːɹt"},
-    {"word": "fox", "ipa": "fɑːks"},
-    {"word": "forks", "ipa": "fɔːɹks"},
+    {"word": "cot", "ipa": "kɑːt", "cmu": "K AA1 T"},
+    {"word": "caught", "ipa": "kɔːt", "cmu": "K AO1 T"},
+    {"word": "shot", "ipa": "ʃɑːt", "cmu": "SH AA1 T"},
+    {"word": "short", "ipa": "ʃɔːɹt", "cmu": "SH AO1 R T"},
+    {"word": "pot", "ipa": "pɑːt", "cmu": "P AA1 T"},
+    {"word": "port", "ipa": "pɔːɹt", "cmu": "P AO1 R T"},
+    {"word": "spot", "ipa": "spɑːt", "cmu": "S P AA1 T"},
+    {"word": "sport", "ipa": "spɔːɹt", "cmu": "S P AO1 R T"},
+    {"word": "fox", "ipa": "fɑːks", "cmu": "F AA1 K S"},
+    {"word": "forks", "ipa": "fɔːɹks", "cmu": "F AO1 R K S"},
     # 6. e_vs_I (/e/ vs /ɪ/) - ("pen" and "sit" already listed above)
-    {"word": "pin", "ipa": "pɪn"},
-    {"word": "ten", "ipa": "tɛn"},
-    {"word": "tin", "ipa": "tɪn"},
-    {"word": "bet", "ipa": "bɛt"},
-    {"word": "bit", "ipa": "bɪt"},
-    {"word": "set", "ipa": "sɛt"},
-    {"word": "dead", "ipa": "dɛd"},
-    {"word": "did", "ipa": "dɪd"},
+    {"word": "pin", "ipa": "pɪn", "cmu": "P IH1 N"},
+    {"word": "ten", "ipa": "tɛn", "cmu": "T EH1 N"},
+    {"word": "tin", "ipa": "tɪn", "cmu": "T IH1 N"},
+    {"word": "bet", "ipa": "bɛt", "cmu": "B EH1 T"},
+    {"word": "bit", "ipa": "bɪt", "cmu": "B IH1 T"},
+    {"word": "set", "ipa": "sɛt", "cmu": "S EH1 T"},
+    {"word": "dead", "ipa": "dɛd", "cmu": "D EH1 D"},
+    {"word": "did", "ipa": "dɪd", "cmu": "D IH1 D"},
 ]
 
 # 3 Prosody Sentences from ProsodyCatalog.kt
@@ -258,6 +260,8 @@ def wrap_pcm_to_wav(pcm_bytes: bytes) -> bytes:
     byte_rate = SAMPLE_RATE * CHANNELS * (BITS_PER_SAMPLE // 8)
     block_align = CHANNELS * (BITS_PER_SAMPLE // 8)
     data_size = len(pcm_bytes)
+    if not data_size or data_size % 2:
+        raise ValueError("Expected nonempty 16-bit PCM audio")
     riff_size = 36 + data_size
 
     header = struct.pack(
@@ -323,16 +327,17 @@ def synthesize_pcm16k(
 def main():
     parser = argparse.ArgumentParser(description="Generate ElevenLabs WAV audio files for MinimalPairs.")
     parser.add_argument("--force", action="store_true", help="Overwrite existing WAV files.")
+    parser.add_argument("--words-only", action="store_true", help="Generate only minimal-pair words, leaving other audio untouched.")
     args = parser.parse_args()
 
     api_key = get_api_key()
-    print(f"Loaded ElevenLabs API key via Doppler (length={len(api_key)}).")
+    print("Loaded ElevenLabs API key.")
 
     words_dir = OUTPUT_BASE / "words"
     prosody_dir = OUTPUT_BASE / "prosody"
     meaning_trap_dir = OUTPUT_BASE / "meaning_trap"
 
-    for d in (words_dir, prosody_dir, meaning_trap_dir):
+    for d in ((words_dir,) if args.words_only else (words_dir, prosody_dir, meaning_trap_dir)):
         d.mkdir(parents=True, exist_ok=True)
 
     generated = 0
@@ -350,14 +355,15 @@ def main():
             skipped += 1
             continue
 
-        # Use SSML phoneme tag with eleven_flash_v2_5 for precise IPA articulation
-        ssml_text = f'<phoneme alphabet="ipa" ph="{ipa}">{word}</phoneme>.'
+        # Flash v2 supports SSML phoneme tags; the multilingual v2.5 model does not.
+        cmu = item["cmu"]
+        ssml_text = f'<phoneme alphabet="cmu-arpabet" ph="{cmu}">{word}</phoneme>.'
         print(f"  [gen]  words/{word}.wav  /{ipa}/ ...")
         pcm_bytes = synthesize_pcm16k(
             api_key=api_key,
             voice_id=tutor_voice_id,
             text=ssml_text,
-            model_id="eleven_flash_v2_5",
+            model_id="eleven_flash_v2",
             stability=0.75,
             similarity_boost=0.85,
         )
@@ -365,6 +371,11 @@ def main():
         out_path.write_bytes(wav_bytes)
         generated += 1
         time.sleep(0.08)
+
+    if args.words_only:
+        print(f"\nDone! Generated: {generated}, Skipped: {skipped}, Total files: {generated + skipped}")
+        print(f"Output directory: {words_dir}")
+        return
 
     # 2. Generate 3 Prosody Sentences
     print(f"\n--- Generating {len(PROSODY_SENTENCES)} Prosody Sentences ---")
