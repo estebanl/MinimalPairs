@@ -107,7 +107,7 @@ class DefaultRootComponent(
 
     private val progressScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val progressDatabase = createDatabase(getDatabaseBuilder())
-    private val progressRepository = ProgressRepository(progressDatabase.progressDao(), progressScope)
+    private val progressRepository = ProgressRepository(RoomProgressStore(progressDatabase), progressScope)
     init {
         lifecycle.doOnDestroy {
             val job = progressScope.coroutineContext[Job]!!

@@ -25,7 +25,7 @@ class ProgressPersistenceTest {
         var database = open()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {
-            val repository = ProgressRepository(database.progressDao(), scope)
+            val repository = ProgressRepository(RoomProgressStore(database), scope)
             withTimeout(5000) { repository.state.first { !it.loading } }
             repository.record(trial("i_vs_I", "sheep", "sheep", true), 5)
             val first = withTimeout(5000) { repository.state.first { it.attempts == 1 && it.contrasts.single().card != null } }
@@ -65,7 +65,7 @@ class ProgressPersistenceTest {
                 timestampEpochMs = Instant.parse("2026-10-25T12:00:00Z").toEpochMilliseconds()
             ), 5)
             val calendar = MutableStateFlow(PracticeCalendar(LocalDate.parse("2026-10-26"), TimeZone.UTC))
-            val repository = ProgressRepository(database.progressDao(), scope, calendar)
+            val repository = ProgressRepository(RoomProgressStore(database), scope, calendar)
             val yesterday = withTimeout(5000) { repository.state.first { !it.loading } }
             assertEquals(1, yesterday.activity.currentStreak)
             calendar.value = PracticeCalendar(LocalDate.parse("2026-10-27"), TimeZone.UTC)
@@ -91,7 +91,7 @@ class ProgressPersistenceTest {
             val dao = database.progressDao()
             dao.record(trial("i_vs_I", "sheep", "sheep", true).copy(timestampEpochMs = 0), 5)
             val clock = MutableStateFlow(86_399_999L)
-            val repository = ProgressRepository(dao, scope, nowEpochMs = { clock.value }, refresh = clock.map { Unit })
+            val repository = ProgressRepository(RoomProgressStore(database), scope, nowEpochMs = { clock.value }, refresh = clock.map { Unit })
             val before = withTimeout(5000) { repository.state.first { !it.loading } }
             assertTrue(before.reviews.due.isEmpty())
             assertEquals("i_vs_I", before.reviews.next?.contrastId)
@@ -122,7 +122,7 @@ class ProgressPersistenceTest {
         try {
             val now = AtomicLong(0)
             val refresh = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
-            val repository = ProgressRepository(database.progressDao(), scope, nowEpochMs = now::get, refresh = refresh)
+            val repository = ProgressRepository(RoomProgressStore(database), scope, nowEpochMs = now::get, refresh = refresh)
             withTimeout(5000) { repository.state.first { !it.loading } }
             now.set(30_000)
             repository.record(trial("i_vs_I", "sheep", "sheep", true).copy(timestampEpochMs = now.get()), 5)

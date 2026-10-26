@@ -95,8 +95,26 @@ interface TrialDao {
     suspend fun getTotalTrialCount(): Int
 }
 
+data class ProgressSnapshot(
+    val trials: List<TrialRecordEntity>,
+    val cards: List<Sm2CardEntity>,
+    val speaking: List<SpeakingRecordEntity>
+)
+
 @Dao
 abstract class ProgressDao {
+    @Query("SELECT * FROM trial_records ORDER BY timestampEpochMs DESC, id DESC")
+    abstract suspend fun readTrials(): List<TrialRecordEntity>
+
+    @Query("SELECT * FROM sm2_cards")
+    abstract suspend fun readCards(): List<Sm2CardEntity>
+
+    @Query("SELECT * FROM speaking_records ORDER BY timestampEpochMs DESC, id DESC")
+    abstract suspend fun readSpeaking(): List<SpeakingRecordEntity>
+
+    @Transaction
+    open suspend fun readSnapshot(): ProgressSnapshot = ProgressSnapshot(readTrials(), readCards(), readSpeaking())
+
     @Query("SELECT * FROM speaking_records ORDER BY timestampEpochMs DESC, id DESC")
     abstract fun observeSpeaking(): Flow<List<SpeakingRecordEntity>>
 

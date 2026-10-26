@@ -107,11 +107,12 @@ private fun reviewRefreshes(): Flow<Unit> = flow {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressRepository(
-    private val dao: ProgressDao,
+    private val store: ProgressStore,
     private val scope: CoroutineScope,
     calendar: Flow<PracticeCalendar> = practiceCalendarChanges(),
     private val nowEpochMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    refresh: Flow<Unit> = reviewRefreshes()
+    refresh: Flow<Unit> = reviewRefreshes(),
+    aggregationDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private data class PendingAnswer(val trial: TrialRecordEntity? = null, val quality: Int = 0, val speaking: SpeakingRecordEntity? = null)
     private data class SaveStatus(val pending: Int, val saving: Boolean, val failed: Boolean)
@@ -129,9 +130,12 @@ class ProgressRepository(
         flow {
             emit(lastLoaded.copy(progress = lastLoaded.progress.copy(isRefreshing = true, canRetryLoad = attempt > 0)))
             // Construct the database flows here so synchronous open errors can also be retried.
-            emitAll(combine(dao.observeTrials(), dao.observeCards(), calendar, dao.observeSpeaking()) { trials, cards, day, speaking ->
-                LoadedProgress(summarizeProgress(trials, cards, day, nowEpochMs()).copy(speaking = speaking), cards)
-            }.onEach { lastLoaded = it })
+            emitAll(combine(store.observe(), calendar) { snapshot, day ->
+                LoadedProgress(
+                    summarizeProgress(snapshot.trials, snapshot.cards, day, nowEpochMs()).copy(speaking = snapshot.speaking),
+                    snapshot.cards
+                )
+            }.flowOn(aggregationDispatcher).onEach { lastLoaded = it })
         }.catch {
             val message = if (lastLoaded.progress.loading) "Couldn't load progress. Try again."
             else "Couldn't refresh progress. Showing the last loaded totals. Retry to get the latest progress."
@@ -186,8 +190,8 @@ class ProgressRepository(
                         while (true) {
                             val answer = pending.value.firstOrNull() ?: break
                             try {
-                                if (answer.speaking != null) dao.recordSpeaking(answer.speaking)
-                                else dao.record(answer.trial!!, answer.quality)
+                                if (answer.speaking != null) store.recordSpeaking(answer.speaking)
+                                else store.record(answer.trial!!, answer.quality)
                             } catch (_: Exception) {
                                 saveFailed.value = true
                                 return@withLock

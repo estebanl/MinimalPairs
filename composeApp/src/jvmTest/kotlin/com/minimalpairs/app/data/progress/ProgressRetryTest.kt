@@ -13,7 +13,7 @@ class ProgressRetryTest {
     @Test
     fun failedAnswersStayQueuedInOrderAndRepeatedRetriesDoNotDuplicateThem() = runBlocking {
         withDatabase { database, scope ->
-            val flaky = FlakyDao(database.progressDao()).apply { failBefore = true }
+            val flaky = FlakyStore(RoomProgressStore(database)).apply { failBefore = true }
             val repository = ProgressRepository(flaky, scope)
             repository.record(trial("sheep"), 5)
             withTimeout(5000) { repository.state.first { it.canRetrySave && !it.isSaving } }
@@ -36,7 +36,7 @@ class ProgressRetryTest {
     @Test
     fun retryAfterCommitDoesNotApplyMasteryTwice() = runBlocking {
         withDatabase { database, scope ->
-            val flaky = FlakyDao(database.progressDao()).apply { failAfter = true }
+            val flaky = FlakyStore(RoomProgressStore(database)).apply { failAfter = true }
             val repository = ProgressRepository(flaky, scope)
             repository.record(trial("sheep"), 5)
             withTimeout(5000) { repository.state.first { it.canRetrySave && !it.isSaving } }
@@ -54,7 +54,7 @@ class ProgressRetryTest {
         withDatabase { database, scope ->
             val dao = database.progressDao()
             dao.record(trial("sheep"), 5)
-            val flaky = FlakyDao(dao).apply { failReads.value = true }
+            val flaky = FlakyStore(RoomProgressStore(database)).apply { failReads.value = true }
             val repository = ProgressRepository(flaky, scope)
             val failed = withTimeout(5000) { repository.state.first { it.canRetryLoad } }
             assertFalse(failed.loading)
@@ -80,7 +80,7 @@ class ProgressRetryTest {
     @Test
     fun loadAndSaveFailuresRecoverIndependently() = runBlocking {
         withDatabase { database, scope ->
-            val flaky = FlakyDao(database.progressDao()).apply {
+            val flaky = FlakyStore(RoomProgressStore(database)).apply {
                 failReads.value = true
                 failBefore = true
             }
@@ -102,7 +102,7 @@ class ProgressRetryTest {
     @Test
     fun speakingSaveRetriesWithoutDuplicatingACommittedResult() = runBlocking {
         withDatabase { database, scope ->
-            val flaky = FlakyDao(database.progressDao()).apply { failAfter = true }
+            val flaky = FlakyStore(RoomProgressStore(database)).apply { failAfter = true }
             val repository = ProgressRepository(flaky, scope)
             repository.recordSpeaking(SpeakingRecordEntity(0, "i_vs_I", "sheep", "iː", 88f, 200, 1000))
             withTimeout(5000) { repository.state.first { it.canRetrySave && !it.isSaving } }
@@ -130,22 +130,14 @@ class ProgressRetryTest {
         latencyMs = 1000, drillType = "FORCED_CHOICE", timestampEpochMs = 1000
     )
 
-    private class FlakyDao(private val delegate: ProgressDao) : ProgressDao() {
+    private class FlakyStore(private val delegate: ProgressStore) : ProgressStore {
         @Volatile var failBefore = false
         @Volatile var failAfter = false
         val failReads = MutableStateFlow(false)
-        override fun observeTrials() = combine(delegate.observeTrials(), failReads) { trials, failed ->
+        override fun observe() = combine(delegate.observe(), failReads) { snapshot, failed ->
             check(!failed) { "Simulated read failure" }
-            trials
+            snapshot
         }
-        override fun observeCards() = delegate.observeCards()
-        override fun observeSpeaking() = delegate.observeSpeaking()
-        override suspend fun getSpeaking(id: Long) = delegate.getSpeaking(id)
-        override suspend fun insertSpeaking(record: SpeakingRecordEntity) = delegate.insertSpeaking(record)
-        override suspend fun getCard(id: String) = delegate.getCard(id)
-        override suspend fun getTrial(id: Long) = delegate.getTrial(id)
-        override suspend fun insertTrial(trial: TrialRecordEntity) = delegate.insertTrial(trial)
-        override suspend fun saveCard(card: Sm2CardEntity) = delegate.saveCard(card)
         override suspend fun recordSpeaking(record: SpeakingRecordEntity) {
             if (failBefore) error("Simulated storage failure")
             delegate.recordSpeaking(record)

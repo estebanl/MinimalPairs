@@ -32,7 +32,7 @@ class SpeakingPersistenceTest {
         var database = open()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {
-            val repository = ProgressRepository(database.progressDao(), scope)
+            val repository = ProgressRepository(RoomProgressStore(database), scope)
             val before = withTimeout(5000) { repository.state.first { !it.loading } }
             assertEquals(1, before.attempts)
             assertTrue(before.speaking.isEmpty())
