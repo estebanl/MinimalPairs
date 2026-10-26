@@ -100,3 +100,5 @@ Feature: Persistent listening and speaking progress
     Then the overview shows the current streak, reviews, and three lowest-accuracy contrasts
     And the full contrast list can be expanded
     And daily activity, trends, sound patterns, and history expand independently
+    When a detail section is collapsed and reopened
+    Then its selected sound and expanded history choices are retained

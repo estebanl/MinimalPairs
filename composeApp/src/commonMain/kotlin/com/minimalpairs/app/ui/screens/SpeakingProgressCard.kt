@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
@@ -23,8 +24,8 @@ internal fun SpeakingProgressCard(
     onStartSpeaking: () -> Unit,
     onPractice: (String, String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    var allSounds by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var allSounds by rememberSaveable { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Speaking progress", style = MaterialTheme.typography.titleLarge)

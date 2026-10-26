@@ -36,7 +36,9 @@ class SoundConfusionMatrixTest {
                     val scene = ImageComposeScene(width = width, height = 1400, density = Density(1f, fontScale)) {
                         MinimalPairsTheme(darkTheme = width == 430) {
                             Column(Modifier.verticalScroll(rememberScrollState())) {
-                                SoundConfusionMatrix(displayedContrasts.value) { selected = it }
+                                ProgressDetailSection("Sound patterns", "Choose a contrast") {
+                                    SoundConfusionMatrix(displayedContrasts.value) { selected = it }
+                                }
                             }
                         }
                     }
@@ -53,6 +55,7 @@ class SoundConfusionMatrixTest {
                             settle()
                         }
                         settle()
+                        click("Show sound patterns")
                         assertTrue(descriptions().contains("Heard /iː/, chose /iː/: 3 of 4 answers, 75 percent, correct"))
                         assertTrue(descriptions().contains("Heard /iː/, chose /ɪ/: 1 of 4 answers, 25 percent, mixed up"))
                         assertTrue(descriptions().contains("Heard /ɪ/, chose /ɪ/: not practiced"))
@@ -73,6 +76,10 @@ class SoundConfusionMatrixTest {
                         assertEquals("p_vs_b", selected)
                         displayedContrasts.value = contrasts
                         settle()
+                        click("Hide sound patterns")
+                        assertFalse(descriptions().any { it.contains("Heard /p/") })
+                        click("Show sound patterns")
+                        assertTrue(descriptions().contains("Heard /p/, chose /b/: 2 of 2 answers, 100 percent, mixed up"))
                         click("Practice these sounds")
                         assertEquals("p_vs_b", selected)
                         displayedContrasts.value = contrasts.take(1)
