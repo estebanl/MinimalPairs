@@ -34,14 +34,17 @@ data class ProgressState(
     val contrasts: List<ContrastProgress> = emptyList(),
     val confusion: Map<String, Map<String, Int>> = emptyMap(),
     val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
-    val recentTrials: List<TrialRecordEntity> = emptyList()
+    val recentTrials: List<TrialRecordEntity> = emptyList(),
+    val activity: PracticeActivity = PracticeActivity()
 ) {
     val attempts: Int get() = contrasts.sumOf { it.attempts }
     val accuracy: Int get() = if (attempts == 0) 0 else
         (contrasts.sumOf { it.correct } * 100f / attempts).roundToInt()
 }
 
-fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity>): ProgressState {
+fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity>,
+    calendar: PracticeCalendar = PracticeCalendar.current()
+): ProgressState {
     val confusion = mutableMapOf<String, MutableMap<String, Int>>()
     trials.forEach { trial ->
         val contrast = ListeningContrastsCatalog.getContrastById(trial.contrastId) ?: return@forEach
@@ -61,14 +64,27 @@ fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity
     return ProgressState(
         loading = false, contrasts = contrasts, confusion = confusion,
         trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
-        recentTrials = newestFirst.take(20)
+        recentTrials = newestFirst.take(20),
+        activity = summarizeActivity(trials, calendar)
     )
 }
 
-class ProgressRepository(private val dao: ProgressDao, private val scope: CoroutineScope) {
+private fun practiceCalendarChanges(): Flow<PracticeCalendar> = flow {
+    // Refresh after local midnight or a time-zone change even without another answer.
+    while (true) {
+        emit(PracticeCalendar.current())
+        delay(60_000)
+    }
+}.distinctUntilChanged()
+
+class ProgressRepository(
+    private val dao: ProgressDao,
+    private val scope: CoroutineScope,
+    calendar: Flow<PracticeCalendar> = practiceCalendarChanges()
+) {
     private val saveError = MutableStateFlow<String?>(null)
-    val state: StateFlow<ProgressState> = combine(dao.observeTrials(), dao.observeCards(), saveError) { trials, cards, error ->
-        summarizeProgress(trials, cards).copy(error = error)
+    val state: StateFlow<ProgressState> = combine(dao.observeTrials(), dao.observeCards(), saveError, calendar) { trials, cards, error, day ->
+        summarizeProgress(trials, cards, day).copy(error = error)
     }.catch { emit(ProgressState(loading = false, error = "Couldn't load progress. Reopen the app to try again.")) }
         .stateIn(scope, SharingStarted.Eagerly, ProgressState())
 

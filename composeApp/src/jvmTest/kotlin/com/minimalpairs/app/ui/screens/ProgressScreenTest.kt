@@ -50,6 +50,13 @@ class ProgressScreenTest {
                     )), listOf(Sm2CardEntity("i_vs_I", 0, 1, 2.3f, .47f, 1000)))
                     settle()
                     assertTrue(nodes().any { it.text() == "0% accuracy" })
+                    assertTrue(nodes().any { it.text() == "0-day streak" })
+                    assertTrue(nodes().any { it.text() == "Longest streak: 1 day" })
+                    assertEquals(7, nodes().count {
+                        it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { description ->
+                            description.contains(": 0 answers")
+                        } == true
+                    })
                     assertTrue(nodes().any { it.text() == "Mastery estimate · 47%" })
                     assertTrue(nodes().any { it.text() == "Review due" })
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })

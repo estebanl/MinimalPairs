@@ -74,6 +74,7 @@ fun ConfusionMatrixScreen(
                         Text("Accuracy is the share of listening answers you got right.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
+                PracticeActivityCard(state.activity)
                 AccuracyTrendCard(state.trend)
                 Text("Practice next", style = MaterialTheme.typography.titleLarge)
                 Text("Your lowest-accuracy contrasts come first. Small samples can change quickly.", style = MaterialTheme.typography.bodyMedium)

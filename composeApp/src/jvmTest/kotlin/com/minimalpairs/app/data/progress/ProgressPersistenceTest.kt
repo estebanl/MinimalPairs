@@ -6,6 +6,10 @@ import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.Sm2State
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlin.time.Instant
 import java.nio.file.Files
 import kotlin.test.*
 
@@ -43,6 +47,33 @@ class ProgressPersistenceTest {
             assertEquals(expected.masteryScore, dao.getCard("i_vs_I")!!.masteryScore)
         } finally {
             scope.cancel()
+            database.close()
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun calendarChangesRefreshStreakWithoutAnotherAnswer() = runBlocking {
+        val directory = Files.createTempDirectory("progress-calendar-test").toFile()
+        val database = createDatabase(Room.databaseBuilder<AppDatabase>(name = directory.resolve("progress.db").absolutePath))
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            database.progressDao().record(trial("i_vs_I", "sheep", "sheep", true).copy(
+                timestampEpochMs = Instant.parse("2026-10-25T12:00:00Z").toEpochMilliseconds()
+            ), 5)
+            val calendar = MutableStateFlow(PracticeCalendar(LocalDate.parse("2026-10-26"), TimeZone.UTC))
+            val repository = ProgressRepository(database.progressDao(), scope, calendar)
+            val yesterday = withTimeout(5000) { repository.state.first { !it.loading } }
+            assertEquals(1, yesterday.activity.currentStreak)
+            calendar.value = PracticeCalendar(LocalDate.parse("2026-10-27"), TimeZone.UTC)
+            val tomorrow = withTimeout(5000) {
+                repository.state.first { it.activity.days.lastOrNull()?.date == LocalDate.parse("2026-10-27") }
+            }
+            assertEquals(0, tomorrow.activity.currentStreak)
+            assertEquals(1, tomorrow.activity.longestStreak)
+            assertEquals(1, tomorrow.attempts)
+        } finally {
+            scope.coroutineContext[Job]!!.cancelAndJoin()
             database.close()
             directory.deleteRecursively()
         }
