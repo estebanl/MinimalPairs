@@ -144,12 +144,30 @@ class ProgressScreenTest {
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     click("Show speaking progress")
                     assertTrue(nodes().any { it.text() == "Score: 88/100" })
+                    assertTrue(nodes().any { it.text() == "Recent average: 88/100" })
+                    assertTrue(nodes().any { it.text() == "Record this sound 9 more times to compare two sets of five." })
                     assertFalse(nodes().any { it.text() == "0% accuracy" })
                     click("Practice speaking again")
                     assertEquals("i_vs_I", selected)
                     scene.render(++frame * 16_666_667L).use { image ->
                         image.encodeToData()!!.use { data -> File(directory, "speaking-progress.png").writeBytes(data.bytes) }
                     }
+                    val speaking = (1..10).map { index ->
+                        SpeakingRecordEntity(index.toLong(), "i_vs_I", "sheep", "iː", if (index <= 5) 40f else 80f, 200, index * 1000L)
+                    } + listOf(
+                        SpeakingRecordEntity(11, "i_vs_I", "ship", "ɪ", 50f, 200, 11000),
+                        SpeakingRecordEntity(12, "ae_vs_e", "bad", "æ", 60f, 200, 12000),
+                        SpeakingRecordEntity(13, "ae_vs_e", "bed", "e", 70f, 200, 13000)
+                    )
+                    component.state.value = component.state.value.copy(speaking = speaking)
+                    settle()
+                    assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
+                    click("Show all 4 sounds")
+                    assertTrue(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
+                    click("Practice bad / bed")
+                    assertEquals("ae_vs_e", selected)
+                    click("Show fewer sounds")
+                    assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
                 } finally { scene.close() }
             } catch (error: Throwable) { failure = error }
         }

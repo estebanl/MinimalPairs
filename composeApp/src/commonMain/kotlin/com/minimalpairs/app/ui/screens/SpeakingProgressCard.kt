@@ -11,11 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.data.local.SpeakingRecordEntity
+import com.minimalpairs.app.data.progress.summarizeSpeaking
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
 internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochMs: Long, onPractice: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    var allSounds by remember { mutableStateOf(false) }
+    val summaries = remember(records) { summarizeSpeaking(records) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Speaking progress", style = MaterialTheme.typography.titleLarge)
@@ -23,6 +27,38 @@ internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochM
             Text("Pronunciation scores are estimates out of 100. They are separate from listening accuracy and do not affect listening streaks or reviews.", style = MaterialTheme.typography.bodySmall)
             if (records.isEmpty()) {
                 Text("Complete a recording in Speak to start your speaking history.")
+            }
+            if (summaries.isNotEmpty()) {
+                Text("By sound", style = MaterialTheme.typography.titleLarge)
+                Text("Lowest recent averages first. Recording conditions can affect scores.", style = MaterialTheme.typography.bodySmall)
+                summaries.take(if (allSounds) summaries.size else 3).forEach { sound ->
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium) {
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("/${sound.phoneme}/ · ${sound.latest.targetWord}", style = MaterialTheme.typography.titleMedium)
+                            Text("Recent average: ${sound.recentAverage}/100", style = MaterialTheme.typography.bodyLarge)
+                            Text("Based on the latest ${sound.recentCount} ${if (sound.recentCount == 1) "recording" else "recordings"}.", style = MaterialTheme.typography.bodySmall)
+                            Text("Latest: ${sound.latest.score.roundToInt()}/100 · Best: ${sound.bestScore}/100 · Attempts: ${sound.attempts}", style = MaterialTheme.typography.bodySmall)
+                            val change = sound.changePoints
+                            Text(when {
+                                change == null -> "Record this sound ${10 - sound.recentCount - sound.previousCount} more ${if (10 - sound.recentCount - sound.previousCount == 1) "time" else "times"} to compare two sets of five."
+                                change > 0 -> "Up $change points from the previous five recordings."
+                                change < 0 -> "Down ${abs(change)} points from the previous five recordings."
+                                else -> "Unchanged from the previous five recordings."
+                            }, style = MaterialTheme.typography.bodyMedium)
+                            VowelContrastsCatalog.getContrastById(sound.contrastId)?.pairs?.firstOrNull()?.let { pair ->
+                                Button(onClick = { onPractice(sound.contrastId) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                                    Text("Practice ${pair.word1} / ${pair.word2}")
+                                }
+                            }
+                        }
+                    }
+                }
+                if (summaries.size > 3) {
+                    TextButton(onClick = { allSounds = !allSounds }) {
+                        Text(if (allSounds) "Show fewer sounds" else "Show all ${summaries.size} sounds")
+                    }
+                }
+                Text("Recent recordings", style = MaterialTheme.typography.titleLarge)
             }
             records.take(if (expanded) 20 else 5).forEach { record ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
