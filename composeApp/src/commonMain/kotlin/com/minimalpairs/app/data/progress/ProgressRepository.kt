@@ -10,7 +10,8 @@ data class ContrastProgress(
     val contrastId: String,
     val attempts: Int,
     val correct: Int,
-    val card: Sm2CardEntity?
+    val card: Sm2CardEntity?,
+    val confusion: Map<String, Map<String, Int>> = emptyMap()
 ) {
     val accuracy: Int get() = (correct * 100f / attempts).roundToInt()
 }
@@ -45,6 +46,22 @@ data class ProgressState(
 fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity>,
     calendar: PracticeCalendar = PracticeCalendar.current()
 ): ProgressState {
+    val confusion = summarizeConfusions(trials)
+    val byId = cards.associateBy { it.contrastId }
+    val contrasts = trials.groupBy { it.contrastId }.map { (id, attempts) ->
+        ContrastProgress(id, attempts.size, attempts.count { it.isCorrect }, byId[id], summarizeConfusions(attempts))
+    }.sortedWith(compareBy<ContrastProgress> { it.correct.toDouble() / it.attempts }.thenBy { it.contrastId })
+    val newestFirst = trials.sortedWith(compareByDescending<TrialRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
+    fun sample(records: List<TrialRecordEntity>) = AccuracySample(records.size, records.count { it.isCorrect })
+    return ProgressState(
+        loading = false, contrasts = contrasts, confusion = confusion,
+        trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
+        recentTrials = newestFirst.take(20),
+        activity = summarizeActivity(trials, calendar)
+    )
+}
+
+private fun summarizeConfusions(trials: List<TrialRecordEntity>): Map<String, Map<String, Int>> {
     val confusion = mutableMapOf<String, MutableMap<String, Int>>()
     trials.forEach { trial ->
         val contrast = ListeningContrastsCatalog.getContrastById(trial.contrastId) ?: return@forEach
@@ -55,18 +72,7 @@ fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity
         val row = confusion.getOrPut(target) { mutableMapOf() }
         row[chosen] = (row[chosen] ?: 0) + 1
     }
-    val byId = cards.associateBy { it.contrastId }
-    val contrasts = trials.groupBy { it.contrastId }.map { (id, attempts) ->
-        ContrastProgress(id, attempts.size, attempts.count { it.isCorrect }, byId[id])
-    }.sortedWith(compareBy<ContrastProgress> { it.correct.toDouble() / it.attempts }.thenBy { it.contrastId })
-    val newestFirst = trials.sortedWith(compareByDescending<TrialRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
-    fun sample(records: List<TrialRecordEntity>) = AccuracySample(records.size, records.count { it.isCorrect })
-    return ProgressState(
-        loading = false, contrasts = contrasts, confusion = confusion,
-        trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
-        recentTrials = newestFirst.take(20),
-        activity = summarizeActivity(trials, calendar)
-    )
+    return confusion
 }
 
 private fun practiceCalendarChanges(): Flow<PracticeCalendar> = flow {

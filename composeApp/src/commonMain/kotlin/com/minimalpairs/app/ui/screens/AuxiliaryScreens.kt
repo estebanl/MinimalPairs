@@ -2,7 +2,6 @@ package com.minimalpairs.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.ui.components.PracticeIcon
 import com.minimalpairs.app.ui.components.PracticeTopBar
 import com.minimalpairs.app.ui.navigation.ConfusionMatrixComponent
-import com.minimalpairs.app.ui.theme.PracticeTheme
 
 @Composable
 fun ConfusionMatrixScreen(
@@ -39,10 +37,8 @@ fun ConfusionMatrixScreen(
     modifier: Modifier = Modifier,
     onPractice: () -> Unit = component::onBack
 ) {
-    val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
-    val confusion = state.confusion
     Scaffold(topBar = { PracticeTopBar("Progress", onBack = component::onBack) }, modifier = modifier) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -101,26 +97,7 @@ fun ConfusionMatrixScreen(
                     }
                 }
                 Text("Mastery estimates use answer speed and repeated success to plan reviews. They are separate from accuracy.", style = MaterialTheme.typography.bodySmall)
-                Text("Sound patterns", style = MaterialTheme.typography.titleLarge)
-                confusion.forEach { (target, chosenMap) ->
-                    Card(colors = CardDefaults.cardColors(containerColor = scheme.surface), modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text("Sound /$target/", style = MaterialTheme.typography.titleMedium)
-                                val accuracy = ((chosenMap[target] ?: 0) * 100f / chosenMap.values.sum()).roundToInt()
-                                Text("Accuracy · $accuracy%", style = MaterialTheme.typography.bodySmall)
-                            }
-                            chosenMap.forEach { (chosen, count) ->
-                                val times = if (count == 1) "time" else "times"
-                                Text(
-                                    if (target == chosen) "✓ Heard /$chosen/ correctly · $count $times" else "Mixed up with /$chosen/ · $count $times",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (target == chosen) colors.success else colors.warning
-                                )
-                            }
-                        }
-                    }
-                }
+                SoundConfusionMatrix(state.contrasts, component::practiceContrast)
                 PracticeHistory(state.recentTrials)
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Keep listening") }
             }
