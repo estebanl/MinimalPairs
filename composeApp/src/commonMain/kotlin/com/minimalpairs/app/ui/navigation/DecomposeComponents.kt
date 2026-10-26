@@ -208,6 +208,8 @@ data class EarTrainerUiState(
     val playbackError: String? = null,
     val lastResultCorrect: Boolean? = null,
     val feedbackMessage: String = "",
+    val progressSaveError: String? = null,
+    val isSavingProgress: Boolean = false,
     val sm2State: Sm2State = Sm2State()
 )
 
@@ -218,6 +220,7 @@ interface EarTrainerComponent {
     fun onSelectAnswer(chosenWord: String)
     fun setPlaybackSpeed(speed: PlaybackSpeed)
     fun dismissFormantHint()
+    fun retryProgressSaves()
     fun nextTrial()
     fun onBack()
 }
@@ -255,6 +258,10 @@ class DefaultEarTrainerComponent(
         progressRepository?.let { repository ->
             scope.launch {
                 repository.state.collect { progress ->
+                    _state.value = _state.value.copy(
+                        progressSaveError = if (progress.canRetrySave) progress.error else null,
+                        isSavingProgress = progress.isSaving
+                    )
                     progress.contrasts.firstOrNull { it.contrastId == contrast.id }?.card?.let { card ->
                         val saved = Sm2State(card.repetitions, card.intervalDays, card.easeFactor, card.masteryScore)
                         _state.value = _state.value.copy(sm2State = saved, drillType = progression.resolveDrillType(saved.masteryScore))
@@ -381,6 +388,8 @@ class DefaultEarTrainerComponent(
             drillType = nextDrill
         )
     }
+
+    override fun retryProgressSaves() { progressRepository?.retrySaves() }
 
     override fun setPlaybackSpeed(speed: PlaybackSpeed) {
         if (closed || _state.value.isPlayingAudio) return
@@ -665,17 +674,19 @@ class DefaultArticulatorLabComponent(
 interface ConfusionMatrixComponent {
     val state: StateFlow<ProgressState>
     fun practiceContrast(id: String)
+    fun retrySaves()
     fun onBack()
 }
 
 class DefaultConfusionMatrixComponent(
     componentContext: ComponentContext,
-    repository: ProgressRepository,
+    private val repository: ProgressRepository,
     private val onPractice: (String) -> Unit,
     private val onBackClicked: () -> Unit
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
+    override fun retrySaves() = repository.retrySaves()
     override fun onBack() = onBackClicked()
 }
 

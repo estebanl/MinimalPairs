@@ -157,6 +157,13 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
+                state.progressSaveError?.let { message ->
+                    Text(message, color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    TextButton(onClick = component::retryProgressSaves, enabled = !state.isSavingProgress) {
+                        Text(if (state.isSavingProgress) "Saving answers…" else "Retry saving")
+                    }
+                }
                 state.playbackError?.let { message ->
                     Text(
                         message, color = MaterialTheme.colorScheme.error,

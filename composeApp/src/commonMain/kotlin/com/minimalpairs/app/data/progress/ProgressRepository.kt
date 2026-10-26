@@ -6,6 +6,9 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
 import kotlin.time.Clock
+import kotlin.random.Random
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class ContrastProgress(
     val contrastId: String,
@@ -33,6 +36,9 @@ data class AccuracyTrend(
 data class ProgressState(
     val loading: Boolean = true,
     val error: String? = null,
+    val pendingAnswers: Int = 0,
+    val isSaving: Boolean = false,
+    val canRetrySave: Boolean = false,
     val contrasts: List<ContrastProgress> = emptyList(),
     val confusion: Map<String, Map<String, Int>> = emptyMap(),
     val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
@@ -102,26 +108,63 @@ class ProgressRepository(
     calendar: Flow<PracticeCalendar> = practiceCalendarChanges(),
     clock: Flow<Long> = reviewClock()
 ) {
-    private val saveError = MutableStateFlow<String?>(null)
-    private val progress = combine(dao.observeTrials(), dao.observeCards(), saveError, calendar) { trials, cards, error, day ->
-        summarizeProgress(trials, cards, day).copy(error = error)
+    private data class PendingAnswer(val trial: TrialRecordEntity, val quality: Int)
+    private data class SaveStatus(val pending: Int, val saving: Boolean, val failed: Boolean)
+    private val pending = MutableStateFlow<List<PendingAnswer>>(emptyList())
+    private val saving = MutableStateFlow(false)
+    private val saveFailed = MutableStateFlow(false)
+    private val saveMutex = Mutex()
+    private val saveStatus = combine(pending, saving, saveFailed) { answers, active, failed ->
+        SaveStatus(answers.size, active, failed)
+    }
+    private val progress = combine(dao.observeTrials(), dao.observeCards(), calendar) { trials, cards, day ->
+        summarizeProgress(trials, cards, day)
     }.catch { emit(ProgressState(loading = false, error = "Couldn't load progress. Reopen the app to try again.")) }
-    val state: StateFlow<ProgressState> = combine(progress, clock) { progress, now ->
+    val state: StateFlow<ProgressState> = combine(progress, clock, saveStatus) { progress, now, saves ->
+        val saveMessage = if (saves.failed && saves.pending > 0)
+            "${saves.pending} ${if (saves.pending == 1) "answer hasn't" else "answers haven't"} been saved. Free up device storage, then retry. Unsaved answers are kept only while this app stays open."
+        else null
         progress.copy(
             reviews = reviewSchedule(progress.contrasts.mapNotNull { it.card }, now),
-            nowEpochMs = now
+            nowEpochMs = now,
+            error = listOfNotNull(progress.error, saveMessage).joinToString("\n").ifEmpty { null },
+            pendingAnswers = saves.pending,
+            isSaving = saves.saving,
+            canRetrySave = saves.failed && saves.pending > 0
         )
     }.stateIn(scope, SharingStarted.Eagerly, ProgressState())
 
     fun record(trial: TrialRecordEntity, quality: Int) {
+        // Negative IDs leave SQLite's positive auto-generated ID sequence untouched.
+        val identified = if (trial.id == 0L) trial.copy(id = Random.nextLong(Long.MIN_VALUE, 0)) else trial
+        pending.update { it + PendingAnswer(identified, quality) }
+        drainPending()
+    }
+
+    fun retrySaves() = drainPending()
+
+    private fun drainPending() {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            // Finish an accepted answer even if the user leaves the exercise.
+            // Finish accepted writes even when the exercise or root is leaving.
             withContext(NonCancellable) {
-                try {
-                    dao.record(trial, quality)
-                    saveError.value = null
-                } catch (_: Exception) {
-                    saveError.value = "Couldn't save your latest answer. Check your device storage before continuing."
+                saveMutex.withLock {
+                    if (pending.value.isEmpty()) return@withLock
+                    saving.value = true
+                    try {
+                        while (true) {
+                            val answer = pending.value.firstOrNull() ?: break
+                            try {
+                                dao.record(answer.trial, answer.quality)
+                            } catch (_: Exception) {
+                                saveFailed.value = true
+                                return@withLock
+                            }
+                            pending.update { it.drop(1) }
+                        }
+                        saveFailed.value = false
+                    } finally {
+                        saving.value = false
+                    }
                 }
             }
         }

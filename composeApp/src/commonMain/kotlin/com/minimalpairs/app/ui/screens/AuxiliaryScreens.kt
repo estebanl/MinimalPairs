@@ -27,6 +27,9 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.ui.components.PracticeIcon
 import com.minimalpairs.app.ui.components.PracticeTopBar
@@ -48,10 +51,21 @@ fun ConfusionMatrixScreen(
             Text("Every listen counts.", style = MaterialTheme.typography.headlineLarge)
             Text("See the sounds you recognize and the ones to practice next.", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
             Text("Listening practice", style = MaterialTheme.typography.labelLarge)
-            state.error?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium) }
+            state.error?.let {
+                Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            }
+            if (state.canRetrySave) {
+                Button(onClick = component::retrySaves, enabled = !state.isSaving,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(if (state.isSaving) "Saving answers…" else "Retry saving")
+                }
+            } else if (state.pendingAnswers > 0) {
+                Text("Saving answers…", style = MaterialTheme.typography.bodySmall)
+            }
             if (state.loading) {
                 Text("Loading your progress…", style = MaterialTheme.typography.bodyLarge)
-            } else if (state.attempts == 0 && state.error == null) {
+            } else if (state.attempts == 0 && state.error == null && state.pendingAnswers == 0) {
                 Card(colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         PracticeIcon(PracticeIcon.Progress, modifier = Modifier.size(36.dp))

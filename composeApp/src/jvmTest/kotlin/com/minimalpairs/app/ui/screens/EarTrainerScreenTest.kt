@@ -178,6 +178,23 @@ class EarTrainerScreenTest {
         }
     }
 
+    @Test
+    fun failedProgressSaveCanBeRetriedDuringPractice() = onUiThread {
+        Harness(Configuration("save-retry", 430, 1100), false, initialState().copy(
+            progressSaveError = "1 answer hasn't been saved. Unsaved answers are kept only while this app stays open."
+        )).use { harness ->
+            harness.settle()
+            harness.click("Retry saving")
+            assertEquals(1, harness.component.retrySaveCount)
+            harness.component.state.value = harness.component.state.value.copy(isSavingProgress = true)
+            harness.settle()
+            assertTrue(harness.button("Saving answers…").config.contains(SemanticsProperties.Disabled))
+            harness.component.state.value = harness.component.state.value.copy(progressSaveError = null, isSavingProgress = false)
+            harness.settle()
+            assertFalse(harness.nodes().any { it.text() == "Retry saving" })
+        }
+    }
+
     private data class Configuration(val name: String, val width: Int, val height: Int, val fontScale: Float = 1f)
 
     private class Harness(
@@ -234,6 +251,8 @@ class EarTrainerScreenTest {
         override val state = MutableStateFlow(initial)
         var playCount = 0
         val playedOptions = mutableListOf<String>()
+        var retrySaveCount = 0
+        override fun retryProgressSaves() { retrySaveCount++ }
         override fun playPrompt() { playCount++; state.value = state.value.copy(isPlayingAudio = true) }
         override fun playOption(word: String) {
             playedOptions += word

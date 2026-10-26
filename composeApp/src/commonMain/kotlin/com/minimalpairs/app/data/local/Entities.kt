@@ -94,6 +94,9 @@ abstract class ProgressDao {
     @Query("SELECT * FROM sm2_cards WHERE contrastId = :id")
     abstract suspend fun getCard(id: String): Sm2CardEntity?
 
+    @Query("SELECT * FROM trial_records WHERE id = :id")
+    abstract suspend fun getTrial(id: Long): TrialRecordEntity?
+
     @Insert
     abstract suspend fun insertTrial(trial: TrialRecordEntity)
 
@@ -102,6 +105,13 @@ abstract class ProgressDao {
 
     @Transaction
     open suspend fun record(trial: TrialRecordEntity, quality: Int) {
+        // Retried writes retain their ID, including a retry after an ambiguous commit result.
+        if (trial.id != 0L) {
+            getTrial(trial.id)?.let { existing ->
+                check(existing == trial) { "Answer ID already belongs to another answer" }
+                return
+            }
+        }
         val previous = getCard(trial.contrastId)
         val state = previous?.let {
             com.minimalpairs.app.domain.srs.Sm2State(it.repetitions, it.intervalDays, it.easeFactor, it.masteryScore)

@@ -25,10 +25,12 @@ class ProgressScreenTest {
         SwingUtilities.invokeAndWait {
             try {
                 var selected: String? = null
+                var retries = 0
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
                     override fun onBack() {}
+                    override fun retrySaves() { retries++ }
                 }
                 val scene = ImageComposeScene(width = 430, height = 1100) {
                     MinimalPairsTheme { ConfusionMatrixScreen(component) }
@@ -41,6 +43,12 @@ class ProgressScreenTest {
                     fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
                     settle()
                     assertTrue(nodes().any { it.text() == "Loading your progress…" })
+                    component.state.value = ProgressState(loading = false, error = "1 answer hasn't been saved.", pendingAnswers = 1, canRetrySave = true)
+                    settle()
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Retry saving" }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    assertEquals(1, retries)
+                    assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     component.state.value = summarizeProgress(emptyList(), emptyList())
                     settle()
                     assertTrue(nodes().any { it.text() == "Your progress starts here" })
