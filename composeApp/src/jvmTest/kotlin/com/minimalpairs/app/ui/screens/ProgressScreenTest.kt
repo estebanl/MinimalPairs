@@ -60,6 +60,23 @@ class ProgressScreenTest {
                     scene.render(++frame * 16_666_667L).use { image ->
                         image.encodeToData()!!.use { data -> File(directory, "progress.png").writeBytes(data.bytes) }
                     }
+                    component.state.value = summarizeProgress((1..40).map { index ->
+                        TrialRecordEntity(
+                            id = index.toLong(), contrastId = "i_vs_I", targetWord = "sheep", selectedWord = "sheep",
+                            isCorrect = true, latencyMs = 1000, drillType = "FORCED_CHOICE", timestampEpochMs = index * 1000L
+                        )
+                    }, emptyList())
+                    settle()
+                    assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
+                    assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Show all 20 answers" }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    settle()
+                    assertEquals(20, nodes().count { it.text() == "Correct · sheep" })
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Show fewer answers" }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    settle()
+                    assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
                 } finally { scene.close() }
             } catch (error: Throwable) { failure = error }
         }

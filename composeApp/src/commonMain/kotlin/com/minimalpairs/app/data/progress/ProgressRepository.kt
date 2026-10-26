@@ -15,11 +15,26 @@ data class ContrastProgress(
     val accuracy: Int get() = (correct * 100f / attempts).roundToInt()
 }
 
+/** Equal-sized, non-overlapping samples keep recent accuracy comparisons interpretable. */
+data class AccuracySample(val attempts: Int, val correct: Int) {
+    val accuracy: Int? get() = if (attempts == 0) null else (correct * 100f / attempts).roundToInt()
+}
+
+data class AccuracyTrend(
+    val recent: AccuracySample,
+    val previous: AccuracySample
+) {
+    val changePoints: Int? get() = if (recent.attempts == 20 && previous.attempts == 20)
+        recent.accuracy!! - previous.accuracy!! else null
+}
+
 data class ProgressState(
     val loading: Boolean = true,
     val error: String? = null,
     val contrasts: List<ContrastProgress> = emptyList(),
-    val confusion: Map<String, Map<String, Int>> = emptyMap()
+    val confusion: Map<String, Map<String, Int>> = emptyMap(),
+    val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
+    val recentTrials: List<TrialRecordEntity> = emptyList()
 ) {
     val attempts: Int get() = contrasts.sumOf { it.attempts }
     val accuracy: Int get() = if (attempts == 0) 0 else
@@ -41,7 +56,13 @@ fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity
     val contrasts = trials.groupBy { it.contrastId }.map { (id, attempts) ->
         ContrastProgress(id, attempts.size, attempts.count { it.isCorrect }, byId[id])
     }.sortedWith(compareBy<ContrastProgress> { it.correct.toDouble() / it.attempts }.thenBy { it.contrastId })
-    return ProgressState(loading = false, contrasts = contrasts, confusion = confusion)
+    val newestFirst = trials.sortedWith(compareByDescending<TrialRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
+    fun sample(records: List<TrialRecordEntity>) = AccuracySample(records.size, records.count { it.isCorrect })
+    return ProgressState(
+        loading = false, contrasts = contrasts, confusion = confusion,
+        trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
+        recentTrials = newestFirst.take(20)
+    )
 }
 
 class ProgressRepository(private val dao: ProgressDao, private val scope: CoroutineScope) {
