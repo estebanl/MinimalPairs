@@ -188,7 +188,7 @@ class EarTrainerScreenTest {
             assertEquals(1, harness.component.retrySaveCount)
             harness.component.state.value = harness.component.state.value.copy(isSavingProgress = true)
             harness.settle()
-            assertTrue(harness.button("Saving answers…").config.contains(SemanticsProperties.Disabled))
+            assertTrue(harness.button("Saving progress…").config.contains(SemanticsProperties.Disabled))
             harness.component.state.value = harness.component.state.value.copy(progressSaveError = null, isSavingProgress = false)
             harness.settle()
             assertFalse(harness.nodes().any { it.text() == "Retry saving" })

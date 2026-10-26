@@ -11,6 +11,7 @@ import com.minimalpairs.app.core.hal.AudioRecorder
 import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.core.model.PhonemeScoringResponse
 import com.minimalpairs.app.data.remote.PhonemeScorerApi
+import com.minimalpairs.app.data.local.SpeakingRecordEntity
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,8 @@ class ArticulatorLabComponentTest {
                 assertEquals(if (first) pair.word1 else pair.word2, f.scorer.words.last())
                 assertEquals(if (first) f.state.contrast.phoneme1 else f.state.contrast.phoneme2, f.scorer.phonemes.last())
                 assertEquals(88f, f.state.overallGopScore)
+                assertEquals(f.scorer.words.last(), f.saved.last().targetWord)
+                assertEquals(88f, f.saved.last().score)
                 assertNotNull(f.state.feedback)
                 assertTrue(f.state.hasRecording)
                 f.component.playRecording()
@@ -66,6 +69,7 @@ class ArticulatorLabComponentTest {
             f.component.toggleRecording()
             runCurrent()
             assertEquals(1, f.scorer.words.size)
+            assertEquals(1, f.saved.size)
             assertNotNull(f.state.error)
             assertNull(f.state.overallGopScore)
         } finally { f.lifecycle.destroy(); runCurrent() }
@@ -81,6 +85,7 @@ class ArticulatorLabComponentTest {
             runCurrent()
             assertTrue(f.player.samples.single().isNotEmpty())
             assertEquals(1, f.scorer.words.size)
+            assertEquals(1, f.saved.size)
             assertEquals(score, f.state.overallGopScore)
             assertTrue(f.state.hasRecording)
         } finally { f.lifecycle.destroy(); runCurrent() }
@@ -103,6 +108,7 @@ class ArticulatorLabComponentTest {
             f.scorer.gate!!.complete(Unit)
             runCurrent()
             assertNull(f.state.overallGopScore)
+            assertTrue(f.saved.isEmpty())
             assertEquals(AudioRecorderState.UNINITIALIZED, f.recorder.state.value)
             assertFalse(f.state.isBusy)
         } finally { f.lifecycle.destroy(); runCurrent() }
@@ -189,14 +195,29 @@ class ArticulatorLabComponentTest {
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 
+    @Test
+    fun invalidScoresAreNotSaved() = runTest {
+        val f = Fixture(this)
+        try {
+            for (score in listOf(Float.NaN, -1f, 101f)) {
+                f.scorer.score = score
+                f.record(f.samples)
+                assertTrue(f.saved.isEmpty())
+                assertNull(f.state.overallGopScore)
+                assertNotNull(f.state.error)
+            }
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     private class Fixture(val scope: TestScope) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
         val player = FakePlayer()
         val scorer = FakeScorer()
         val samples = FormantSynthesizer.synthesizeVowel(310f, 2350f, durationMs = 200)
+        val saved = mutableListOf<SpeakingRecordEntity>()
         val component = DefaultArticulatorLabComponent(DefaultComponentContext(lifecycle), null, scorer, {},
-            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler))
+            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add)
         val state get() = component.state.value
         fun record(samples: ShortArray) {
             component.toggleRecording()
@@ -213,13 +234,14 @@ class ArticulatorLabComponentTest {
         val phonemes = mutableListOf<String>()
         var gate: CompletableDeferred<Unit>? = null
         var fail = false
+        var score = 88f
         override suspend fun scoreAudio(audioSamples: ShortArray, targetWord: String, expectedIpa: String,
             contrastId: String?): PhonemeScoringResponse {
             words += targetWord
             phonemes += expectedIpa
             gate?.await()
             check(!fail)
-            return PhonemeScoringResponse(overallScore = 88f, phonemes = emptyList())
+            return PhonemeScoringResponse(overallScore = score, phonemes = emptyList())
         }
     }
 

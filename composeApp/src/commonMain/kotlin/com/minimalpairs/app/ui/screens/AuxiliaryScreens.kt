@@ -54,8 +54,8 @@ fun ConfusionMatrixScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Every listen counts.", style = MaterialTheme.typography.headlineLarge)
-            Text("See the sounds you recognize and the ones to practice next.", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
+            Text("Every practice counts.", style = MaterialTheme.typography.headlineLarge)
+            Text("Review your listening patterns and speaking scores.", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
             Text("Listening practice", style = MaterialTheme.typography.labelLarge)
             state.error?.let {
                 Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium,
@@ -70,13 +70,16 @@ fun ConfusionMatrixScreen(
             if (state.canRetrySave) {
                 Button(onClick = component::retrySaves, enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                    Text(if (state.isSaving) "Saving answers…" else "Retry saving")
+                    Text(if (state.isSaving) "Saving progress…" else "Retry saving")
                 }
             } else if (state.pendingAnswers > 0) {
-                Text("Saving answers…", style = MaterialTheme.typography.bodySmall)
+                Text("Saving progress…", style = MaterialTheme.typography.bodySmall)
             }
             if (state.loading) {
                 Text("Loading your progress…", style = MaterialTheme.typography.bodyLarge)
+            } else if (state.attempts == 0 && state.speaking.isNotEmpty() && state.error == null) {
+                Text("No listening answers yet.", style = MaterialTheme.typography.bodyLarge)
+                Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Start listening") }
             } else if (state.attempts == 0 && state.error == null && state.pendingAnswers == 0) {
                 Card(colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -139,6 +142,11 @@ fun ConfusionMatrixScreen(
                     PracticeHistory(state.recentTrials)
                 }
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Keep listening") }
+            }
+            if (!state.loading) {
+                ProgressDetailSection("Speaking progress", "${state.speaking.size} scored ${if (state.speaking.size == 1) "recording" else "recordings"} · separate from listening accuracy.") {
+                    SpeakingProgressCard(state.speaking, state.nowEpochMs, component::practiceSpeaking)
+                }
             }
         }
     }

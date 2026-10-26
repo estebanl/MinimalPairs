@@ -47,6 +47,7 @@ data class ProgressState(
     val recentTrials: List<TrialRecordEntity> = emptyList(),
     val activity: PracticeActivity = PracticeActivity(),
     val reviews: ReviewSchedule = ReviewSchedule(),
+    val speaking: List<SpeakingRecordEntity> = emptyList(),
     val nowEpochMs: Long = Clock.System.now().toEpochMilliseconds()
 ) {
     val attempts: Int get() = contrasts.sumOf { it.attempts }
@@ -111,7 +112,7 @@ class ProgressRepository(
     calendar: Flow<PracticeCalendar> = practiceCalendarChanges(),
     clock: Flow<Long> = reviewClock()
 ) {
-    private data class PendingAnswer(val trial: TrialRecordEntity, val quality: Int)
+    private data class PendingAnswer(val trial: TrialRecordEntity? = null, val quality: Int = 0, val speaking: SpeakingRecordEntity? = null)
     private data class SaveStatus(val pending: Int, val saving: Boolean, val failed: Boolean)
     private val pending = MutableStateFlow<List<PendingAnswer>>(emptyList())
     private val saving = MutableStateFlow(false)
@@ -127,8 +128,8 @@ class ProgressRepository(
         flow {
             emit(lastLoaded.copy(progress = lastLoaded.progress.copy(isRefreshing = true, canRetryLoad = attempt > 0)))
             // Construct the database flows here so synchronous open errors can also be retried.
-            emitAll(combine(dao.observeTrials(), dao.observeCards(), calendar) { trials, cards, day ->
-                LoadedProgress(summarizeProgress(trials, cards, day), cards)
+            emitAll(combine(dao.observeTrials(), dao.observeCards(), calendar, dao.observeSpeaking()) { trials, cards, day, speaking ->
+                LoadedProgress(summarizeProgress(trials, cards, day).copy(speaking = speaking), cards)
             }.onEach { lastLoaded = it })
         }.catch {
             val message = if (lastLoaded.progress.loading) "Couldn't load progress. Try again."
@@ -141,7 +142,7 @@ class ProgressRepository(
     val state: StateFlow<ProgressState> = combine(progress, clock, saveStatus) { loaded, now, saves ->
         val progress = loaded.progress
         val saveMessage = if (saves.failed && saves.pending > 0)
-            "${saves.pending} ${if (saves.pending == 1) "answer hasn't" else "answers haven't"} been saved. Free up device storage, then retry. Unsaved answers are kept only while this app stays open."
+            "${saves.pending} ${if (saves.pending == 1) "practice result hasn't" else "practice results haven't"} been saved. Free up device storage, then retry. Unsaved results are kept only while this app stays open."
         else null
         progress.copy(
             reviews = reviewSchedule(loaded.cards, now),
@@ -160,6 +161,13 @@ class ProgressRepository(
         drainPending()
     }
 
+    fun recordSpeaking(record: SpeakingRecordEntity) {
+        require(record.score.isFinite() && record.score in 0f..100f && record.durationMs > 0)
+        val identified = if (record.id == 0L) record.copy(id = Random.nextLong(Long.MIN_VALUE, 0)) else record
+        pending.update { it + PendingAnswer(speaking = identified) }
+        drainPending()
+    }
+
     fun retrySaves() = drainPending()
 
     fun retryLoading() { reload.update { it + 1 } }
@@ -175,7 +183,8 @@ class ProgressRepository(
                         while (true) {
                             val answer = pending.value.firstOrNull() ?: break
                             try {
-                                dao.record(answer.trial, answer.quality)
+                                if (answer.speaking != null) dao.recordSpeaking(answer.speaking)
+                                else dao.record(answer.trial!!, answer.quality)
                             } catch (_: Exception) {
                                 saveFailed.value = true
                                 return@withLock

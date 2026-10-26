@@ -99,6 +99,21 @@ class ProgressRetryTest {
         }
     }
 
+    @Test
+    fun speakingSaveRetriesWithoutDuplicatingACommittedResult() = runBlocking {
+        withDatabase { database, scope ->
+            val flaky = FlakyDao(database.progressDao()).apply { failAfter = true }
+            val repository = ProgressRepository(flaky, scope)
+            repository.recordSpeaking(SpeakingRecordEntity(0, "i_vs_I", "sheep", "iː", 88f, 200, 1000))
+            withTimeout(5000) { repository.state.first { it.canRetrySave && !it.isSaving } }
+            flaky.failAfter = false
+            repository.retrySaves()
+            val recovered = withTimeout(5000) { repository.state.first { it.pendingAnswers == 0 && it.speaking.size == 1 } }
+            assertEquals(0, recovered.attempts)
+            assertEquals(1, database.progressDao().observeSpeaking().first().size)
+        }
+    }
+
     private suspend fun withDatabase(block: suspend (AppDatabase, CoroutineScope) -> Unit) {
         val directory = Files.createTempDirectory("progress-retry").toFile()
         val database = createDatabase(Room.databaseBuilder<AppDatabase>(name = directory.resolve("progress.db").absolutePath))
@@ -124,10 +139,18 @@ class ProgressRetryTest {
             trials
         }
         override fun observeCards() = delegate.observeCards()
+        override fun observeSpeaking() = delegate.observeSpeaking()
+        override suspend fun getSpeaking(id: Long) = delegate.getSpeaking(id)
+        override suspend fun insertSpeaking(record: SpeakingRecordEntity) = delegate.insertSpeaking(record)
         override suspend fun getCard(id: String) = delegate.getCard(id)
         override suspend fun getTrial(id: Long) = delegate.getTrial(id)
         override suspend fun insertTrial(trial: TrialRecordEntity) = delegate.insertTrial(trial)
         override suspend fun saveCard(card: Sm2CardEntity) = delegate.saveCard(card)
+        override suspend fun recordSpeaking(record: SpeakingRecordEntity) {
+            if (failBefore) error("Simulated storage failure")
+            delegate.recordSpeaking(record)
+            if (failAfter) error("Simulated lost commit acknowledgement")
+        }
         override suspend fun record(trial: TrialRecordEntity, quality: Int) {
             if (failBefore) error("Simulated storage failure")
             delegate.record(trial, quality)

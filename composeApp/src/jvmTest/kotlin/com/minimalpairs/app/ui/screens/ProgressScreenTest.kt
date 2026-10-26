@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.getOrNull
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.local.TrialRecordEntity
 import com.minimalpairs.app.data.local.Sm2CardEntity
+import com.minimalpairs.app.data.local.SpeakingRecordEntity
 import com.minimalpairs.app.data.progress.*
 import com.minimalpairs.app.ui.navigation.ConfusionMatrixComponent
 import com.minimalpairs.app.ui.theme.MinimalPairsTheme
@@ -31,6 +32,7 @@ class ProgressScreenTest {
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
+                    override fun practiceSpeaking(id: String) { selected = id }
                     override fun onBack() {}
                     override fun retrySaves() { retries++ }
                     override fun retryLoading() { reloads++ }
@@ -134,6 +136,20 @@ class ProgressScreenTest {
                     assertEquals(5, practiceButtons().size)
                     click("Show fewer contrasts")
                     assertEquals(3, practiceButtons().size)
+                    component.state.value = ProgressState(loading = false, nowEpochMs = 2000, speaking = listOf(
+                        SpeakingRecordEntity(-1, "i_vs_I", "sheep", "iː", 88f, 200, 1000)
+                    ))
+                    settle()
+                    assertTrue(nodes().any { it.text() == "No listening answers yet." })
+                    assertFalse(nodes().any { it.text() == "Your progress starts here" })
+                    click("Show speaking progress")
+                    assertTrue(nodes().any { it.text() == "Score: 88/100" })
+                    assertFalse(nodes().any { it.text() == "0% accuracy" })
+                    click("Practice speaking again")
+                    assertEquals("i_vs_I", selected)
+                    scene.render(++frame * 16_666_667L).use { image ->
+                        image.encodeToData()!!.use { data -> File(directory, "speaking-progress.png").writeBytes(data.bytes) }
+                    }
                 } finally { scene.close() }
             } catch (error: Throwable) { failure = error }
         }

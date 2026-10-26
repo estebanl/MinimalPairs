@@ -1,5 +1,6 @@
 package com.minimalpairs.app.data.local
 
+import androidx.room3.AutoMigration
 import androidx.room3.ConstructedBy
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -44,6 +45,17 @@ data class TrialRecordEntity(
     val timestampEpochMs: Long
 )
 
+@Entity(tableName = "speaking_records")
+data class SpeakingRecordEntity(
+    @PrimaryKey val id: Long,
+    val contrastId: String,
+    val targetWord: String,
+    val targetPhoneme: String,
+    val score: Float,
+    val durationMs: Int,
+    val timestampEpochMs: Long
+)
+
 @Dao
 interface Sm2Dao {
     @Query("SELECT * FROM sm2_cards WHERE contrastId = :contrastId")
@@ -85,6 +97,24 @@ interface TrialDao {
 
 @Dao
 abstract class ProgressDao {
+    @Query("SELECT * FROM speaking_records ORDER BY timestampEpochMs DESC, id DESC")
+    abstract fun observeSpeaking(): Flow<List<SpeakingRecordEntity>>
+
+    @Query("SELECT * FROM speaking_records WHERE id = :id")
+    abstract suspend fun getSpeaking(id: Long): SpeakingRecordEntity?
+
+    @Insert
+    abstract suspend fun insertSpeaking(record: SpeakingRecordEntity)
+
+    @Transaction
+    open suspend fun recordSpeaking(record: SpeakingRecordEntity) {
+        getSpeaking(record.id)?.let {
+            check(it == record) { "Recording ID already belongs to another result" }
+            return
+        }
+        insertSpeaking(record)
+    }
+
     @Query("SELECT * FROM trial_records ORDER BY timestampEpochMs DESC")
     abstract fun observeTrials(): Flow<List<TrialRecordEntity>>
 
@@ -124,8 +154,9 @@ abstract class ProgressDao {
 }
 
 @Database(
-    entities = [Sm2CardEntity::class, ConfusionMatrixEntryEntity::class, TrialRecordEntity::class],
-    version = 1
+    entities = [Sm2CardEntity::class, ConfusionMatrixEntryEntity::class, TrialRecordEntity::class, SpeakingRecordEntity::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

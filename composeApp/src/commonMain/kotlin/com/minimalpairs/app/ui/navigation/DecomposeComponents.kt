@@ -149,11 +149,12 @@ class DefaultRootComponent(
                     componentContext = componentContext,
                     contrastId = config.contrastId,
                     scorerApi = scorerApi,
-                    onBackClicked = ::onBack
+                    onBackClicked = ::onBack,
+                    progressRepository = progressRepository
                 )
             )
             is RootConfig.ConfusionMatrix -> RootChild.ConfusionMatrix(
-                DefaultConfusionMatrixComponent(componentContext, progressRepository, ::onNavigateToEarTrainer, ::onBack)
+                DefaultConfusionMatrixComponent(componentContext, progressRepository, ::onNavigateToEarTrainer, ::onBack, ::onNavigateToArticulatorLab)
             )
             is RootConfig.MeaningTrap -> RootChild.MeaningTrap(
                 DefaultMeaningTrapComponent(
@@ -466,11 +467,13 @@ data class ArticulatorLabUiState(
     val isPlaying: Boolean = false,
     val hasRecording: Boolean = false,
     val feedback: String? = null,
+    val progressSaveError: String? = null,
     val error: String? = null
 )
 
 interface ArticulatorLabComponent {
     val state: StateFlow<ArticulatorLabUiState>
+    fun retryProgressSaves() {}
     fun toggleRecording()
     fun testSynthesizedVowel(isPhoneme1: Boolean)
     fun playRecording() {}
@@ -486,7 +489,9 @@ class DefaultArticulatorLabComponent(
     private val recorder: AudioRecorder = createAudioRecorder(),
     private val audioPlayer: AudioPlayer = createAudioPlayer(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
-    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val progressRepository: ProgressRepository? = null,
+    private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) }
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private val contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
@@ -504,6 +509,13 @@ class DefaultArticulatorLabComponent(
     private var closed = false
 
     init {
+        progressRepository?.let { repository ->
+            scope.launch {
+                repository.state.collect { progress ->
+                    _state.value = _state.value.copy(progressSaveError = if (progress.canRetrySave) progress.error else null)
+                }
+            }
+        }
         scope.launch {
             recorder.state.collect { recState ->
                 _state.value = _state.value.copy(recorderState = recState)
@@ -536,6 +548,8 @@ class DefaultArticulatorLabComponent(
         }
     }
 
+    override fun retryProgressSaves() { progressRepository?.retrySaves() }
+
     override fun toggleRecording(): Unit = runOperation {
         if (acceptingSamples) {
             acceptingSamples = false
@@ -555,6 +569,14 @@ class DefaultArticulatorLabComponent(
                 scorerApi.scoreAudio(samples, if (first) pair.word1 else pair.word2,
                     if (first) contrast.phoneme1 else contrast.phoneme2, contrast.id)
             }
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            if (!scoring.overallScore.isFinite() || scoring.overallScore !in 0f..100f) {
+                _state.value = _state.value.copy(error = "Couldn't score this recording. Please try again.")
+                return@runOperation
+            }
+            onScored(SpeakingRecordEntity(0, contrast.id, if (first) pair.word1 else pair.word2,
+                if (first) contrast.phoneme1 else contrast.phoneme2, scoring.overallScore,
+                analysis.durationMs, Clock.System.now().toEpochMilliseconds()))
             _state.value = _state.value.copy(
                 liveF1 = analysis.f1Hz, liveF2 = analysis.f2Hz, liveF3 = analysis.f3Hz,
                 liveDurationMs = analysis.durationMs, overallGopScore = scoring.overallScore,
@@ -674,6 +696,7 @@ class DefaultArticulatorLabComponent(
 interface ConfusionMatrixComponent {
     val state: StateFlow<ProgressState>
     fun practiceContrast(id: String)
+    fun practiceSpeaking(id: String)
     fun retrySaves()
     fun retryLoading()
     fun onBack()
@@ -683,10 +706,12 @@ class DefaultConfusionMatrixComponent(
     componentContext: ComponentContext,
     private val repository: ProgressRepository,
     private val onPractice: (String) -> Unit,
-    private val onBackClicked: () -> Unit
+    private val onBackClicked: () -> Unit,
+    private val onSpeak: (String) -> Unit
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
+    override fun practiceSpeaking(id: String) = onSpeak(id)
     override fun retrySaves() = repository.retrySaves()
     override fun retryLoading() = repository.retryLoading()
     override fun onBack() = onBackClicked()

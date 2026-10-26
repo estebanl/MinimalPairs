@@ -199,6 +199,10 @@ fun ArticulatorLabScreen(
                 Text("Allow microphone access in app settings, then try again.",
                     style = MaterialTheme.typography.bodySmall, color = scheme.error)
             }
+            state.progressSaveError?.let { message ->
+                Text(message, color = MaterialTheme.colorScheme.error)
+                Button(onClick = component::retryProgressSaves) { Text("Retry saving") }
+            }
             state.error?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = scheme.error)
             }
