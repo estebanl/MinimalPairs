@@ -10,7 +10,7 @@ object AndroidContextHolder {
 
 actual fun getDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
     val ctx = AndroidContextHolder.context
-        ?: throw IllegalStateException("AndroidContextHolder.context must be initialized")
+        ?: throw IllegalStateException("Initialize Android progress storage through createAndroidRootComponent or MinimalPairsApp before creating the root")
     val appContext = ctx.applicationContext
     val dbFile = appContext.getDatabasePath("minimal_pairs.db")
     return Room.databaseBuilder<AppDatabase>(

@@ -9,6 +9,18 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 - **Module 3: The Meaning Trap** — Narrative branching comic scenarios highlighting high-stakes minimal pair semantic blunders.
 - **Module 4: Rhythm & Pitch Ribbon** — Continuous YIN F0 pitch tracking ribbon, real-time prosody overlay, and connected speech assimilation practice.
 
+## Progress
+
+Progress stores listening attempts, mastery, review schedules, and scored speaking results locally. It includes listening accuracy, daily streaks, recent trends, per-contrast confusion matrices, and separate speaking summaries. Practice buttons open the relevant contrast or speaking sound. Failed writes can be retried while the app remains open; failed reads retain the last loaded totals.
+
+The behavior contract is in [`specs/features/progress.feature`](specs/features/progress.feature). Database migration, retry, snapshot consistency, and rendered-screen checks run with `./gradlew :composeApp:jvmTest`. Shared Android tests run with `./gradlew :composeApp:testAndroidHostTest`; Android and iOS compilation use `:composeApp:compileAndroidMain` and `:composeApp:compileKotlinIosSimulatorArm64`.
+
+### Android integration
+
+The Android target is a library, not a standalone launcher app. A host Activity should provide a lifecycle-aware Decompose `ComponentContext` and render `MinimalPairsApp(componentContext)`. Hosts managing the root themselves can call `createAndroidRootComponent(context, componentContext)` and pass the result to `RootScreen`. Both entry points initialize progress storage with the application context before creating the root. Destroy the supplied component lifecycle when the host is finished so database and audio resources are released.
+
+Listening streaks and reviews exclude speaking, Stories, and Rhythm. Speaking history stores scores and target metadata, not recorded audio. Storage is local to the device; cloud sync and cross-device restoration are not implemented. Unsaved retry queues are in memory and cannot survive process termination.
+
 ## Documentation & Deployment
 
 - Run on connected iOS device: [`./scripts/run_on_device.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/run_on_device.sh) (defaults to connected iPhone `esteban.lopez`).
