@@ -20,10 +20,12 @@ import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.core.hal.createAudioPlayer
 import com.minimalpairs.app.core.hal.createAudioRecorder
 import com.minimalpairs.app.core.model.DrillType
+import com.minimalpairs.app.core.model.ListeningContrast
 import com.minimalpairs.app.core.model.MinimalPairWord
 import com.minimalpairs.app.core.model.PhoneticContrast
 import com.minimalpairs.app.core.model.PlaybackSpeed
 import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.data.remote.PhonemeScorerApi
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
@@ -158,7 +160,7 @@ class DefaultRootComponent(
 
 // --- Dashboard Component ---
 interface DashboardComponent {
-    val contrasts: List<PhoneticContrast>
+    val contrasts: List<ListeningContrast>
     fun onSelectContrast(contrastId: String)
 }
 
@@ -166,13 +168,13 @@ class DefaultDashboardComponent(
     componentContext: ComponentContext,
     private val onSelect: (String) -> Unit
 ) : DashboardComponent, ComponentContext by componentContext {
-    override val contrasts: List<PhoneticContrast> = VowelContrastsCatalog.defaultContrasts
+    override val contrasts: List<ListeningContrast> = ListeningContrastsCatalog.defaultContrasts
     override fun onSelectContrast(contrastId: String) = onSelect(contrastId)
 }
 
 // --- Ear Trainer Component ---
 data class EarTrainerUiState(
-    val contrast: PhoneticContrast,
+    val contrast: ListeningContrast,
     val currentPair: MinimalPairWord,
     val targetWord: String,
     val targetPhoneme: String,
@@ -214,8 +216,8 @@ class DefaultEarTrainerComponent(
     private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
 ) : EarTrainerComponent, ComponentContext by componentContext {
 
-    private val contrast = VowelContrastsCatalog.getContrastById(contrastId)
-        ?: VowelContrastsCatalog.defaultContrasts.first()
+    private val contrast = ListeningContrastsCatalog.getContrastById(contrastId)
+        ?: ListeningContrastsCatalog.defaultContrasts.first()
 
     private val progression = DrillProgressionManager()
     // UI actions and playback completions are serialized on the main dispatcher.

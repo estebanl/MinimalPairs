@@ -52,7 +52,7 @@ VOICES = {
     },
 }
 
-# 58 Unique Minimal Pair Words across all 6 contrasts in VowelContrastsCatalog
+# Unique practice words across ListeningContrastsCatalog, including existing vowel drills.
 # Use Flash v2 with CMU Arpabet tags, which ElevenLabs recommends over IPA for v2.
 # Keep IPA as the human-readable pronunciation reference and explicit CMU vowels to
 # preserve contrasts such as cot/caught in the American tutor voice.
@@ -122,6 +122,93 @@ MINIMAL_PAIR_WORDS = [
     {"word": "set", "ipa": "sɛt", "cmu": "S EH1 T"},
     {"word": "dead", "ipa": "dɛd", "cmu": "D EH1 D"},
     {"word": "did", "ipa": "dɪd", "cmu": "D IH1 D"},
+    # Additional Ship or Sheep vowel examples.
+    {"word": "peel", "ipa": "piːl", "cmu": "P IY1 L"},
+    {"word": "pill", "ipa": "pɪl", "cmu": "P IH1 L"},
+    {"word": "bean", "ipa": "biːn", "cmu": "B IY1 N"},
+    {"word": "bin", "ipa": "bɪn", "cmu": "B IH1 N"},
+    {"word": "leave", "ipa": "liːv", "cmu": "L IY1 V"},
+    {"word": "live", "ipa": "lɪv", "cmu": "L IH1 V"},  # Verb, not the adjective /laɪv/.
+    {"word": "heel", "ipa": "hiːl", "cmu": "HH IY1 L"},
+    {"word": "hill", "ipa": "hɪl", "cmu": "HH IH1 L"},
+    {"word": "bat", "ipa": "bæt", "cmu": "B AE1 T"},
+    {"word": "send", "ipa": "sɛnd", "cmu": "S EH1 N D"},
+    {"word": "sand", "ipa": "sænd", "cmu": "S AE1 N D"},
+    {"word": "cat", "ipa": "kæt", "cmu": "K AE1 T"},
+    {"word": "cut", "ipa": "kʌt", "cmu": "K AH1 T"},
+    {"word": "hat", "ipa": "hæt", "cmu": "HH AE1 T"},
+    {"word": "match", "ipa": "mætʃ", "cmu": "M AE1 CH"},
+    {"word": "ankle", "ipa": "ˈæŋkəl", "cmu": "AE1 NG K AH0 L"},
+    {"word": "uncle", "ipa": "ˈʌŋkəl", "cmu": "AH1 NG K AH0 L"},
+    {"word": "don", "ipa": "dɑːn", "cmu": "D AA1 N"},
+    {"word": "dawn", "ipa": "dɔːn", "cmu": "D AO1 N"},
+    {"word": "foot", "ipa": "fʊt", "cmu": "F UH1 T"},
+    {"word": "boot", "ipa": "buːt", "cmu": "B UW1 T"},
+    # Stops: /p b/, /t d/, /k g/.
+    {"word": "pear", "ipa": "pɛɹ", "cmu": "P EH1 R"},
+    {"word": "bear", "ipa": "bɛɹ", "cmu": "B EH1 R"},
+    {"word": "pack", "ipa": "pæk", "cmu": "P AE1 K"},
+    {"word": "back", "ipa": "bæk", "cmu": "B AE1 K"},
+    {"word": "pig", "ipa": "pɪɡ", "cmu": "P IH1 G"},
+    {"word": "big", "ipa": "bɪɡ", "cmu": "B IH1 G"},
+    {"word": "rope", "ipa": "ɹoʊp", "cmu": "R OW1 P"},
+    {"word": "robe", "ipa": "ɹoʊb", "cmu": "R OW1 B"},
+    {"word": "two", "ipa": "tuː", "cmu": "T UW1"},
+    {"word": "do", "ipa": "duː", "cmu": "D UW1"},
+    {"word": "tear", "ipa": "tɪɹ", "cmu": "T IH1 R"},  # Eye tear; rhymes with dear.
+    {"word": "dear", "ipa": "dɪɹ", "cmu": "D IH1 R"},
+    {"word": "cart", "ipa": "kɑːɹt", "cmu": "K AA1 R T"},
+    {"word": "card", "ipa": "kɑːɹd", "cmu": "K AA1 R D"},
+    {"word": "wet", "ipa": "wɛt", "cmu": "W EH1 T"},
+    {"word": "wed", "ipa": "wɛd", "cmu": "W EH1 D"},
+    {"word": "coat", "ipa": "koʊt", "cmu": "K OW1 T"},
+    {"word": "goat", "ipa": "ɡoʊt", "cmu": "G OW1 T"},
+    {"word": "class", "ipa": "klæs", "cmu": "K L AE1 S"},
+    {"word": "glass", "ipa": "ɡlæs", "cmu": "G L AE1 S"},
+    {"word": "bag", "ipa": "bæɡ", "cmu": "B AE1 G"},
+    {"word": "cold", "ipa": "koʊld", "cmu": "K OW1 L D"},
+    {"word": "gold", "ipa": "ɡoʊld", "cmu": "G OW1 L D"},
+    # Fricatives and affricates.
+    {"word": "fan", "ipa": "fæn", "cmu": "F AE1 N"},
+    {"word": "van", "ipa": "væn", "cmu": "V AE1 N"},
+    {"word": "leaf", "ipa": "liːf", "cmu": "L IY1 F"},
+    {"word": "few", "ipa": "fjuː", "cmu": "F Y UW1"},
+    {"word": "view", "ipa": "vjuː", "cmu": "V Y UW1"},
+    {"word": "ferry", "ipa": "ˈfɛɹi", "cmu": "F EH1 R IY0"},
+    {"word": "very", "ipa": "ˈvɛɹi", "cmu": "V EH1 R IY0"},
+    {"word": "think", "ipa": "θɪŋk", "cmu": "TH IH1 NG K"},
+    {"word": "sink", "ipa": "sɪŋk", "cmu": "S IH1 NG K"},
+    {"word": "thin", "ipa": "θɪn", "cmu": "TH IH1 N"},
+    {"word": "this", "ipa": "ðɪs", "cmu": "DH IH1 S"},
+    {"word": "sue", "ipa": "suː", "cmu": "S UW1"},
+    {"word": "zoo", "ipa": "zuː", "cmu": "Z UW1"},
+    {"word": "price", "ipa": "pɹaɪs", "cmu": "P R AY1 S"},
+    {"word": "prize", "ipa": "pɹaɪz", "cmu": "P R AY1 Z"},
+    {"word": "bus", "ipa": "bʌs", "cmu": "B AH1 S"},
+    {"word": "buzz", "ipa": "bʌz", "cmu": "B AH1 Z"},
+    {"word": "sip", "ipa": "sɪp", "cmu": "S IH1 P"},
+    {"word": "zip", "ipa": "zɪp", "cmu": "Z IH1 P"},
+    {"word": "slip", "ipa": "slɪp", "cmu": "S L IH1 P"},
+    {"word": "shoe", "ipa": "ʃuː", "cmu": "SH UW1"},
+    {"word": "measure", "ipa": "ˈmɛʒɚ", "cmu": "M EH1 ZH ER0"},
+    {"word": "chair", "ipa": "tʃɛɹ", "cmu": "CH EH1 R"},
+    {"word": "jam", "ipa": "dʒæm", "cmu": "JH AE1 M"},
+    {"word": "cheap", "ipa": "tʃiːp", "cmu": "CH IY1 P"},
+    # Liquids and glides.
+    {"word": "light", "ipa": "laɪt", "cmu": "L AY1 T"},
+    {"word": "right", "ipa": "ɹaɪt", "cmu": "R AY1 T"},
+    {"word": "grass", "ipa": "ɡɹæs", "cmu": "G R AE1 S"},
+    {"word": "fly", "ipa": "flaɪ", "cmu": "F L AY1"},
+    {"word": "fry", "ipa": "fɹaɪ", "cmu": "F R AY1"},
+    {"word": "belly", "ipa": "ˈbɛli", "cmu": "B EH1 L IY0"},
+    {"word": "berry", "ipa": "ˈbɛɹi", "cmu": "B EH1 R IY0"},
+    {"word": "vet", "ipa": "vɛt", "cmu": "V EH1 T"},
+    {"word": "wine", "ipa": "waɪn", "cmu": "W AY1 N"},
+    {"word": "vine", "ipa": "vaɪn", "cmu": "V AY1 N"},
+    {"word": "west", "ipa": "wɛst", "cmu": "W EH1 S T"},
+    {"word": "vest", "ipa": "vɛst", "cmu": "V EH1 S T"},
+    {"word": "wheel", "ipa": "wiːl", "cmu": "W IY1 L"},
+    {"word": "veal", "ipa": "viːl", "cmu": "V IY1 L"},
 ]
 
 # 3 Prosody Sentences from ProsodyCatalog.kt
@@ -343,7 +430,7 @@ def main():
     generated = 0
     skipped = 0
 
-    # 1. Generate 58 Minimal Pair Words
+    # 1. Generate practice words, preserving existing recordings unless --force is set.
     print(f"\n--- Generating {len(MINIMAL_PAIR_WORDS)} Minimal Pair Words ---")
     tutor_voice_id = VOICES["tutor"]["voice_id"]
     for item in MINIMAL_PAIR_WORDS:

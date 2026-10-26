@@ -269,7 +269,7 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("Sound tips", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
-                Text(soundTip(state.contrast.id), style = MaterialTheme.typography.bodyLarge)
+                Text(state.contrast.soundTip, style = MaterialTheme.typography.bodyLarge)
                 TextButton(
                     onClick = { showDetails = !showDetails },
                     modifier = Modifier.heightIn(min = 48.dp).semantics {
@@ -279,23 +279,15 @@ fun EarTrainerScreen(component: EarTrainerComponent, modifier: Modifier = Modifi
                 if (showDetails) {
                     Text("/${state.contrast.phoneme1}/ and /${state.contrast.phoneme2}/", style = MaterialTheme.typography.titleMedium)
                     Text("Sound mastery · ${(state.sm2State.masteryScore.coerceIn(0f, 1f) * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
-                    VowelTrapezoidPlot(state.contrast)
-                    ArticulatoryBiofeedbackCard(state.contrast.visualIndicators, state.contrast.phoneme1, state.contrast.phoneme2)
+                    state.contrast.vowelReference?.let { vowel ->
+                        VowelTrapezoidPlot(vowel)
+                        ArticulatoryBiofeedbackCard(vowel.visualIndicators, vowel.phoneme1, vowel.phoneme2)
+                    }
                 }
                 Button(onClick = closeTips, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Back to listening") }
             }
         }
     }
-}
-
-private fun soundTip(contrastId: String): String = when (contrastId) {
-    "i_vs_I" -> "For “sheep,” lift your tongue toward the front and hold the sound a little longer. For “ship,” relax your tongue slightly lower and keep the sound short."
-    "ae_vs_e" -> "Open your jaw a little more for “bad.” For “bed,” bring your jaw slightly closer and keep your tongue near the front."
-    "a_vs_uh" -> "For “heart,” open your mouth and hold the vowel longer. The vowel in “hut” is shorter and more relaxed."
-    "u_vs_uu" -> "Both sounds use rounded lips. For “fool,” round them more and hold the sound longer. For “full,” relax them and keep it short."
-    "o_vs_or" -> "Keep your lips rounded. The vowel in “cot” is more open and shorter; the vowel in “caught” is usually held longer."
-    "e_vs_I" -> "For “pen,” let your jaw open a little more. For “pin,” lift your tongue slightly higher. Both sounds stay near the front."
-    else -> "Replay both sounds slowly. Notice how your tongue, lips, and jaw change position."
 }
 
 @Composable

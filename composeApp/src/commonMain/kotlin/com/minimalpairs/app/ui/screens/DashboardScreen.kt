@@ -28,7 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.minimalpairs.app.core.model.PhoneticContrast
+import com.minimalpairs.app.core.model.ListeningContrast
 import com.minimalpairs.app.ui.components.PracticeIcon
 import com.minimalpairs.app.ui.navigation.DashboardComponent
 import com.minimalpairs.app.ui.theme.PracticeTheme
@@ -82,7 +82,7 @@ fun DashboardScreen(component: DashboardComponent, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun FeaturedContrast(contrast: PhoneticContrast, onClick: () -> Unit) {
+private fun FeaturedContrast(contrast: ListeningContrast, onClick: () -> Unit) {
     val pair = contrast.pairs.firstOrNull()
     val ink = PracticeTheme.colors.accentInk
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), shape = MaterialTheme.shapes.large) {
@@ -124,7 +124,7 @@ private fun FeaturedWord(word: String, sound: String, modifier: Modifier) {
 }
 
 @Composable
-fun ContrastCard(contrast: PhoneticContrast, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ContrastCard(contrast: ListeningContrast, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val pair = contrast.pairs.firstOrNull()
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {

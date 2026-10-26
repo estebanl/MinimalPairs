@@ -1,7 +1,7 @@
 package com.minimalpairs.app.sdd
 
 import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
-import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import java.io.ByteArrayInputStream
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
@@ -15,9 +15,10 @@ import kotlin.test.assertTrue
 class WordAudioResourcesTest {
     @Test
     fun everyPracticeWordLoadsFromPackagedResourcesAsCompletePcm() = runBlocking {
-        val words = VowelContrastsCatalog.defaultContrasts
+        val words = ListeningContrastsCatalog.defaultContrasts
             .flatMap { it.pairs }
             .flatMap { listOf(it.word1, it.word2) }
+            .map { it.lowercase() }
             .toSet()
         assertTrue(words.isNotEmpty())
         for (word in words) {
