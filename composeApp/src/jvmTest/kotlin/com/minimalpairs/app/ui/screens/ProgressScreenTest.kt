@@ -27,12 +27,13 @@ class ProgressScreenTest {
         SwingUtilities.invokeAndWait {
             try {
                 var selected: String? = null
+                var selectedPhoneme: String? = null
                 var retries = 0
                 var reloads = 0
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
-                    override fun practiceSpeaking(id: String) { selected = id }
+                    override fun practiceSpeaking(id: String, phoneme: String) { selected = id; selectedPhoneme = phoneme }
                     override fun onBack() {}
                     override fun retrySaves() { retries++ }
                     override fun retryLoading() { reloads++ }
@@ -164,8 +165,12 @@ class ProgressScreenTest {
                     assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
                     click("Show all 4 sounds")
                     assertTrue(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
-                    click("Practice bad / bed")
+                    click("Practice /æ/ · bad")
                     assertEquals("ae_vs_e", selected)
+                    assertEquals("æ", selectedPhoneme)
+                    click("Practice /ɪ/ · ship")
+                    assertEquals("i_vs_I", selected)
+                    assertEquals("ɪ", selectedPhoneme)
                     click("Show fewer sounds")
                     assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
                 } finally { scene.close() }

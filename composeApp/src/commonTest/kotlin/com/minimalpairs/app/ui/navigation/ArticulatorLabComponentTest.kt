@@ -20,6 +20,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ArticulatorLabComponentTest {
@@ -209,7 +212,46 @@ class ArticulatorLabComponentTest {
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 
-    private class Fixture(val scope: TestScope) {
+    @Test
+    fun targetedPracticeStartsWithSecondSoundAndScoresThatTarget() = runTest {
+        val f = Fixture(this, "ɪ")
+        try {
+            assertFalse(f.state.isTargetPhoneme1)
+            f.record(f.samples)
+            assertEquals("ship", f.scorer.words.single())
+            assertEquals("ɪ", f.scorer.phonemes.single())
+            assertEquals("ɪ", f.saved.single().targetPhoneme)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun retainedSpeakingScreenReselectsRequestedSoundAfterCleanup() = runTest {
+        val f = Fixture(this, "ɪ")
+        try {
+            f.component.switchTargetPhoneme(true)
+            f.record(f.samples)
+            f.lifecycle.stop()
+            f.component.preparePracticeTarget("ɪ")
+            f.lifecycle.resume()
+            runCurrent()
+            assertFalse(f.state.isTargetPhoneme1)
+            assertNull(f.state.overallGopScore)
+            assertFalse(f.state.hasRecording)
+            f.component.preparePracticeTarget("unknown")
+            runCurrent()
+            assertFalse(f.state.isTargetPhoneme1)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun speakingRouteRestoresTargetAndAcceptsOldRoutes() {
+        val target = RootConfig.ArticulatorLab("i_vs_I", "ɪ")
+        assertEquals(target, Json.decodeFromString<RootConfig.ArticulatorLab>(Json.encodeToString(target)))
+        val old = Json.decodeFromString<RootConfig.ArticulatorLab>("""{"contrastId":"i_vs_I"}""")
+        assertNull(old.targetPhoneme)
+    }
+
+    private class Fixture(val scope: TestScope, targetPhoneme: String? = null) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
         val player = FakePlayer()
@@ -217,7 +259,7 @@ class ArticulatorLabComponentTest {
         val samples = FormantSynthesizer.synthesizeVowel(310f, 2350f, durationMs = 200)
         val saved = mutableListOf<SpeakingRecordEntity>()
         val component = DefaultArticulatorLabComponent(DefaultComponentContext(lifecycle), null, scorer, {},
-            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add)
+            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme)
         val state get() = component.state.value
         fun record(samples: ShortArray) {
             component.toggleRecording()

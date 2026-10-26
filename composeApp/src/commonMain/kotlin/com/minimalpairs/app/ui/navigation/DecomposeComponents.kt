@@ -67,7 +67,7 @@ sealed interface RootConfig {
     data class EarTrainer(val contrastId: String) : RootConfig
 
     @Serializable
-    data class ArticulatorLab(val contrastId: String? = null) : RootConfig
+    data class ArticulatorLab(val contrastId: String? = null, val targetPhoneme: String? = null) : RootConfig
 
     @Serializable
     data object ConfusionMatrix : RootConfig
@@ -92,7 +92,7 @@ interface RootComponent {
     val childStack: Value<ChildStack<*, RootChild>>
     fun onNavigateToDashboard()
     fun onNavigateToEarTrainer(contrastId: String)
-    fun onNavigateToArticulatorLab(contrastId: String? = null)
+    fun onNavigateToArticulatorLab(contrastId: String? = null, targetPhoneme: String? = null)
     fun onNavigateToConfusionMatrix()
     fun onNavigateToMeaningTrap()
     fun onNavigateToProsody()
@@ -150,7 +150,8 @@ class DefaultRootComponent(
                     contrastId = config.contrastId,
                     scorerApi = scorerApi,
                     onBackClicked = ::onBack,
-                    progressRepository = progressRepository
+                    progressRepository = progressRepository,
+                    initialTargetPhoneme = config.targetPhoneme
                 )
             )
             is RootConfig.ConfusionMatrix -> RootChild.ConfusionMatrix(
@@ -171,7 +172,13 @@ class DefaultRootComponent(
 
     override fun onNavigateToDashboard() = navigation.bringToFront(RootConfig.Dashboard)
     override fun onNavigateToEarTrainer(contrastId: String) = navigation.bringToFront(RootConfig.EarTrainer(contrastId))
-    override fun onNavigateToArticulatorLab(contrastId: String?) = navigation.bringToFront(RootConfig.ArticulatorLab(contrastId))
+    override fun onNavigateToArticulatorLab(contrastId: String?, targetPhoneme: String?) {
+        navigation.bringToFront(RootConfig.ArticulatorLab(contrastId, targetPhoneme))
+        // A retained component may have had its target changed manually since the last visit.
+        if (targetPhoneme != null) {
+            (childStack.value.active.instance as? RootChild.ArticulatorLab)?.component?.preparePracticeTarget(targetPhoneme)
+        }
+    }
     override fun onNavigateToConfusionMatrix() = navigation.bringToFront(RootConfig.ConfusionMatrix)
     override fun onNavigateToMeaningTrap() = navigation.bringToFront(RootConfig.MeaningTrap)
     override fun onNavigateToProsody() = navigation.bringToFront(RootConfig.Prosody)
@@ -478,6 +485,11 @@ interface ArticulatorLabComponent {
     fun testSynthesizedVowel(isPhoneme1: Boolean)
     fun playRecording() {}
     fun switchTargetPhoneme(isPhoneme1: Boolean)
+    fun preparePracticeTarget(phoneme: String) {
+        if (phoneme == state.value.contrast.phoneme1 || phoneme == state.value.contrast.phoneme2) {
+            switchTargetPhoneme(phoneme == state.value.contrast.phoneme1)
+        }
+    }
     fun onBack()
 }
 
@@ -491,13 +503,15 @@ class DefaultArticulatorLabComponent(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
     private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val progressRepository: ProgressRepository? = null,
-    private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) }
+    private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) },
+    private val initialTargetPhoneme: String? = null
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private val contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
         ?: VowelContrastsCatalog.defaultContrasts.first()
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val _state = MutableStateFlow(ArticulatorLabUiState(contrast = contrast))
+    private val _state = MutableStateFlow(ArticulatorLabUiState(contrast = contrast,
+        isTargetPhoneme1 = initialTargetPhoneme != contrast.phoneme2))
     override val state: StateFlow<ArticulatorLabUiState> = _state.asStateFlow()
     // All mutable recording data is confined to the UI dispatcher.
     private val accumulatedSamples = mutableListOf<Short>()
@@ -656,6 +670,14 @@ class DefaultArticulatorLabComponent(
         }
     }
 
+    override fun preparePracticeTarget(phoneme: String) {
+        if (closed || (phoneme != contrast.phoneme1 && phoneme != contrast.phoneme2)) return
+        scope.launch {
+            cleanup?.join()
+            if (!closed) switchTargetPhoneme(phoneme == contrast.phoneme1)
+        }
+    }
+
     override fun switchTargetPhoneme(isPhoneme1: Boolean) {
         if (closed || acceptingSamples || _state.value.isBusy || cleanup?.isActive == true) return
         if (_state.value.isTargetPhoneme1 == isPhoneme1) return
@@ -696,7 +718,7 @@ class DefaultArticulatorLabComponent(
 interface ConfusionMatrixComponent {
     val state: StateFlow<ProgressState>
     fun practiceContrast(id: String)
-    fun practiceSpeaking(id: String)
+    fun practiceSpeaking(id: String, phoneme: String)
     fun retrySaves()
     fun retryLoading()
     fun onBack()
@@ -707,11 +729,11 @@ class DefaultConfusionMatrixComponent(
     private val repository: ProgressRepository,
     private val onPractice: (String) -> Unit,
     private val onBackClicked: () -> Unit,
-    private val onSpeak: (String) -> Unit
+    private val onSpeak: (String, String) -> Unit
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
-    override fun practiceSpeaking(id: String) = onSpeak(id)
+    override fun practiceSpeaking(id: String, phoneme: String) = onSpeak(id, phoneme)
     override fun retrySaves() = repository.retrySaves()
     override fun retryLoading() = repository.retryLoading()
     override fun onBack() = onBackClicked()

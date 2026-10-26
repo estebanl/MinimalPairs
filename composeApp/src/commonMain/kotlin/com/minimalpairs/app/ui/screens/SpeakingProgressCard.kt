@@ -16,7 +16,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
-internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochMs: Long, onPractice: (String) -> Unit) {
+internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochMs: Long, onPractice: (String, String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var allSounds by remember { mutableStateOf(false) }
     val summaries = remember(records) { summarizeSpeaking(records) }
@@ -45,9 +45,9 @@ internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochM
                                 change < 0 -> "Down ${abs(change)} points from the previous five recordings."
                                 else -> "Unchanged from the previous five recordings."
                             }, style = MaterialTheme.typography.bodyMedium)
-                            VowelContrastsCatalog.getContrastById(sound.contrastId)?.pairs?.firstOrNull()?.let { pair ->
-                                Button(onClick = { onPractice(sound.contrastId) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                                    Text("Practice ${pair.word1} / ${pair.word2}")
+                            VowelContrastsCatalog.getContrastById(sound.contrastId)?.takeIf { sound.phoneme == it.phoneme1 || sound.phoneme == it.phoneme2 }?.let {
+                                Button(onClick = { onPractice(sound.contrastId, sound.phoneme) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                                    Text("Practice /${sound.phoneme}/ · ${sound.latest.targetWord}")
                                 }
                             }
                         }
@@ -74,7 +74,7 @@ internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochM
             }
             val latestContrast = records.firstOrNull()?.contrastId
             if (latestContrast != null && VowelContrastsCatalog.getContrastById(latestContrast) != null) {
-                Button(onClick = { onPractice(latestContrast) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Button(onClick = { onPractice(latestContrast, records.first().targetPhoneme) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text("Practice speaking again")
                 }
             }
