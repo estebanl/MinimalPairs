@@ -15,6 +15,8 @@ Progress stores listening attempts, mastery, review schedules, and scored speaki
 
 The behavior contract is in [`specs/features/progress.feature`](specs/features/progress.feature). Database migration, retry, snapshot consistency, and rendered-screen checks run with `./gradlew :composeApp:jvmTest`. Shared Android tests run with `./gradlew :composeApp:testAndroidHostTest`; Android and iOS compilation use `:composeApp:compileAndroidMain` and `:composeApp:compileKotlinIosSimulatorArm64`.
 
+For a runtime check of navigation and persistence after an app restart, follow the [Progress simulator smoke test](docs/PROGRESS_SMOKE_TEST.md).
+
 ### Android integration
 
 The Android target is a library, not a standalone launcher app. A host Activity should provide a lifecycle-aware Decompose `ComponentContext` and render `MinimalPairsApp(componentContext)`. Hosts managing the root themselves can call `createAndroidRootComponent(context, componentContext)` and pass the result to `RootScreen`. Both entry points initialize progress storage with the application context before creating the root. Destroy the supplied component lifecycle when the host is finished so database and audio resources are released.
