@@ -28,6 +28,12 @@ Feature: Ear Trainer Minimal Pair Discrimination
     Then the complete target word recording is played, including its consonants
     And slow playback processes the complete word recording
 
+  Scenario: Practice audio stays clear as mastery increases
+    Given the user has correctly answered questions and achieved high mastery
+    When the user plays or replays a word at either playback speed
+    Then no masking noise is added to prompts or word comparisons
+    And subsequent questions continue to use clear word recordings
+
   Scenario: Word audio is unavailable
     Given the target word recording is missing or empty
     When the user taps "Play word"

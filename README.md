@@ -4,7 +4,7 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 
 ## Features & Modules
 
-- **Module 1: The Ear Trainer** — High-entropy ABX phonemic discrimination engine, adaptive SNR pink-noise masking, and SM-2 spaced repetition memory scheduler.
+- **Module 1: The Ear Trainer** — High-entropy ABX phonemic discrimination engine, clear whole-word audio, and SM-2 spaced repetition memory scheduler.
 - **Module 2: Articulator Lab** — Live acoustic Sound map and offline mouth-position reference cards showing lips and tongue placement for each vowel.
 - **Module 3: The Meaning Trap** — Narrative branching comic scenarios highlighting high-stakes minimal pair semantic blunders.
 - **Module 4: Rhythm & Pitch Ribbon** — Continuous YIN F0 pitch tracking ribbon, real-time prosody overlay, and connected speech assimilation practice.

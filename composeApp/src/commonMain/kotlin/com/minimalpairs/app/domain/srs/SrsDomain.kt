@@ -148,7 +148,6 @@ class DrillProgressionManager {
 
     fun resolveDrillType(masteryScore: Float): DrillType {
         return when {
-            masteryScore > 0.7f -> DrillType.MASKING_NOISE
             masteryScore > 0.4f -> DrillType.ABX
             else -> DrillType.FORCED_CHOICE
         }

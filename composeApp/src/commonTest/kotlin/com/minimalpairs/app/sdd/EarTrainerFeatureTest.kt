@@ -89,12 +89,13 @@ class EarTrainerFeatureTest {
         // Initial mastery <= 0.4 -> Forced Choice
         assertEquals(DrillType.FORCED_CHOICE, progression.resolveDrillType(0.2f))
 
-        // Intermediate mastery 0.4..0.7 -> ABX
+        // Mastery above 0.4 -> ABX
         assertEquals(DrillType.ABX, progression.resolveDrillType(0.55f))
 
         // Given user achieves mastery score above 0.7
         val highMastery = 0.78f
-        // Then drill progresses to Masking Noise / Advanced testing
-        assertEquals(DrillType.MASKING_NOISE, progression.resolveDrillType(highMastery))
+        // Then drill stays at ABX without introducing masking noise
+        assertEquals(DrillType.ABX, progression.resolveDrillType(highMastery))
+        assertEquals(DrillType.ABX, progression.resolveDrillType(1.0f))
     }
 }

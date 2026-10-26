@@ -8,7 +8,6 @@ import com.arkivanov.essenty.lifecycle.stop
 import com.minimalpairs.app.core.hal.AudioPlayer
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.model.PlaybackSpeed
-import com.minimalpairs.app.core.model.DrillType
 import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
@@ -104,10 +103,10 @@ class EarTrainerComponentTest {
             assertEquals(1, audio.recordings.size)
 
             wordPcm = shortArrayOf(100, -100)
-            assertEquals(DrillType.MASKING_NOISE, state.drillType)
+            assertTrue(state.sm2State.masteryScore > 0.7f)
             component.playOption(otherWord)
             runCurrent()
-            assertContentEquals(wordPcm, audio.recordings.last(), "Comparison must stay clear even in noise drills")
+            assertContentEquals(wordPcm, audio.recordings.last(), "Comparison must stay clear at high mastery")
             finishPlayback()
             assertEquals(answered, state)
         }
@@ -158,6 +157,43 @@ class EarTrainerComponentTest {
             assertEquals(List(3) { state.targetWord }, loadedWords)
             assertContentEquals(TimeStretchProcessor.process(recording, 0.75f), audio.recordings.last())
             assertTrue(audio.recordings.last().size > recording.size)
+        }
+    }
+
+    @Test
+    fun promptsAndComparisonsStayCleanAfterCorrectAnswersAtBothSpeeds() = runTest {
+        withTrainer {
+            val recording = ShortArray(1600) { ((it * 37) % 20_000 - 10_000).toShort() }
+            wordPcm = recording
+
+            repeat(3) {
+                component.setPlaybackSpeed(PlaybackSpeed.NORMAL)
+                component.playPrompt()
+                runCurrent()
+                assertContentEquals(recording, audio.recordings.last())
+                finishPlayback()
+                component.onSelectAnswer(state.targetWord)
+                assertTrue(state.sm2State.masteryScore > 0.7f)
+
+                for (speed in PlaybackSpeed.entries) {
+                    component.setPlaybackSpeed(speed)
+                    val expected = if (speed == PlaybackSpeed.NORMAL) recording
+                    else TimeStretchProcessor.process(recording, 0.75f)
+
+                    component.playPrompt()
+                    runCurrent()
+                    assertContentEquals(expected, audio.recordings.last(), "Prompt replay must stay clear at high mastery")
+                    finishPlayback()
+
+                    for (word in listOf(state.currentPair.word1, state.currentPair.word2)) {
+                        component.playOption(word)
+                        runCurrent()
+                        assertContentEquals(expected, audio.recordings.last())
+                        finishPlayback()
+                    }
+                }
+                component.nextTrial()
+            }
         }
     }
 

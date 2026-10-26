@@ -2,7 +2,6 @@ package com.minimalpairs.app.sdd
 
 import com.minimalpairs.app.core.dsp.FormantSynthesizer
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
-import com.minimalpairs.app.core.dsp.MaskingNoiseMixer
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.dsp.WavCodec
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
@@ -41,22 +40,6 @@ class DspAndScorerTest {
 
         val ratio = stretched.size.toFloat() / originalSamples.size.toFloat()
         assertTrue(ratio > 1.15f, "Stretched 0.75x audio must expand duration (actual ratio: $ratio)")
-    }
-
-    @Test
-    fun testMaskingNoiseMixerPreservesLengthAndAddsNoise() {
-        val signal = FormantSynthesizer.synthesizeVowel(f1 = 400f, f2 = 2000f, durationMs = 100)
-        val mixed = MaskingNoiseMixer.mix(signal, snrDb = 10.0f)
-
-        assertEquals(signal.size, mixed.size)
-        var differs = false
-        for (i in signal.indices) {
-            if (signal[i] != mixed[i]) {
-                differs = true
-                break
-            }
-        }
-        assertTrue(differs, "Mixed signal must incorporate masking noise")
     }
 
     @Test

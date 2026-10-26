@@ -43,8 +43,7 @@ data class PhoneticContrast(
 
 enum class DrillType {
     FORCED_CHOICE,
-    ABX,
-    MASKING_NOISE
+    ABX
 }
 
 enum class PlaybackSpeed(val multiplier: Float, val label: String) {

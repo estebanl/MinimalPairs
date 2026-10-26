@@ -13,7 +13,6 @@ import com.arkivanov.essenty.lifecycle.doOnDestroy
 import com.arkivanov.essenty.lifecycle.doOnStop
 import com.minimalpairs.app.core.dsp.FormantSynthesizer
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
-import com.minimalpairs.app.core.dsp.MaskingNoiseMixer
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.hal.AudioPlayer
 import com.minimalpairs.app.core.hal.AudioRecorder
@@ -279,15 +278,10 @@ class DefaultEarTrainerComponent(
                 val finalSamples = withContext(audioDispatcher) {
                     val baseSamples = loadWordPcm(word)
                     check(baseSamples != null && baseSamples.isNotEmpty()) { "Whole-word audio is unavailable" }
-                    val stretched = if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
+                    if (currentState.playbackSpeed == PlaybackSpeed.SLOW_DIAGNOSTIC) {
                         TimeStretchProcessor.process(baseSamples, 0.75f)
                     } else {
                         baseSamples
-                    }
-                    if (!isComparison && currentState.drillType == DrillType.MASKING_NOISE) {
-                        MaskingNoiseMixer.mix(stretched, snrDb = 8.0f)
-                    } else {
-                        stretched
                     }
                 }
 
