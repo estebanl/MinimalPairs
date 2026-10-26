@@ -3,6 +3,7 @@ package com.minimalpairs.app.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -18,8 +19,11 @@ import kotlin.math.roundToInt
 internal fun SoundConfusionMatrix(contrasts: List<ContrastProgress>, onPractice: (String) -> Unit) {
     val available = contrasts.filter { ListeningContrastsCatalog.getContrastById(it.contrastId) != null }
     if (available.isEmpty()) return
-    var selectedId by remember { mutableStateOf<String?>(null) }
+    var selectedId by rememberSaveable { mutableStateOf(available.first().contrastId) }
     val selected = available.firstOrNull { it.contrastId == selectedId } ?: available.first()
+    // Keep the displayed contrast stable when accuracy updates reorder the list.
+    // If it disappears, retain the fallback rather than jumping back if it returns.
+    LaunchedEffect(selected.contrastId) { selectedId = selected.contrastId }
     val contrast = ListeningContrastsCatalog.getContrastById(selected.contrastId) ?: return
     val sounds = listOf(contrast.phoneme1, contrast.phoneme2)
     Card(modifier = Modifier.fillMaxWidth()) {

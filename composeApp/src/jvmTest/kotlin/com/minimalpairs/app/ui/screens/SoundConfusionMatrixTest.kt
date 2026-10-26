@@ -3,6 +3,7 @@ package com.minimalpairs.app.ui.screens
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.InternalComposeUiApi
@@ -31,10 +32,11 @@ class SoundConfusionMatrixTest {
                         ContrastProgress("i_vs_I", 4, 3, null, mapOf("iː" to mapOf("iː" to 3, "ɪ" to 1))),
                         ContrastProgress("p_vs_b", 2, 0, null, mapOf("p" to mapOf("b" to 2)))
                     )
+                    val displayedContrasts = mutableStateOf(contrasts)
                     val scene = ImageComposeScene(width = width, height = 1400, density = Density(1f, fontScale)) {
                         MinimalPairsTheme(darkTheme = width == 430) {
                             Column(Modifier.verticalScroll(rememberScrollState())) {
-                                SoundConfusionMatrix(contrasts) { selected = it }
+                                SoundConfusionMatrix(displayedContrasts.value) { selected = it }
                             }
                         }
                     }
@@ -54,6 +56,11 @@ class SoundConfusionMatrixTest {
                         assertTrue(descriptions().contains("Heard /iː/, chose /iː/: 3 of 4 answers, 75 percent, correct"))
                         assertTrue(descriptions().contains("Heard /iː/, chose /ɪ/: 1 of 4 answers, 25 percent, mixed up"))
                         assertTrue(descriptions().contains("Heard /ɪ/, chose /ɪ/: not practiced"))
+                        displayedContrasts.value = contrasts.reversed()
+                        settle()
+                        assertTrue(descriptions().contains("Heard /iː/, chose /iː/: 3 of 4 answers, 75 percent, correct"))
+                        click("Practice these sounds")
+                        assertEquals("i_vs_I", selected)
                         val directory = File("build/reports/progress").apply { mkdirs() }
                         scene.render(++frame * 16_666_667L).use { image ->
                             image.encodeToData()!!.use { File(directory, "matrix-$width.png").writeBytes(it.bytes) }
@@ -64,6 +71,18 @@ class SoundConfusionMatrixTest {
                         assertFalse(descriptions().any { it.contains("/iː/") })
                         click("Practice these sounds")
                         assertEquals("p_vs_b", selected)
+                        displayedContrasts.value = contrasts
+                        settle()
+                        click("Practice these sounds")
+                        assertEquals("p_vs_b", selected)
+                        displayedContrasts.value = contrasts.take(1)
+                        settle()
+                        click("Practice these sounds")
+                        assertEquals("i_vs_I", selected)
+                        displayedContrasts.value = contrasts.reversed()
+                        settle()
+                        click("Practice these sounds")
+                        assertEquals("i_vs_I", selected)
                     } finally { scene.close() }
                 }
             } catch (error: Throwable) { failure = error }

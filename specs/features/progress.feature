@@ -62,6 +62,9 @@ Feature: Persistent listening and speaking progress
     And cells show counts and percentages within each row
     And an untested row shows no data rather than zero accuracy
     And counts from other contrasts are excluded
+    When live accuracy updates reorder the contrast list
+    Then the displayed contrast and its practice action remain selected
+    And if that contrast disappears the first available contrast becomes selected
 
   Scenario: Due reviews are actionable
     Given saved review schedules
