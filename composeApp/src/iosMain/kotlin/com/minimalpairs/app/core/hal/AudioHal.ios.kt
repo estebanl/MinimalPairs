@@ -3,17 +3,24 @@ package com.minimalpairs.app.core.hal
 import com.minimalpairs.app.core.dsp.WavCodec
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.get
+import kotlinx.cinterop.pointed
+import kotlinx.cinterop.value
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import platform.AVFAudio.AVAudioEngine
+import platform.AVFAudio.AVAudioFormat
+import platform.AVFAudio.AVAudioConverter
+import platform.AVFAudio.AVAudioConverterInputStatus_NoDataNow
+import platform.AVFAudio.AVAudioConverterInputStatus_HaveData
+import platform.AVFAudio.AVAudioPCMFormatInt16
+import platform.AVFAudio.AVAudioPCMBuffer
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import platform.AVFAudio.AVAudioPlayer
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryOptionDefaultToSpeaker
@@ -22,61 +29,125 @@ import platform.AVFAudio.setActive
 import platform.Foundation.NSData
 import platform.Foundation.create
 
+@OptIn(ExperimentalForeignApi::class)
 class IosAudioRecorder : AudioRecorder {
     private val _state = MutableStateFlow(AudioRecorderState.UNINITIALIZED)
     override val state: StateFlow<AudioRecorderState> = _state.asStateFlow()
-
-    private var recordJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private var engine: AVAudioEngine? = null
+    private var hasTap = false
+    private var sessionActive = false
     private var activeCallback: ((ShortArray) -> Unit)? = null
 
     override suspend fun prepare(): Boolean {
+        release()
+        val session = AVAudioSession.sharedInstance()
+        val granted = suspendCancellableCoroutine<Boolean> { continuation ->
+            session.requestRecordPermission { allowed ->
+                if (continuation.isActive) continuation.resume(allowed)
+            }
+        }
+        if (!granted) {
+            _state.value = AudioRecorderState.ERROR
+            return false
+        }
+        if (!session.setCategory(AVAudioSessionCategoryPlayAndRecord,
+                withOptions = AVAudioSessionCategoryOptionDefaultToSpeaker, error = null) ||
+            !session.setActive(true, error = null)) {
+            _state.value = AudioRecorderState.ERROR
+            return false
+        }
+        sessionActive = true
+        engine = AVAudioEngine()
         _state.value = AudioRecorderState.READY
         return true
     }
 
     override suspend fun start(onBuffer: (ShortArray) -> Unit): Boolean {
-        if (_state.value != AudioRecorderState.READY && _state.value != AudioRecorderState.PAUSED) {
+        if (_state.value != AudioRecorderState.READY && _state.value != AudioRecorderState.PAUSED) return false
+        val audioEngine = engine ?: return false
+        val input = audioEngine.inputNode
+        val inputFormat = input.outputFormatForBus(0u)
+        if (inputFormat.sampleRate <= 0.0 || inputFormat.channelCount == 0u) {
+            _state.value = AudioRecorderState.ERROR
             return false
         }
+        val outputFormat = AVAudioFormat(commonFormat = AVAudioPCMFormatInt16,
+            sampleRate = 16000.0, channels = 1u, interleaved = false)
+        val converter = AVAudioConverter(fromFormat = inputFormat, toFormat = outputFormat)
         activeCallback = onBuffer
-        _state.value = AudioRecorderState.RECORDING
-
-        recordJob?.cancel()
-        recordJob = scope.launch {
-            val emptyBuffer = ShortArray(512)
-            while (isActive && _state.value == AudioRecorderState.RECORDING) {
-                activeCallback?.invoke(emptyBuffer)
-                delay(32)
+        var packet = ShortArray(bufferFrames)
+        var packetSize = 0
+        input.installTapOnBus(0u, bufferSize = 1024u, format = inputFormat) { buffer, _ ->
+            if (buffer != null && _state.value == AudioRecorderState.RECORDING) {
+                val capacity = (buffer.frameLength.toDouble() * 16000.0 / inputFormat.sampleRate).toUInt() + 32u
+                val output = AVAudioPCMBuffer(pCMFormat = outputFormat, frameCapacity = capacity)
+                var supplied = false
+                converter.convertToBuffer(output, error = null) { _, status ->
+                    if (supplied) {
+                        status?.pointed?.value = AVAudioConverterInputStatus_NoDataNow
+                        null
+                    } else {
+                        supplied = true
+                        status?.pointed?.value = AVAudioConverterInputStatus_HaveData
+                        buffer
+                    }
+                }
+                val samples = output.int16ChannelData?.get(0)
+                if (samples != null) {
+                    for (i in 0 until output.frameLength.toInt()) {
+                        packet[packetSize++] = samples[i]
+                        if (packetSize == bufferFrames) {
+                            onBuffer(packet)
+                            packet = ShortArray(bufferFrames)
+                            packetSize = 0
+                        }
+                    }
+                }
             }
         }
+        hasTap = true
+        _state.value = AudioRecorderState.RECORDING
+        audioEngine.prepare()
+        if (!audioEngine.startAndReturnError(null)) {
+            removeTap()
+            _state.value = AudioRecorderState.ERROR
+            return false
+        }
         return true
+    }
+
+    private fun removeTap() {
+        engine?.stop()
+        if (hasTap) engine?.inputNode?.removeTapOnBus(0u)
+        hasTap = false
     }
 
     override suspend fun pause(): Boolean {
         if (_state.value != AudioRecorderState.RECORDING) return false
         _state.value = AudioRecorderState.PAUSED
-        recordJob?.cancel()
+        removeTap()
         return true
     }
 
     override suspend fun resume(): Boolean {
         if (_state.value != AudioRecorderState.PAUSED) return false
-        val cb = activeCallback ?: return false
-        return start(cb)
+        return activeCallback?.let { start(it) } ?: false
     }
 
     override suspend fun stop(): Boolean {
         if (_state.value == AudioRecorderState.UNINITIALIZED) return false
-        recordJob?.cancel()
         _state.value = AudioRecorderState.READY
+        removeTap()
         return true
     }
 
     override suspend fun release() {
-        recordJob?.cancel()
-        activeCallback = null
         _state.value = AudioRecorderState.UNINITIALIZED
+        removeTap()
+        activeCallback = null
+        engine = null
+        if (sessionActive) AVAudioSession.sharedInstance().setActive(false, error = null)
+        sessionActive = false
     }
 }
 

@@ -44,6 +44,10 @@ object LpcFormantExtractor {
             if (frameEnergies[f] > maxEnergy) maxEnergy = frameEnergies[f]
         }
 
+        // Reject silence and very low level input before attempting LPC.
+        if (maxEnergy < 100f) {
+            return FormantResult(0f, 0f, 0f, 0, 0f)
+        }
         val energyThreshold = maxEnergy * 0.15f
         var voicedFrames = 0
         var f1Sum = 0.0f

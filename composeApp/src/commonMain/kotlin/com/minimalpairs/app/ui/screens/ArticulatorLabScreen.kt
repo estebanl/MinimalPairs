@@ -28,16 +28,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minimalpairs.app.core.hal.rememberMicrophonePermissionRequest
 import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.ui.components.ArticulatoryBiofeedbackCard
 import com.minimalpairs.app.ui.components.PracticeDetails
 import com.minimalpairs.app.ui.components.PracticeTopBar
+import com.minimalpairs.app.ui.components.LipCameraFeedbackCard
+import com.minimalpairs.app.ui.components.OralCavityReferenceCard
 import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
 import com.minimalpairs.app.ui.components.VowelTrapezoidPlot
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
@@ -52,6 +56,13 @@ fun ArticulatorLabScreen(
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
+    val isRecording = state.recorderState == AudioRecorderState.RECORDING
+    val canSelectTarget = !isRecording && !state.isBusy
+    var permissionDenied by remember { mutableStateOf(false) }
+    val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
+        permissionDenied = !granted
+        if (granted) component.toggleRecording()
+    }
 
     Scaffold(
         topBar = {
@@ -77,19 +88,21 @@ fun ArticulatorLabScreen(
                 FilterChip(
                     selected = state.isTargetPhoneme1,
                     onClick = { component.switchTargetPhoneme(true) },
+                    enabled = canSelectTarget,
                     label = { Text("${state.contrast.pairs.first().word1} /${state.contrast.phoneme1}/") },
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 FilterChip(
                     selected = !state.isTargetPhoneme1,
                     onClick = { component.switchTargetPhoneme(false) },
+                    enabled = canSelectTarget,
                     label = { Text("${state.contrast.pairs.first().word2} /${state.contrast.phoneme2}/") }
                 )
             }
 
             Spacer(Modifier.height(10.dp))
 
-            var visualMode by remember { mutableStateOf(0) }
+            var visualMode by rememberSaveable { mutableStateOf(0) }
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -106,6 +119,16 @@ fun ArticulatorLabScreen(
                     onClick = { visualMode = 1 },
                     label = { Text("Mouth position") }
                 )
+                FilterChip(
+                    selected = visualMode == 2,
+                    onClick = { visualMode = 2 },
+                    label = { Text("3D model") }
+                )
+                FilterChip(
+                    selected = visualMode == 3,
+                    onClick = { visualMode = 3 },
+                    label = { Text("Camera") }
+                )
             }
 
             Spacer(Modifier.height(14.dp))
@@ -115,6 +138,20 @@ fun ArticulatorLabScreen(
                     contrast = state.contrast,
                     liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
                     liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
+                )
+            } else if (visualMode == 3) {
+                LipCameraFeedbackCard(
+                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                    exampleWord = state.contrast.pairs.first().let {
+                        if (state.isTargetPhoneme1) it.word1 else it.word2
+                    }
+                )
+            } else if (visualMode == 2) {
+                OralCavityReferenceCard(
+                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                    exampleWord = state.contrast.pairs.first().let {
+                        if (state.isTargetPhoneme1) it.word1 else it.word2
+                    }
                 )
             } else {
                 MouthPositionReferenceCard(
@@ -127,11 +164,16 @@ fun ArticulatorLabScreen(
 
             Spacer(Modifier.height(14.dp))
 
+            if (isRecording) {
+                Text("Recording · ${state.liveDurationMs / 1000}s / 30s",
+                    style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+            }
             // Microphone Capture Button (AudioRecorder HAL)
-            val isRecording = state.recorderState == AudioRecorderState.RECORDING
 
             Button(
-                onClick = component::toggleRecording,
+                onClick = { if (isRecording) component.toggleRecording() else requestMicrophone() },
+                enabled = !state.isBusy,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRecording) scheme.error else scheme.primary,
@@ -140,14 +182,35 @@ fun ArticulatorLabScreen(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
             ) {
                 Text(
-                    text = if (isRecording) "Stop and review" else "Record your sound",
+                    text = when {
+                        state.isScoring -> "Reviewing your sound…"
+                        state.isPlaying -> "Playing…"
+                        state.isBusy -> "Preparing microphone…"
+                        isRecording -> "Stop and review"
+                        else -> "Record your sound"
+                    },
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
             }
 
             Spacer(Modifier.height(12.dp))
-            if (state.recorderState == AudioRecorderState.ERROR) {
+            if (permissionDenied) {
+                Text("Allow microphone access in app settings, then try again.",
+                    style = MaterialTheme.typography.bodySmall, color = scheme.error)
+            }
+            state.error?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = scheme.error)
+            }
+            state.feedback?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium)
+            }
+            if (state.hasRecording) {
+                OutlinedButton(onClick = component::playRecording, enabled = !state.isBusy && !isRecording) {
+                    Text("Listen to your recording")
+                }
+            }
+            if (state.recorderState == AudioRecorderState.ERROR && state.error == null) {
                 Text("Microphone unavailable. Check microphone access and try again.", style = MaterialTheme.typography.bodySmall, color = scheme.error)
             }
             state.overallGopScore?.let { score ->
@@ -200,7 +263,8 @@ fun ArticulatorLabScreen(
                         ) {
                             AcousticMetric(label = "Jaw height · F1", value = "${state.liveF1.toInt()} Hz")
                             AcousticMetric(label = "Tongue position · F2", value = "${state.liveF2.toInt()} Hz")
-                            AcousticMetric(label = "Duration", value = "${state.liveDurationMs} ms")
+                            AcousticMetric(label = "F3", value = "${state.liveF3.toInt()} Hz")
+                            AcousticMetric(label = if (isRecording) "Recording time" else "Vowel duration", value = "${state.liveDurationMs} ms")
                         }
                     }
                 }
@@ -211,10 +275,11 @@ fun ArticulatorLabScreen(
                 OutlinedButton(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                     onClick = { component.testSynthesizedVowel(state.isTargetPhoneme1) },
+                    enabled = !state.isBusy && !isRecording,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Try a generated example of /${if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2}/")
+                    Text("Listen to a generated example of /${if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2}/")
                 }
 
                 Spacer(Modifier.height(16.dp))

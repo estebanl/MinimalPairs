@@ -43,6 +43,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.compose.runtime)
+            implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
@@ -79,6 +80,10 @@ kotlin {
         }
 
         androidMain.dependencies {
+            implementation(libs.camera.camera2)
+            implementation(libs.camera.lifecycle)
+            implementation(libs.camera.view)
+            implementation(libs.mlkit.face)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
         }

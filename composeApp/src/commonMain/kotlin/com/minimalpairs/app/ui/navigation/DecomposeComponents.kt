@@ -416,13 +416,20 @@ data class ArticulatorLabUiState(
     val liveF3: Float = 0f,
     val liveDurationMs: Int = 0,
     val overallGopScore: Float? = null,
-    val isTargetPhoneme1: Boolean = true
+    val isTargetPhoneme1: Boolean = true,
+    val isBusy: Boolean = false,
+    val isScoring: Boolean = false,
+    val isPlaying: Boolean = false,
+    val hasRecording: Boolean = false,
+    val feedback: String? = null,
+    val error: String? = null
 )
 
 interface ArticulatorLabComponent {
     val state: StateFlow<ArticulatorLabUiState>
     fun toggleRecording()
     fun testSynthesizedVowel(isPhoneme1: Boolean)
+    fun playRecording() {}
     fun switchTargetPhoneme(isPhoneme1: Boolean)
     fun onBack()
 }
@@ -432,92 +439,191 @@ class DefaultArticulatorLabComponent(
     contrastId: String?,
     private val scorerApi: PhonemeScorerApi,
     private val onBackClicked: () -> Unit,
-    private val recorder: AudioRecorder = createAudioRecorder()
+    private val recorder: AudioRecorder = createAudioRecorder(),
+    private val audioPlayer: AudioPlayer = createAudioPlayer(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private val contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
         ?: VowelContrastsCatalog.defaultContrasts.first()
-
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val _state = MutableStateFlow(ArticulatorLabUiState(contrast = contrast))
     override val state: StateFlow<ArticulatorLabUiState> = _state.asStateFlow()
-
+    // All mutable recording data is confined to the UI dispatcher.
     private val accumulatedSamples = mutableListOf<Short>()
+    private var recordedSamples = ShortArray(0)
+    private var operation: Job? = null
+    private var cleanup: Job? = null
+    private var generation = 0L
+    private var acceptingSamples = false
+    private var closed = false
 
     init {
         scope.launch {
-            recorder.prepare()
             recorder.state.collect { recState ->
                 _state.value = _state.value.copy(recorderState = recState)
             }
         }
+        lifecycle.doOnStop { stopSession() }
+        lifecycle.doOnDestroy {
+            closed = true
+            stopSession()
+            scope.cancel()
+        }
     }
 
-    override fun toggleRecording() {
-        scope.launch {
-            if (recorder.state.value == AudioRecorderState.RECORDING) {
-                recorder.stop()
-                val samples = accumulatedSamples.toShortArray()
-                if (samples.isNotEmpty()) {
-                    val targetPhoneme = if (_state.value.isTargetPhoneme1) contrast.phoneme1 else contrast.phoneme2
-                    val scoring = scorerApi.scoreAudio(samples, "vowel", targetPhoneme, contrast.id)
-                    _state.value = _state.value.copy(overallGopScore = scoring.overallScore)
+    private fun runOperation(block: suspend () -> Unit) {
+        if (closed || operation?.isActive == true || cleanup?.isActive == true) return
+        _state.value = _state.value.copy(isBusy = true, error = null)
+        operation = scope.launch {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                acceptingSamples = false
+                generation++
+                runCatching { recorder.release() }
+                _state.value = _state.value.copy(error = "Unable to finish. Please try again.")
+            } finally {
+                _state.value = _state.value.copy(isBusy = false, isScoring = false, isPlaying = false)
+            }
+        }
+    }
+
+    override fun toggleRecording(): Unit = runOperation {
+        if (acceptingSamples) {
+            acceptingSamples = false
+            generation++
+            check(recorder.stop())
+            val samples = accumulatedSamples.toShortArray()
+            recordedSamples = samples
+            _state.value = _state.value.copy(hasRecording = samples.isNotEmpty(), isScoring = true)
+            val analysis = withContext(analysisDispatcher) { LpcFormantExtractor.extract(samples) }
+            if (analysis.voicedRatio == 0f || analysis.durationMs < 80) {
+                _state.value = _state.value.copy(error = "No clear vowel detected. Hold the sound a little longer and try again.")
+                return@runOperation
+            }
+            val first = _state.value.isTargetPhoneme1
+            val pair = contrast.pairs.first()
+            val scoring = withContext(analysisDispatcher) {
+                scorerApi.scoreAudio(samples, if (first) pair.word1 else pair.word2,
+                    if (first) contrast.phoneme1 else contrast.phoneme2, contrast.id)
+            }
+            _state.value = _state.value.copy(
+                liveF1 = analysis.f1Hz, liveF2 = analysis.f2Hz, liveF3 = analysis.f3Hz,
+                liveDurationMs = analysis.durationMs, overallGopScore = scoring.overallScore,
+                feedback = placementFeedback(analysis, first)
+            )
+        } else {
+            accumulatedSamples.clear()
+            recordedSamples = ShortArray(0)
+            _state.value = ArticulatorLabUiState(contrast, recorderState = recorder.state.value,
+                isTargetPhoneme1 = _state.value.isTargetPhoneme1, isBusy = true)
+            if (recorder.state.value != AudioRecorderState.READY) {
+                recorder.release()
+                if (!recorder.prepare()) {
+                    _state.value = _state.value.copy(error = "Microphone unavailable. Allow microphone access and try again.")
+                    return@runOperation
                 }
-            } else {
-                accumulatedSamples.clear()
-                recorder.start { buffer ->
-                    accumulatedSamples.addAll(buffer.toList())
-                    if (buffer.isNotEmpty()) {
-                        val analysis = LpcFormantExtractor.extract(buffer)
-                        if (analysis.f1Hz > 150f) {
-                            _state.value = _state.value.copy(
-                                liveF1 = analysis.f1Hz,
-                                liveF2 = analysis.f2Hz,
-                                liveF3 = analysis.f3Hz,
-                                liveDurationMs = analysis.durationMs
-                            )
-                        }
+            }
+            val token = ++generation
+            acceptingSamples = true
+            val started = recorder.start { buffer ->
+                val copy = buffer.copyOf()
+                scope.launch {
+                    if (!acceptingSamples || token != generation) return@launch
+                    val remaining = recorder.sampleRate * 30 - accumulatedSamples.size
+                    accumulatedSamples.addAll(copy.take(remaining.coerceAtLeast(0)))
+                    _state.value = _state.value.copy(liveDurationMs = accumulatedSamples.size * 1000 / recorder.sampleRate)
+                    if (remaining <= copy.size) {
+                        toggleRecording()
+                        return@launch
                     }
+                    val analysis = withContext(analysisDispatcher) { LpcFormantExtractor.extract(copy) }
+                    if (acceptingSamples && token == generation && analysis.voicedRatio > 0f) {
+                        _state.value = _state.value.copy(liveF1 = analysis.f1Hz,
+                            liveF2 = analysis.f2Hz, liveF3 = analysis.f3Hz)
+                    }
+                }
+            }
+            if (!started) {
+                acceptingSamples = false
+                _state.value = _state.value.copy(error = "Could not start the microphone. Please try again.")
+            }
+        }
+    }
+
+    private fun placementFeedback(result: LpcFormantExtractor.FormantResult, first: Boolean): String {
+        val bounds = if (first) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
+        val cues = mutableListOf<String>()
+        if (result.f1Hz > bounds.f1MaxHz) cues += "Try raising your tongue slightly."
+        else if (result.f1Hz < bounds.f1MinHz) cues += "Try lowering your tongue slightly."
+        if (result.f2Hz < bounds.f2MinHz) cues += "Try moving your tongue forward."
+        else if (result.f2Hz > bounds.f2MaxHz) cues += "Try moving your tongue back."
+        if (bounds.minDurationMs?.let { result.durationMs < it } == true) cues += "Hold the vowel a little longer."
+        if (bounds.maxDurationMs?.let { result.durationMs > it } == true) cues += "Try a shorter vowel."
+        return cues.joinToString(" ").ifEmpty { "Your sound is within the target range. Try it again to build consistency." }
+    }
+
+    override fun testSynthesizedVowel(isPhoneme1: Boolean) {
+        if (acceptingSamples) return
+        runOperation {
+            val bounds = if (isPhoneme1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
+            val samples = withContext(analysisDispatcher) {
+                FormantSynthesizer.synthesizeVowel(
+                    f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
+                    f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
+                    durationMs = bounds.minDurationMs ?: 140)
+            }
+            _state.value = _state.value.copy(isPlaying = true)
+            audioPlayer.play(samples)
+        }
+    }
+
+    override fun playRecording() {
+        if (acceptingSamples || recordedSamples.isEmpty()) return
+        runOperation {
+            _state.value = _state.value.copy(isPlaying = true)
+            audioPlayer.play(recordedSamples)
+        }
+    }
+
+    override fun switchTargetPhoneme(isPhoneme1: Boolean) {
+        if (closed || acceptingSamples || _state.value.isBusy || cleanup?.isActive == true) return
+        if (_state.value.isTargetPhoneme1 == isPhoneme1) return
+        recordedSamples = ShortArray(0)
+        _state.value = ArticulatorLabUiState(contrast, recorderState = recorder.state.value,
+            isTargetPhoneme1 = isPhoneme1)
+    }
+
+    private fun stopSession() {
+        acceptingSamples = false
+        generation++
+        val pending = operation
+        pending?.cancel()
+        val previousCleanup = cleanup
+        cleanup = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) {
+                previousCleanup?.join()
+                pending?.join()
+                try {
+                    audioPlayer.stop()
+                } finally {
+                    recorder.release()
+                    _state.value = _state.value.copy(isBusy = false, isScoring = false, isPlaying = false)
                 }
             }
         }
     }
 
-    override fun testSynthesizedVowel(isPhoneme1: Boolean) {
-        scope.launch {
-            val bounds = if (isPhoneme1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
-            val midF1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f
-            val midF2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f
-            val testSamples = FormantSynthesizer.synthesizeVowel(
-                f1 = midF1,
-                f2 = midF2,
-                durationMs = bounds.minDurationMs ?: 140
-            )
-
-            val analysis = LpcFormantExtractor.extract(testSamples)
-            val scoring = scorerApi.scoreAudio(
-                testSamples,
-                if (isPhoneme1) contrast.pairs.first().word1 else contrast.pairs.first().word2,
-                if (isPhoneme1) contrast.phoneme1 else contrast.phoneme2,
-                contrast.id
-            )
-
-            _state.value = _state.value.copy(
-                liveF1 = analysis.f1Hz,
-                liveF2 = analysis.f2Hz,
-                liveF3 = analysis.f3Hz,
-                liveDurationMs = analysis.durationMs,
-                overallGopScore = scoring.overallScore,
-                isTargetPhoneme1 = isPhoneme1
-            )
-        }
+    override fun onBack() {
+        if (closed) return
+        closed = true
+        stopSession()
+        onBackClicked()
     }
-
-    override fun switchTargetPhoneme(isPhoneme1: Boolean) {
-        _state.value = _state.value.copy(isTargetPhoneme1 = isPhoneme1)
-    }
-
-    override fun onBack() = onBackClicked()
 }
 
 // --- Confusion Matrix Component ---

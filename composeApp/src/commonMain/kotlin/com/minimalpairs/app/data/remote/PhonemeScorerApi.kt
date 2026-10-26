@@ -16,6 +16,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CancellationException
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sqrt
@@ -66,6 +67,8 @@ class PhonemeScorerClient(
                     )
                 }.body()
                 return response
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Graceful fallback to offline local acoustic evaluation
             }

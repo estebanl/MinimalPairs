@@ -1,0 +1,36 @@
+{
+  "upstream": "https://github.com/TUD-STKS/VocalTractLabBackend-dev",
+  "commit": "df30392f18dc5e175b577c3ba734caaa65a3927f",
+  "speaker": "resources/JD3.speaker",
+  "speaker_sha256": "e1e592dae13991e981c17bcc326cccc7bce3705e3862eb77fdeaeb238418a503",
+  "source_archive_sha256": "dc4c930ce261f31e60ba94af122808490881efb8301e55e18baaa611cf52104b",
+  "exporter_sha256": "da7252019d83fa2fecafd906a375f8c101cfb05616c2a47b77fa19108d88bad1",
+  "license": "GPL-3.0-or-later (upstream source; no separate asset exception found)",
+  "format_version": 1,
+  "files": {
+    "dress.vtlm": {
+      "bytes": 156468,
+      "sha256": "f3738c9581fd009743a33a7f42a94e31575546a18052d62498b772da009ea31d"
+    },
+    "fleece.vtlm": {
+      "bytes": 156468,
+      "sha256": "7c88a4bd8022ddf8f30e8dc8b81effe9989fe187b405270e661a3a915f6a7040"
+    },
+    "foot.vtlm": {
+      "bytes": 156468,
+      "sha256": "edbf199f07f0858f74ecd099dad8a46f6862ef7f975b13376dd85549f64b24ec"
+    },
+    "goose.vtlm": {
+      "bytes": 156468,
+      "sha256": "31c35bef52cfc375a9b4945e7299f52ef4b66b220bd24db4f3a37bc279ece219"
+    },
+    "kit.vtlm": {
+      "bytes": 156468,
+      "sha256": "19f0b3127bfc062f88a1e97d2e7ad9d29d559001f364ccb7d8e1f18ef749850b"
+    },
+    "thought.vtlm": {
+      "bytes": 156468,
+      "sha256": "4a9d64832799f68307efd14ecb7c5925be33d77b413eace808f947b7a0cbf596"
+    }
+  }
+}
