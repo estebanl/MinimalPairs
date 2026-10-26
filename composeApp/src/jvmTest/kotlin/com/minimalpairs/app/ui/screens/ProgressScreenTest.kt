@@ -66,9 +66,17 @@ class ProgressScreenTest {
                         .config[SemanticsActions.OnClick].action!!.invoke()
                     assertEquals(1, reloads)
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
+                    assertFalse(nodes().any { it.text() == "Show speaking progress" })
+                    assertFalse(nodes().any { it.text().startsWith("0 scored recordings") })
+                    component.state.value = component.state.value.copy(isRefreshing = true)
+                    settle()
+                    assertTrue(nodes().any { it.text() == "Refreshing progress…" })
+                    assertFalse(nodes().any { it.text() == "Show speaking progress" })
                     component.state.value = summarizeProgress(emptyList(), emptyList())
                     settle()
                     assertTrue(nodes().any { it.text() == "Your progress starts here" })
+                    assertTrue(nodes().any { it.text() == "Show speaking progress" })
+                    assertTrue(nodes().any { it.text().startsWith("0 scored recordings") })
                     component.state.value = summarizeProgress(listOf(TrialRecordEntity(
                         contrastId = "i_vs_I", targetWord = "sheep", selectedWord = "ship", isCorrect = false,
                         latencyMs = 1000, drillType = "FORCED_CHOICE", timestampEpochMs = 1000
@@ -152,6 +160,14 @@ class ProgressScreenTest {
                     assertFalse(nodes().any { it.text() == "0% accuracy" })
                     click("Practice speaking again")
                     assertEquals("i_vs_I", selected)
+                    component.state.value = component.state.value.copy(
+                        canRetryLoad = true, error = "Couldn't refresh progress. Showing the last loaded totals.")
+                    settle()
+                    assertTrue(nodes().any { it.text() == "Retry loading" })
+                    assertTrue(nodes().any { it.text() == "Score: 88/100" })
+                    assertTrue(nodes().any { it.text() == "Recent average: 88/100" })
+                    component.state.value = component.state.value.copy(canRetryLoad = false, error = null)
+                    settle()
                     scene.render(++frame * 16_666_667L).use { image ->
                         image.encodeToData()!!.use { data -> File(directory, "speaking-progress.png").writeBytes(data.bytes) }
                     }

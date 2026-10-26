@@ -54,6 +54,7 @@ class ProgressRetryTest {
         withDatabase { database, scope ->
             val dao = database.progressDao()
             dao.record(trial("sheep"), 5)
+            dao.recordSpeaking(SpeakingRecordEntity(-1, "i_vs_I", "sheep", "iː", 88f, 200, 1000))
             val flaky = FlakyStore(RoomProgressStore(database)).apply { failReads.value = true }
             val repository = ProgressRepository(flaky, scope)
             val failed = withTimeout(5000) { repository.state.first { it.canRetryLoad } }
@@ -65,13 +66,18 @@ class ProgressRetryTest {
             flaky.failReads.value = true
             val stale = withTimeout(5000) { repository.state.first { it.canRetryLoad } }
             assertEquals(1, stale.attempts)
+            assertEquals(88f, stale.speaking.single().score)
+            assertEquals(88, stale.speakingSummaries.single().recentAverage)
             assertTrue(stale.error!!.contains("last loaded totals"))
             dao.record(trial("ship"), 2)
+            dao.recordSpeaking(SpeakingRecordEntity(-2, "i_vs_I", "sheep", "iː", 60f, 200, 2000))
             flaky.failReads.value = false
             repository.retryLoading()
             repository.retryLoading()
             val recovered = withTimeout(5000) { repository.state.first { it.attempts == 2 && !it.canRetryLoad } }
             assertNull(recovered.error)
+            assertEquals(2, recovered.speaking.size)
+            assertEquals(74, recovered.speakingSummaries.single().recentAverage)
             dao.record(trial("sheep"), 5)
             withTimeout(5000) { repository.state.first { it.attempts == 3 } }
         }

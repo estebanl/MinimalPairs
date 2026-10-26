@@ -33,6 +33,14 @@ Feature: Persistent listening and speaking progress
     Then current totals replace the outdated totals
     And live updates resume
 
+  Scenario: Unavailable speaking history is not reported as empty
+    Given the initial progress read fails
+    Then Progress offers a loading retry without claiming zero scored recordings
+    When the read succeeds with no speaking records
+    Then the empty speaking summary is shown
+    When a refresh fails after speaking records have loaded
+    Then the cached speaking records and sound summaries remain visible with the outdated-data message
+
   Scenario: Listening activity uses local calendar dates
     Given listening answers on consecutive local dates ending yesterday
     Then the current streak remains active today
