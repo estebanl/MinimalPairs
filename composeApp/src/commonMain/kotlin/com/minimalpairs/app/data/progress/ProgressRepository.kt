@@ -39,6 +39,8 @@ data class ProgressState(
     val pendingAnswers: Int = 0,
     val isSaving: Boolean = false,
     val canRetrySave: Boolean = false,
+    val canRetryLoad: Boolean = false,
+    val isRefreshing: Boolean = false,
     val contrasts: List<ContrastProgress> = emptyList(),
     val confusion: Map<String, Map<String, Int>> = emptyMap(),
     val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
@@ -102,6 +104,7 @@ private fun reviewClock(): Flow<Long> = flow {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProgressRepository(
     private val dao: ProgressDao,
     private val scope: CoroutineScope,
@@ -117,15 +120,31 @@ class ProgressRepository(
     private val saveStatus = combine(pending, saving, saveFailed) { answers, active, failed ->
         SaveStatus(answers.size, active, failed)
     }
-    private val progress = combine(dao.observeTrials(), dao.observeCards(), calendar) { trials, cards, day ->
-        summarizeProgress(trials, cards, day)
-    }.catch { emit(ProgressState(loading = false, error = "Couldn't load progress. Reopen the app to try again.")) }
-    val state: StateFlow<ProgressState> = combine(progress, clock, saveStatus) { progress, now, saves ->
+    private data class LoadedProgress(val progress: ProgressState, val cards: List<Sm2CardEntity>)
+    private val reload = MutableStateFlow(0)
+    private var lastLoaded = LoadedProgress(ProgressState(), emptyList())
+    private val progress = reload.flatMapLatest { attempt ->
+        flow {
+            emit(lastLoaded.copy(progress = lastLoaded.progress.copy(isRefreshing = true, canRetryLoad = attempt > 0)))
+            // Construct the database flows here so synchronous open errors can also be retried.
+            emitAll(combine(dao.observeTrials(), dao.observeCards(), calendar) { trials, cards, day ->
+                LoadedProgress(summarizeProgress(trials, cards, day), cards)
+            }.onEach { lastLoaded = it })
+        }.catch {
+            val message = if (lastLoaded.progress.loading) "Couldn't load progress. Try again."
+            else "Couldn't refresh progress. Showing the last loaded totals. Retry to get the latest progress."
+            emit(lastLoaded.copy(progress = lastLoaded.progress.copy(
+                loading = false, isRefreshing = false, canRetryLoad = true, error = message
+            )))
+        }
+    }
+    val state: StateFlow<ProgressState> = combine(progress, clock, saveStatus) { loaded, now, saves ->
+        val progress = loaded.progress
         val saveMessage = if (saves.failed && saves.pending > 0)
             "${saves.pending} ${if (saves.pending == 1) "answer hasn't" else "answers haven't"} been saved. Free up device storage, then retry. Unsaved answers are kept only while this app stays open."
         else null
         progress.copy(
-            reviews = reviewSchedule(progress.contrasts.mapNotNull { it.card }, now),
+            reviews = reviewSchedule(loaded.cards, now),
             nowEpochMs = now,
             error = listOfNotNull(progress.error, saveMessage).joinToString("\n").ifEmpty { null },
             pendingAnswers = saves.pending,
@@ -142,6 +161,8 @@ class ProgressRepository(
     }
 
     fun retrySaves() = drainPending()
+
+    fun retryLoading() { reload.update { it + 1 } }
 
     private fun drainPending() {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {

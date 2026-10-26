@@ -55,6 +55,12 @@ fun ConfusionMatrixScreen(
                 Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
+            if (state.canRetryLoad) {
+                Button(onClick = component::retryLoading, enabled = !state.isRefreshing,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(if (state.isRefreshing) "Refreshing progress…" else "Retry loading")
+                }
+            }
             if (state.canRetrySave) {
                 Button(onClick = component::retrySaves, enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {

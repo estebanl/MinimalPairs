@@ -675,6 +675,7 @@ interface ConfusionMatrixComponent {
     val state: StateFlow<ProgressState>
     fun practiceContrast(id: String)
     fun retrySaves()
+    fun retryLoading()
     fun onBack()
 }
 
@@ -687,6 +688,7 @@ class DefaultConfusionMatrixComponent(
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
     override fun retrySaves() = repository.retrySaves()
+    override fun retryLoading() = repository.retryLoading()
     override fun onBack() = onBackClicked()
 }
 

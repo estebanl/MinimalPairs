@@ -26,11 +26,13 @@ class ProgressScreenTest {
             try {
                 var selected: String? = null
                 var retries = 0
+                var reloads = 0
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
                     override fun onBack() {}
                     override fun retrySaves() { retries++ }
+                    override fun retryLoading() { reloads++ }
                 }
                 val scene = ImageComposeScene(width = 430, height = 1100) {
                     MinimalPairsTheme { ConfusionMatrixScreen(component) }
@@ -48,6 +50,12 @@ class ProgressScreenTest {
                     nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Retry saving" }
                         .config[SemanticsActions.OnClick].action!!.invoke()
                     assertEquals(1, retries)
+                    assertFalse(nodes().any { it.text() == "Your progress starts here" })
+                    component.state.value = ProgressState(loading = false, error = "Couldn't load progress. Try again.", canRetryLoad = true)
+                    settle()
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Retry loading" }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    assertEquals(1, reloads)
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     component.state.value = summarizeProgress(emptyList(), emptyList())
                     settle()

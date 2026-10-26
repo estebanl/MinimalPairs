@@ -4,6 +4,8 @@ import androidx.room3.Room
 import com.minimalpairs.app.data.local.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import java.nio.file.Files
 import kotlin.test.*
 
@@ -47,6 +49,56 @@ class ProgressRetryTest {
         }
     }
 
+    @Test
+    fun loadRetryKeepsLastTotalsAndReconnectsToLiveChanges() = runBlocking {
+        withDatabase { database, scope ->
+            val dao = database.progressDao()
+            dao.record(trial("sheep"), 5)
+            val flaky = FlakyDao(dao).apply { failReads.value = true }
+            val repository = ProgressRepository(flaky, scope)
+            val failed = withTimeout(5000) { repository.state.first { it.canRetryLoad } }
+            assertFalse(failed.loading)
+            assertNotNull(failed.error)
+            flaky.failReads.value = false
+            repository.retryLoading()
+            withTimeout(5000) { repository.state.first { it.attempts == 1 && !it.canRetryLoad } }
+            flaky.failReads.value = true
+            val stale = withTimeout(5000) { repository.state.first { it.canRetryLoad } }
+            assertEquals(1, stale.attempts)
+            assertTrue(stale.error!!.contains("last loaded totals"))
+            dao.record(trial("ship"), 2)
+            flaky.failReads.value = false
+            repository.retryLoading()
+            repository.retryLoading()
+            val recovered = withTimeout(5000) { repository.state.first { it.attempts == 2 && !it.canRetryLoad } }
+            assertNull(recovered.error)
+            dao.record(trial("sheep"), 5)
+            withTimeout(5000) { repository.state.first { it.attempts == 3 } }
+        }
+    }
+
+    @Test
+    fun loadAndSaveFailuresRecoverIndependently() = runBlocking {
+        withDatabase { database, scope ->
+            val flaky = FlakyDao(database.progressDao()).apply {
+                failReads.value = true
+                failBefore = true
+            }
+            val repository = ProgressRepository(flaky, scope)
+            repository.record(trial("sheep"), 5)
+            withTimeout(5000) { repository.state.first { it.canRetryLoad && it.canRetrySave && !it.isSaving } }
+            flaky.failReads.value = false
+            repository.retryLoading()
+            val reloaded = withTimeout(5000) { repository.state.first { !it.canRetryLoad && it.canRetrySave } }
+            assertEquals(1, reloaded.pendingAnswers)
+            assertEquals(0, reloaded.attempts)
+            flaky.failBefore = false
+            repository.retrySaves()
+            val recovered = withTimeout(5000) { repository.state.first { it.attempts == 1 && it.pendingAnswers == 0 } }
+            assertNull(recovered.error)
+        }
+    }
+
     private suspend fun withDatabase(block: suspend (AppDatabase, CoroutineScope) -> Unit) {
         val directory = Files.createTempDirectory("progress-retry").toFile()
         val database = createDatabase(Room.databaseBuilder<AppDatabase>(name = directory.resolve("progress.db").absolutePath))
@@ -66,7 +118,11 @@ class ProgressRetryTest {
     private class FlakyDao(private val delegate: ProgressDao) : ProgressDao() {
         @Volatile var failBefore = false
         @Volatile var failAfter = false
-        override fun observeTrials() = delegate.observeTrials()
+        val failReads = MutableStateFlow(false)
+        override fun observeTrials() = combine(delegate.observeTrials(), failReads) { trials, failed ->
+            check(!failed) { "Simulated read failure" }
+            trials
+        }
         override fun observeCards() = delegate.observeCards()
         override suspend fun getCard(id: String) = delegate.getCard(id)
         override suspend fun getTrial(id: Long) = delegate.getTrial(id)
