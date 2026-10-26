@@ -30,10 +30,12 @@ class ProgressScreenTest {
                 var selectedPhoneme: String? = null
                 var retries = 0
                 var reloads = 0
+                var speakingStarts = 0
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
                     override fun practiceSpeaking(id: String, phoneme: String) { selected = id; selectedPhoneme = phoneme }
+                    override fun startSpeaking() { speakingStarts++ }
                     override fun onBack() {}
                     override fun retrySaves() { retries++ }
                     override fun retryLoading() { reloads++ }
@@ -77,6 +79,11 @@ class ProgressScreenTest {
                     assertTrue(nodes().any { it.text() == "Your progress starts here" })
                     assertTrue(nodes().any { it.text() == "Show speaking progress" })
                     assertTrue(nodes().any { it.text().startsWith("0 scored recordings") })
+                    click("Show speaking progress")
+                    click("Start speaking")
+                    assertEquals(1, speakingStarts)
+                    assertNull(selected)
+                    click("Hide speaking progress")
                     component.state.value = summarizeProgress(listOf(TrialRecordEntity(
                         contrastId = "i_vs_I", targetWord = "sheep", selectedWord = "ship", isCorrect = false,
                         latencyMs = 1000, drillType = "FORCED_CHOICE", timestampEpochMs = 1000
@@ -155,6 +162,7 @@ class ProgressScreenTest {
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     click("Show speaking progress")
                     assertTrue(nodes().any { it.text() == "Score: 88/100" })
+                    assertFalse(nodes().any { it.text() == "Start speaking" })
                     assertTrue(nodes().any { it.text() == "Recent average: 88/100" })
                     assertTrue(nodes().any { it.text() == "Record this sound 9 more times to compare two sets of five." })
                     assertFalse(nodes().any { it.text() == "0% accuracy" })

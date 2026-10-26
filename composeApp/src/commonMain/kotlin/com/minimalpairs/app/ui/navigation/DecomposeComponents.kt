@@ -719,6 +719,7 @@ interface ConfusionMatrixComponent {
     val state: StateFlow<ProgressState>
     fun practiceContrast(id: String)
     fun practiceSpeaking(id: String, phoneme: String)
+    fun startSpeaking()
     fun retrySaves()
     fun retryLoading()
     fun onBack()
@@ -729,11 +730,12 @@ class DefaultConfusionMatrixComponent(
     private val repository: ProgressRepository,
     private val onPractice: (String) -> Unit,
     private val onBackClicked: () -> Unit,
-    private val onSpeak: (String, String) -> Unit
+    private val onSpeak: (String?, String?) -> Unit
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
     override fun practiceSpeaking(id: String, phoneme: String) = onSpeak(id, phoneme)
+    override fun startSpeaking() = onSpeak(null, null)
     override fun retrySaves() = repository.retrySaves()
     override fun retryLoading() = repository.retryLoading()
     override fun onBack() = onBackClicked()

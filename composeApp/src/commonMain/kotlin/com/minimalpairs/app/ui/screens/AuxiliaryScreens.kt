@@ -147,7 +147,8 @@ fun ConfusionMatrixScreen(
             // Retain any cached results while the shared error offers a retry.
             if (!state.loading && (!state.canRetryLoad || state.speaking.isNotEmpty())) {
                 ProgressDetailSection("Speaking progress", "${state.speaking.size} scored ${if (state.speaking.size == 1) "recording" else "recordings"} · separate from listening accuracy.") {
-                    SpeakingProgressCard(state.speaking, state.speakingSummaries, state.nowEpochMs, component::practiceSpeaking)
+                    SpeakingProgressCard(state.speaking, state.speakingSummaries, state.nowEpochMs,
+                        component::startSpeaking, component::practiceSpeaking)
                 }
             }
         }

@@ -78,6 +78,11 @@ Feature: Persistent listening and speaking progress
     And silence, cancelled scoring, and generated examples are not saved
     And upgrading the database preserves earlier listening data
 
+  Scenario: Start speaking from an empty history
+    Given Progress has loaded without any speaking records
+    When the learner expands speaking progress and chooses Start speaking
+    Then Speak opens without requiring a previously practiced sound
+
   Scenario: Speaking comparisons use the same target
     Given at least ten scored recordings of one sound within one contrast
     Then its latest five scores are compared with its preceding five scores

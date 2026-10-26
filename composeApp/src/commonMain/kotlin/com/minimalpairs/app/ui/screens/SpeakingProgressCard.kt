@@ -20,6 +20,7 @@ internal fun SpeakingProgressCard(
     records: List<SpeakingRecordEntity>,
     summaries: List<SpeakingSoundSummary>,
     nowEpochMs: Long,
+    onStartSpeaking: () -> Unit,
     onPractice: (String, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -31,6 +32,9 @@ internal fun SpeakingProgressCard(
             Text("Pronunciation scores are estimates out of 100. They are separate from listening accuracy and do not affect listening streaks or reviews.", style = MaterialTheme.typography.bodySmall)
             if (records.isEmpty()) {
                 Text("Complete a recording in Speak to start your speaking history.")
+                Button(onClick = onStartSpeaking, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text("Start speaking")
+                }
             }
             if (summaries.isNotEmpty()) {
                 Text("By sound", style = MaterialTheme.typography.titleLarge)
