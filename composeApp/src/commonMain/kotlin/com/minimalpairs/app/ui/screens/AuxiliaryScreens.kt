@@ -19,6 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
+import kotlin.time.Clock
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -36,8 +41,8 @@ fun ConfusionMatrixScreen(
 ) {
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
-    val confusion = component.confusionMap
-    val weights = component.confidenceWeights
+    val state by component.state.collectAsState()
+    val confusion = state.confusion
     Scaffold(topBar = { PracticeTopBar("Progress", onBack = component::onBack) }, modifier = modifier) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -45,7 +50,11 @@ fun ConfusionMatrixScreen(
         ) {
             Text("Every listen counts.", style = MaterialTheme.typography.headlineLarge)
             Text("See the sounds you recognize and the ones to practice next.", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
-            if (confusion.isEmpty()) {
+            Text("Listening practice", style = MaterialTheme.typography.labelLarge)
+            state.error?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium) }
+            if (state.loading) {
+                Text("Loading your progress…", style = MaterialTheme.typography.bodyLarge)
+            } else if (state.attempts == 0 && state.error == null) {
                 Card(colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         PracticeIcon(PracticeIcon.Progress, modifier = Modifier.size(36.dp))
@@ -57,18 +66,52 @@ fun ConfusionMatrixScreen(
                         Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Start listening") }
                     }
                 }
-            } else {
+            } else if (state.attempts > 0) {
+                Card(colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("${state.accuracy}% accuracy", style = MaterialTheme.typography.headlineMedium)
+                        Text("Answers: ${state.attempts} · Contrasts practiced: ${state.contrasts.size}")
+                        Text("Accuracy is the share of listening answers you got right.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Text("Practice next", style = MaterialTheme.typography.titleLarge)
+                Text("Your lowest-accuracy contrasts come first. Small samples can change quickly.", style = MaterialTheme.typography.bodyMedium)
+                state.contrasts.forEach { progress ->
+                    val contrast = ListeningContrastsCatalog.getContrastById(progress.contrastId)
+                    if (contrast != null) {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val pair = contrast.pairs.first()
+                                Text("${pair.word1} / ${pair.word2}", style = MaterialTheme.typography.titleMedium)
+                                Text("${progress.accuracy}% accuracy · ${progress.correct} of ${progress.attempts} correct")
+                                progress.card?.let { card ->
+                                    Text("Mastery estimate · ${(card.masteryScore * 100).roundToInt()}%", style = MaterialTheme.typography.bodyMedium)
+                                    val due = card.lastReviewedEpochMs + card.intervalDays.toLong() * 86_400_000L
+                                    val remaining = due - Clock.System.now().toEpochMilliseconds()
+                                    val days = ((remaining.coerceAtLeast(0) + 86_399_999L) / 86_400_000L)
+                                    Text(if (remaining <= 0) "Review due" else "Review in $days ${if (days == 1L) "day" else "days"}", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Button(onClick = { component.practiceContrast(contrast.id) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                                    Text("Practice ${pair.word1} / ${pair.word2}")
+                                }
+                            }
+                        }
+                    }
+                }
+                Text("Mastery estimates use answer speed and repeated success to plan reviews. They are separate from accuracy.", style = MaterialTheme.typography.bodySmall)
+                Text("Sound patterns", style = MaterialTheme.typography.titleLarge)
                 confusion.forEach { (target, chosenMap) ->
                     Card(colors = CardDefaults.cardColors(containerColor = scheme.surface), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text("Sound /$target/", style = MaterialTheme.typography.titleMedium)
-                                val weight = weights[target] ?: .5f
-                                Text("Confidence · ${(weight * 100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = if (weight >= .7f) colors.success else colors.warning)
+                                val accuracy = ((chosenMap[target] ?: 0) * 100f / chosenMap.values.sum()).roundToInt()
+                                Text("Accuracy · $accuracy%", style = MaterialTheme.typography.bodySmall)
                             }
                             chosenMap.forEach { (chosen, count) ->
+                                val times = if (count == 1) "time" else "times"
                                 Text(
-                                    if (target == chosen) "✓ Heard /$chosen/ correctly · $count times" else "Mixed up with /$chosen/ · $count times",
+                                    if (target == chosen) "✓ Heard /$chosen/ correctly · $count $times" else "Mixed up with /$chosen/ · $count $times",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (target == chosen) colors.success else colors.warning
                                 )

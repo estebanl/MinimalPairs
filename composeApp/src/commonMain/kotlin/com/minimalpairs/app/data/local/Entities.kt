@@ -11,6 +11,7 @@ import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.Update
+import androidx.room3.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "sm2_cards")
@@ -82,6 +83,36 @@ interface TrialDao {
     suspend fun getTotalTrialCount(): Int
 }
 
+@Dao
+abstract class ProgressDao {
+    @Query("SELECT * FROM trial_records ORDER BY timestampEpochMs DESC")
+    abstract fun observeTrials(): Flow<List<TrialRecordEntity>>
+
+    @Query("SELECT * FROM sm2_cards")
+    abstract fun observeCards(): Flow<List<Sm2CardEntity>>
+
+    @Query("SELECT * FROM sm2_cards WHERE contrastId = :id")
+    abstract suspend fun getCard(id: String): Sm2CardEntity?
+
+    @Insert
+    abstract suspend fun insertTrial(trial: TrialRecordEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun saveCard(card: Sm2CardEntity)
+
+    @Transaction
+    open suspend fun record(trial: TrialRecordEntity, quality: Int) {
+        val previous = getCard(trial.contrastId)
+        val state = previous?.let {
+            com.minimalpairs.app.domain.srs.Sm2State(it.repetitions, it.intervalDays, it.easeFactor, it.masteryScore)
+        } ?: com.minimalpairs.app.domain.srs.Sm2State()
+        val next = com.minimalpairs.app.domain.srs.ModifiedSm2Engine.review(state, quality)
+        insertTrial(trial)
+        saveCard(Sm2CardEntity(trial.contrastId, next.repetitions, next.intervalDays,
+            next.easeFactor, next.masteryScore, trial.timestampEpochMs))
+    }
+}
+
 @Database(
     entities = [Sm2CardEntity::class, ConfusionMatrixEntryEntity::class, TrialRecordEntity::class],
     version = 1
@@ -91,6 +122,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sm2Dao(): Sm2Dao
     abstract fun confusionDao(): ConfusionDao
     abstract fun trialDao(): TrialDao
+    abstract fun progressDao(): ProgressDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

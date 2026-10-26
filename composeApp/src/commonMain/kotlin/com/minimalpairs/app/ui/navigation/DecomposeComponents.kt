@@ -50,6 +50,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
+import kotlin.time.Clock
+import com.minimalpairs.app.data.local.*
+import com.minimalpairs.app.data.progress.*
+import kotlinx.coroutines.flow.collect
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -101,6 +105,20 @@ class DefaultRootComponent(
     private val scorerApi: PhonemeScorerApi = PhonemeScorerClient()
 ) : RootComponent, ComponentContext by componentContext {
 
+    private val progressScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val progressDatabase = createDatabase(getDatabaseBuilder())
+    private val progressRepository = ProgressRepository(progressDatabase.progressDao(), progressScope)
+    init {
+        lifecycle.doOnDestroy {
+            val job = progressScope.coroutineContext[Job]!!
+            job.cancel()
+            CoroutineScope(Dispatchers.Default).launch {
+                job.join()
+                progressDatabase.close()
+            }
+        }
+    }
+
     private val navigation = StackNavigation<RootConfig>()
 
     override val childStack: Value<ChildStack<*, RootChild>> =
@@ -122,7 +140,8 @@ class DefaultRootComponent(
                     componentContext = componentContext,
                     contrastId = config.contrastId,
                     confusionTracker = confusionTracker,
-                    onBackClicked = ::onBack
+                    onBackClicked = ::onBack,
+                    progressRepository = progressRepository
                 )
             )
             is RootConfig.ArticulatorLab -> RootChild.ArticulatorLab(
@@ -134,7 +153,7 @@ class DefaultRootComponent(
                 )
             )
             is RootConfig.ConfusionMatrix -> RootChild.ConfusionMatrix(
-                DefaultConfusionMatrixComponent(componentContext, confusionTracker, ::onBack)
+                DefaultConfusionMatrixComponent(componentContext, progressRepository, ::onNavigateToEarTrainer, ::onBack)
             )
             is RootConfig.MeaningTrap -> RootChild.MeaningTrap(
                 DefaultMeaningTrapComponent(
@@ -213,7 +232,8 @@ class DefaultEarTrainerComponent(
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val timeSource: TimeSource = TimeSource.Monotonic,
     private val random: Random = Random.Default,
-    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
+    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm,
+    private val progressRepository: ProgressRepository? = null
 ) : EarTrainerComponent, ComponentContext by componentContext {
 
     private val contrast = ListeningContrastsCatalog.getContrastById(contrastId)
@@ -232,6 +252,16 @@ class DefaultEarTrainerComponent(
     override val state: StateFlow<EarTrainerUiState> = _state.asStateFlow()
 
     init {
+        progressRepository?.let { repository ->
+            scope.launch {
+                repository.state.collect { progress ->
+                    progress.contrasts.firstOrNull { it.contrastId == contrast.id }?.card?.let { card ->
+                        val saved = Sm2State(card.repetitions, card.intervalDays, card.easeFactor, card.masteryScore)
+                        _state.value = _state.value.copy(sm2State = saved, drillType = progression.resolveDrillType(saved.masteryScore))
+                    }
+                }
+            }
+        }
         lifecycle.doOnStop { stopPlayback() }
         lifecycle.doOnDestroy {
             closed = true
@@ -329,6 +359,11 @@ class DefaultEarTrainerComponent(
         // Evaluate SM-2 quality and state
         val q = ModifiedSm2Engine.calculateQuality(isCorrect, latencySeconds, progression.consecutiveFailures)
         val nextSm2 = ModifiedSm2Engine.review(current.sm2State, q)
+        progressRepository?.record(TrialRecordEntity(
+            contrastId = contrast.id, targetWord = current.targetWord, selectedWord = selectedWord,
+            isCorrect = isCorrect, latencyMs = (latencySeconds * 1000).toLong(),
+            drillType = current.drillType.name, timestampEpochMs = Clock.System.now().toEpochMilliseconds()
+        ), q)
 
         // Progress drills and diagnostic flags
         val feedback = progression.onTrialCompleted(isCorrect)
@@ -628,18 +663,19 @@ class DefaultArticulatorLabComponent(
 
 // --- Confusion Matrix Component ---
 interface ConfusionMatrixComponent {
-    val confusionMap: Map<String, Map<String, Int>>
-    val confidenceWeights: Map<String, Float>
+    val state: StateFlow<ProgressState>
+    fun practiceContrast(id: String)
     fun onBack()
 }
 
 class DefaultConfusionMatrixComponent(
     componentContext: ComponentContext,
-    private val tracker: PhonemeConfusionTracker,
+    repository: ProgressRepository,
+    private val onPractice: (String) -> Unit,
     private val onBackClicked: () -> Unit
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
-    override val confusionMap: Map<String, Map<String, Int>> get() = tracker.getAllConfusions()
-    override val confidenceWeights: Map<String, Float> get() = tracker.getAllWeights()
+    override val state = repository.state
+    override fun practiceContrast(id: String) = onPractice(id)
     override fun onBack() = onBackClicked()
 }
 
