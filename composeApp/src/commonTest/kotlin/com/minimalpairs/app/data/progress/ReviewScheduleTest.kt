@@ -29,7 +29,12 @@ class ReviewScheduleTest {
 
     @Test
     fun timingRoundsUpAndUsesTheSameDueBoundary() {
-        assertEquals("Review in 1 day", reviewTiming(1, 0))
+        assertEquals("Review in less than a minute", reviewTiming(1, 0))
+        assertEquals("Review in less than a minute", reviewTiming(59_999, 0))
+        assertEquals("Review in 1 minute", reviewTiming(60_000, 0))
+        assertEquals("Review in 2 minutes", reviewTiming(60_001, 0))
+        assertEquals("Review in 1 hour", reviewTiming(3_600_000, 0))
+        assertEquals("Review in 2 hours", reviewTiming(3_600_001, 0))
         assertEquals("Review in 1 day", reviewTiming(86_400_000, 0))
         assertEquals("Review in 2 days", reviewTiming(86_400_001, 0))
         assertEquals("Review due", reviewTiming(0, 0))

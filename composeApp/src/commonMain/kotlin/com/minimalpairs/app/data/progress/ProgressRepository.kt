@@ -98,9 +98,9 @@ private fun practiceCalendarChanges(): Flow<PracticeCalendar> = flow {
     }
 }.distinctUntilChanged()
 
-private fun reviewClock(): Flow<Long> = flow {
+private fun reviewRefreshes(): Flow<Unit> = flow {
     while (true) {
-        emit(Clock.System.now().toEpochMilliseconds())
+        emit(Unit)
         delay(60_000)
     }
 }
@@ -110,7 +110,8 @@ class ProgressRepository(
     private val dao: ProgressDao,
     private val scope: CoroutineScope,
     calendar: Flow<PracticeCalendar> = practiceCalendarChanges(),
-    clock: Flow<Long> = reviewClock()
+    private val nowEpochMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    refresh: Flow<Unit> = reviewRefreshes()
 ) {
     private data class PendingAnswer(val trial: TrialRecordEntity? = null, val quality: Int = 0, val speaking: SpeakingRecordEntity? = null)
     private data class SaveStatus(val pending: Int, val saving: Boolean, val failed: Boolean)
@@ -129,7 +130,7 @@ class ProgressRepository(
             emit(lastLoaded.copy(progress = lastLoaded.progress.copy(isRefreshing = true, canRetryLoad = attempt > 0)))
             // Construct the database flows here so synchronous open errors can also be retried.
             emitAll(combine(dao.observeTrials(), dao.observeCards(), calendar, dao.observeSpeaking()) { trials, cards, day, speaking ->
-                LoadedProgress(summarizeProgress(trials, cards, day).copy(speaking = speaking), cards)
+                LoadedProgress(summarizeProgress(trials, cards, day, nowEpochMs()).copy(speaking = speaking), cards)
             }.onEach { lastLoaded = it })
         }.catch {
             val message = if (lastLoaded.progress.loading) "Couldn't load progress. Try again."
@@ -139,7 +140,9 @@ class ProgressRepository(
             )))
         }
     }
-    val state: StateFlow<ProgressState> = combine(progress, clock, saveStatus) { loaded, now, saves ->
+    val state: StateFlow<ProgressState> = combine(progress, refresh, saveStatus) { loaded, _, saves ->
+        // Read the wall clock on every data/status update, not just on the periodic tick.
+        val now = nowEpochMs()
         val progress = loaded.progress
         val saveMessage = if (saves.failed && saves.pending > 0)
             "${saves.pending} ${if (saves.pending == 1) "practice result hasn't" else "practice results haven't"} been saved. Free up device storage, then retry. Unsaved results are kept only while this app stays open."
