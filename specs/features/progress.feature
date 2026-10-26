@@ -74,6 +74,7 @@ Feature: Persistent listening and speaking progress
     Given at least ten scored recordings of one sound within one contrast
     Then its latest five scores are compared with its preceding five scores
     And other sounds and contrasts are excluded from that comparison
+    And speaking summaries are calculated off the UI thread before the section opens
     When the learner chooses to practice that sound
     Then Speak opens with that exact phoneme selected
     Including when the requested phoneme is the second sound in the pair

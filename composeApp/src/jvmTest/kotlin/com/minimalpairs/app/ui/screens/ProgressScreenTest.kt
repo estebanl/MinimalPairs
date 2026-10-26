@@ -137,9 +137,11 @@ class ProgressScreenTest {
                     assertEquals(5, practiceButtons().size)
                     click("Show fewer contrasts")
                     assertEquals(3, practiceButtons().size)
-                    component.state.value = ProgressState(loading = false, nowEpochMs = 2000, speaking = listOf(
+                    val firstRecording = listOf(
                         SpeakingRecordEntity(-1, "i_vs_I", "sheep", "iː", 88f, 200, 1000)
-                    ))
+                    )
+                    component.state.value = ProgressState(loading = false, nowEpochMs = 2000,
+                        speaking = firstRecording, speakingSummaries = summarizeSpeaking(firstRecording))
                     settle()
                     assertTrue(nodes().any { it.text() == "No listening answers yet." })
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
@@ -160,7 +162,7 @@ class ProgressScreenTest {
                         SpeakingRecordEntity(12, "ae_vs_e", "bad", "æ", 60f, 200, 12000),
                         SpeakingRecordEntity(13, "ae_vs_e", "bed", "e", 70f, 200, 13000)
                     )
-                    component.state.value = component.state.value.copy(speaking = speaking)
+                    component.state.value = component.state.value.copy(speaking = speaking, speakingSummaries = summarizeSpeaking(speaking))
                     settle()
                     assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
                     click("Show all 4 sounds")

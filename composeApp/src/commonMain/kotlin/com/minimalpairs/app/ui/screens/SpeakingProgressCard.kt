@@ -11,15 +11,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.data.local.SpeakingRecordEntity
-import com.minimalpairs.app.data.progress.summarizeSpeaking
+import com.minimalpairs.app.data.progress.SpeakingSoundSummary
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
-internal fun SpeakingProgressCard(records: List<SpeakingRecordEntity>, nowEpochMs: Long, onPractice: (String, String) -> Unit) {
+internal fun SpeakingProgressCard(
+    records: List<SpeakingRecordEntity>,
+    summaries: List<SpeakingSoundSummary>,
+    nowEpochMs: Long,
+    onPractice: (String, String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
     var allSounds by remember { mutableStateOf(false) }
-    val summaries = remember(records) { summarizeSpeaking(records) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Speaking progress", style = MaterialTheme.typography.titleLarge)

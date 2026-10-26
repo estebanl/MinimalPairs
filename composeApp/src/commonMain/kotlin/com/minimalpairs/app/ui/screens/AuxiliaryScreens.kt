@@ -145,7 +145,7 @@ fun ConfusionMatrixScreen(
             }
             if (!state.loading) {
                 ProgressDetailSection("Speaking progress", "${state.speaking.size} scored ${if (state.speaking.size == 1) "recording" else "recordings"} · separate from listening accuracy.") {
-                    SpeakingProgressCard(state.speaking, state.nowEpochMs, component::practiceSpeaking)
+                    SpeakingProgressCard(state.speaking, state.speakingSummaries, state.nowEpochMs, component::practiceSpeaking)
                 }
             }
         }

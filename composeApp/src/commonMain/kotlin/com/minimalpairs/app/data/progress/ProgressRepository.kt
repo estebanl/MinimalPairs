@@ -48,6 +48,7 @@ data class ProgressState(
     val activity: PracticeActivity = PracticeActivity(),
     val reviews: ReviewSchedule = ReviewSchedule(),
     val speaking: List<SpeakingRecordEntity> = emptyList(),
+    val speakingSummaries: List<SpeakingSoundSummary> = emptyList(),
     val nowEpochMs: Long = Clock.System.now().toEpochMilliseconds()
 ) {
     val attempts: Int get() = contrasts.sumOf { it.attempts }
@@ -132,7 +133,10 @@ class ProgressRepository(
             // Construct the database flows here so synchronous open errors can also be retried.
             emitAll(combine(store.observe(), calendar) { snapshot, day ->
                 LoadedProgress(
-                    summarizeProgress(snapshot.trials, snapshot.cards, day, nowEpochMs()).copy(speaking = snapshot.speaking),
+                    summarizeProgress(snapshot.trials, snapshot.cards, day, nowEpochMs()).copy(
+                        speaking = snapshot.speaking,
+                        speakingSummaries = summarizeSpeaking(snapshot.speaking)
+                    ),
                     snapshot.cards
                 )
             }.flowOn(aggregationDispatcher).onEach { lastLoaded = it })
