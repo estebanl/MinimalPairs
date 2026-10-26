@@ -80,6 +80,33 @@ class ProgressPersistenceTest {
     }
 
     @Test
+    fun dueReviewsRefreshWithTimeAndLeaveQueueAfterAnAnswer() = runBlocking {
+        val directory = Files.createTempDirectory("review-clock-test").toFile()
+        val database = createDatabase(Room.databaseBuilder<AppDatabase>(name = directory.resolve("progress.db").absolutePath))
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val dao = database.progressDao()
+            dao.record(trial("i_vs_I", "sheep", "sheep", true).copy(timestampEpochMs = 0), 5)
+            val clock = MutableStateFlow(86_399_999L)
+            val repository = ProgressRepository(dao, scope, clock = clock)
+            val before = withTimeout(5000) { repository.state.first { !it.loading } }
+            assertTrue(before.reviews.due.isEmpty())
+            assertEquals("i_vs_I", before.reviews.next?.contrastId)
+            clock.value = 86_400_000L
+            withTimeout(5000) { repository.state.first { it.reviews.due.size == 1 } }
+            repository.record(trial("i_vs_I", "sheep", "ship", false).copy(timestampEpochMs = clock.value), 2)
+            val after = withTimeout(5000) {
+                repository.state.first { it.attempts == 2 && it.reviews.due.isEmpty() }
+            }
+            assertEquals(172_800_000L, after.reviews.next?.dueEpochMs)
+        } finally {
+            scope.coroutineContext[Job]!!.cancelAndJoin()
+            database.close()
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun emptyProgressHasNoInventedAccuracyOrMastery() {
         val state = summarizeProgress(emptyList(), emptyList())
         assertFalse(state.loading)

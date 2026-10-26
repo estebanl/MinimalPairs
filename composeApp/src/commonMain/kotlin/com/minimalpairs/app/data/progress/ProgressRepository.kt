@@ -5,6 +5,7 @@ import com.minimalpairs.app.data.local.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
+import kotlin.time.Clock
 
 data class ContrastProgress(
     val contrastId: String,
@@ -36,7 +37,9 @@ data class ProgressState(
     val confusion: Map<String, Map<String, Int>> = emptyMap(),
     val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
     val recentTrials: List<TrialRecordEntity> = emptyList(),
-    val activity: PracticeActivity = PracticeActivity()
+    val activity: PracticeActivity = PracticeActivity(),
+    val reviews: ReviewSchedule = ReviewSchedule(),
+    val nowEpochMs: Long = Clock.System.now().toEpochMilliseconds()
 ) {
     val attempts: Int get() = contrasts.sumOf { it.attempts }
     val accuracy: Int get() = if (attempts == 0) 0 else
@@ -44,7 +47,8 @@ data class ProgressState(
 }
 
 fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity>,
-    calendar: PracticeCalendar = PracticeCalendar.current()
+    calendar: PracticeCalendar = PracticeCalendar.current(),
+    nowEpochMs: Long = Clock.System.now().toEpochMilliseconds()
 ): ProgressState {
     val confusion = summarizeConfusions(trials)
     val byId = cards.associateBy { it.contrastId }
@@ -57,7 +61,9 @@ fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity
         loading = false, contrasts = contrasts, confusion = confusion,
         trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
         recentTrials = newestFirst.take(20),
-        activity = summarizeActivity(trials, calendar)
+        activity = summarizeActivity(trials, calendar),
+        reviews = reviewSchedule(cards, nowEpochMs),
+        nowEpochMs = nowEpochMs
     )
 }
 
@@ -83,16 +89,29 @@ private fun practiceCalendarChanges(): Flow<PracticeCalendar> = flow {
     }
 }.distinctUntilChanged()
 
+private fun reviewClock(): Flow<Long> = flow {
+    while (true) {
+        emit(Clock.System.now().toEpochMilliseconds())
+        delay(60_000)
+    }
+}
+
 class ProgressRepository(
     private val dao: ProgressDao,
     private val scope: CoroutineScope,
-    calendar: Flow<PracticeCalendar> = practiceCalendarChanges()
+    calendar: Flow<PracticeCalendar> = practiceCalendarChanges(),
+    clock: Flow<Long> = reviewClock()
 ) {
     private val saveError = MutableStateFlow<String?>(null)
-    val state: StateFlow<ProgressState> = combine(dao.observeTrials(), dao.observeCards(), saveError, calendar) { trials, cards, error, day ->
+    private val progress = combine(dao.observeTrials(), dao.observeCards(), saveError, calendar) { trials, cards, error, day ->
         summarizeProgress(trials, cards, day).copy(error = error)
     }.catch { emit(ProgressState(loading = false, error = "Couldn't load progress. Reopen the app to try again.")) }
-        .stateIn(scope, SharingStarted.Eagerly, ProgressState())
+    val state: StateFlow<ProgressState> = combine(progress, clock) { progress, now ->
+        progress.copy(
+            reviews = reviewSchedule(progress.contrasts.mapNotNull { it.card }, now),
+            nowEpochMs = now
+        )
+    }.stateIn(scope, SharingStarted.Eagerly, ProgressState())
 
     fun record(trial: TrialRecordEntity, quality: Int) {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {

@@ -59,6 +59,10 @@ class ProgressScreenTest {
                     })
                     assertTrue(nodes().any { it.text() == "Mastery estimate · 47%" })
                     assertTrue(nodes().any { it.text() == "Review due" })
+                    assertTrue(nodes().any { it.text() == "1 contrast is ready to review." })
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Review sheep / ship" }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    assertEquals("i_vs_I", selected)
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     val practice = nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text().startsWith("Practice ") }
                     practice.config[SemanticsActions.OnClick].action!!.invoke()
@@ -75,6 +79,7 @@ class ProgressScreenTest {
                     }, emptyList())
                     settle()
                     assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
+                    assertTrue(nodes().any { it.text() == "No reviews due" })
                     assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
                     nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Show all 20 answers" }
                         .config[SemanticsActions.OnClick].action!!.invoke()

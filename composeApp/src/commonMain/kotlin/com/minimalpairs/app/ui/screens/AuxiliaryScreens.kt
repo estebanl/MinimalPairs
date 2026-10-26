@@ -21,7 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
-import kotlin.time.Clock
+import com.minimalpairs.app.data.progress.reviewDueAt
+import com.minimalpairs.app.data.progress.reviewTiming
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +71,7 @@ fun ConfusionMatrixScreen(
                         Text("Accuracy is the share of listening answers you got right.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
+                ReviewsDueCard(state.reviews, state.nowEpochMs, component::practiceContrast)
                 PracticeActivityCard(state.activity)
                 AccuracyTrendCard(state.trend)
                 Text("Practice next", style = MaterialTheme.typography.titleLarge)
@@ -84,10 +86,7 @@ fun ConfusionMatrixScreen(
                                 Text("${progress.accuracy}% accuracy · ${progress.correct} of ${progress.attempts} correct")
                                 progress.card?.let { card ->
                                     Text("Mastery estimate · ${(card.masteryScore * 100).roundToInt()}%", style = MaterialTheme.typography.bodyMedium)
-                                    val due = card.lastReviewedEpochMs + card.intervalDays.toLong() * 86_400_000L
-                                    val remaining = due - Clock.System.now().toEpochMilliseconds()
-                                    val days = ((remaining.coerceAtLeast(0) + 86_399_999L) / 86_400_000L)
-                                    Text(if (remaining <= 0) "Review due" else "Review in $days ${if (days == 1L) "day" else "days"}", style = MaterialTheme.typography.bodySmall)
+                                    Text(reviewTiming(reviewDueAt(card), state.nowEpochMs), style = MaterialTheme.typography.bodySmall)
                                 }
                                 Button(onClick = { component.practiceContrast(contrast.id) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                                     Text("Practice ${pair.word1} / ${pair.word2}")
