@@ -5,7 +5,7 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 ## Features & Modules
 
 - **Module 1: The Ear Trainer** — High-entropy ABX phonemic discrimination engine, clear whole-word audio, and SM-2 spaced repetition memory scheduler.
-- **Module 2: Articulator Lab** — Live acoustic Sound map, recording/replay with placement guidance, offline mouth-position illustrations, a rotatable 3D teaching model with front/side cutaways, and on-device camera lip feedback on Android/iOS.
+- **Module 2: Articulator Lab** — Contrast and example-word selection, live acoustic Sound map, recording/replay with placement guidance, offline mouth-position illustrations, rotatable 3D teaching references with acoustic comparison, and on-device lip opening/circularity feedback on Android/iOS.
 - **Module 3: The Meaning Trap** — Narrative branching comic scenarios highlighting high-stakes minimal pair semantic blunders.
 - **Module 4: Rhythm & Pitch Ribbon** — Continuous YIN F0 pitch tracking ribbon, real-time prosody overlay, and connected speech assimilation practice.
 
@@ -34,6 +34,8 @@ The Android target is a library, not a standalone launcher app. A host Activity 
 Listening streaks and reviews exclude speaking, Stories, and Rhythm. Histories store scores and target metadata, not recorded audio. Exporting a backup and importing it on another device provides manual transfer. Automatic cloud synchronization and account infrastructure are not implemented.
 
 ## Documentation & Deployment
+
+- Articulator Lab: [practice selection](docs/ARTICULATOR_PRACTICE.md), [camera measurements](docs/ARTICULATOR_CAMERA.md), [acoustic comparison](docs/ARTICULATOR_COMPARISON.md), [model assets](docs/MOUTH_POSITION_ARTWORK.md), [scoring setup](docs/ARTICULATOR_SCORING.md), and [device validation](docs/ARTICULATOR_DEVICE_VALIDATION.md). The behavior contract is in [articulator_lab.feature](specs/features/articulator_lab.feature). Camera measurements and acoustic estimates do not reconstruct internal anatomy or provide calibrated jaw distances.
 
 - Run on connected iOS device: [`./scripts/run_on_device.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/run_on_device.sh) (defaults to connected iPhone `esteban.lopez`).
 - [TestFlight Publishing Guide](file:///Users/estebanlopez/dev/MinimalPairs/docs/TESTFLIGHT_PUBLISHING.md) — Comprehensive guide and CLI workflow for building and distributing to Apple TestFlight.

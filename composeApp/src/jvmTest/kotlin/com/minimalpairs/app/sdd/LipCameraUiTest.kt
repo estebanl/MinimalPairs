@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
@@ -23,6 +24,35 @@ import kotlin.test.*
 
 @OptIn(ExperimentalComposeUiApi::class)
 class LipCameraUiTest {
+    @Test
+    fun trackingDiagnosticsShowMeasuredRatesAndClearAfterStopping() {
+        val owner = Owner()
+        val controller = LipCameraController()
+        ImageComposeScene(390, 2800) {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                MinimalPairsTheme {
+                    LipCameraFeedbackCard("iː", "sheep", controller = controller, preview = { _, _ -> })
+                }
+            }
+        }.use { scene ->
+            scene.render().close()
+            scene.click("Start camera")
+            repeat(4) { index ->
+                controller.accept(controller.state.value.session, LipCameraFrame(LipCameraStatus.TRACKING, sample,
+                    capturedAtSeconds = 1.0 + index * .04, inferenceDurationMs = 10.0))
+            }
+            scene.render().close()
+            scene.click("+ Tracking details")
+            repeat(3) { scene.render().close() }
+            assertTrue(scene.texts().contains("Processed frames: 4"))
+            assertTrue(scene.texts().any { it.startsWith("Analysis rate:") })
+            assertTrue(scene.texts().any { it.contains("10 ms average") })
+            scene.click("Stop camera")
+            scene.render().close()
+            assertFalse(scene.texts().any { it.startsWith("Analysis rate:") })
+        }
+    }
+
     private class Owner : LifecycleOwner {
         override val lifecycle = LifecycleRegistry.createUnsafe(this).apply { currentState = Lifecycle.State.RESUMED }
     }
@@ -35,7 +65,7 @@ class LipCameraUiTest {
         for (scale in listOf(1f, 1.8f)) for (dark in listOf(false, true)) {
             val controller = LipCameraController()
             val owner = Owner()
-            ImageComposeScene(300, 2200, density = Density(1f, scale)) {
+            ImageComposeScene(300, 3200, density = Density(1f, scale)) {
                 CompositionLocalProvider(LocalLifecycleOwner provides owner) {
                     MinimalPairsTheme(darkTheme = dark) {
                         LipCameraFeedbackCard("uː", "fool", controller = controller,
@@ -70,6 +100,50 @@ class LipCameraUiTest {
                 assertTrue(scene.texts().any { it.contains("Camera access is off") })
                 assertTrue(scene.texts().contains("Start camera"))
             }
+        }
+    }
+
+    @Test
+    fun personalReferenceCanBeClearedAndNeverFollowsAnotherSoundOrSession() {
+        val owner = Owner()
+        val controller = LipCameraController()
+        val phoneme = mutableStateOf("iː")
+        ImageComposeScene(390, 2800) {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                MinimalPairsTheme {
+                    LipCameraFeedbackCard(phoneme.value, "example", controller = controller, preview = { _, _ -> })
+                }
+            }
+        }.use { scene ->
+            scene.render().close()
+            scene.click("Start camera")
+            scene.render().close()
+            fun track() {
+                controller.accept(controller.state.value.session, LipCameraFrame(LipCameraStatus.TRACKING, sample))
+                scene.render().close()
+            }
+            track()
+            assertTrue(scene.texts().any { it.startsWith("Lip contour circularity:") })
+            scene.click("Use this pose for comparison")
+            scene.render().close()
+            assertTrue(scene.texts().any { it.startsWith("Compared with your saved pose:") })
+            assertTrue(scene.texts().any { it.contains("not a verified pronunciation target") })
+            scene.click("Clear comparison pose")
+            scene.render().close()
+            assertFalse(scene.texts().any { it.startsWith("Compared with your saved pose:") })
+            scene.click("Use this pose for comparison")
+            scene.render().close()
+            phoneme.value = "uː"
+            scene.render().close()
+            assertFalse(scene.texts().any { it.startsWith("Compared with your saved pose:") })
+            scene.click("Use this pose for comparison")
+            scene.render().close()
+            scene.click("Stop camera")
+            scene.render().close()
+            scene.click("Start camera")
+            scene.render().close()
+            track()
+            assertFalse(scene.texts().any { it.startsWith("Compared with your saved pose:") })
         }
     }
 

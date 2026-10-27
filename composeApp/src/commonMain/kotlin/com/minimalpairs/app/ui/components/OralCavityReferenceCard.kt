@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.minimalpairs.app.core.model.PhoneticBounds
 import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import com.minimalpairs.app.ui.reference.OralCavityModel
 import com.minimalpairs.app.ui.reference.OralPart
@@ -54,7 +55,15 @@ import kotlin.math.min
 
 /** Interactive teaching model. Microphone data must not deform the reference anatomy. */
 @Composable
-fun OralCavityReferenceCard(phoneme: String, exampleWord: String, modifier: Modifier = Modifier) {
+fun OralCavityReferenceCard(
+    phoneme: String,
+    exampleWord: String,
+    modifier: Modifier = Modifier,
+    targetBounds: PhoneticBounds? = null,
+    observedF1: Float? = null,
+    observedF2: Float? = null,
+    isRecording: Boolean = false
+) {
     val scheme = MaterialTheme.colorScheme
     val accentInk = PracticeTheme.colors.accentInk
     val sourceShape = VocalTractLabMeshes.sourceShapes[phoneme]
@@ -85,7 +94,15 @@ fun OralCavityReferenceCard(phoneme: String, exampleWord: String, modifier: Modi
             Text("Explore mouth placement", style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.semantics { heading() })
             Text("$exampleWord /$phoneme/", style = MaterialTheme.typography.titleLarge)
-            Text("VocalTractLab reference", style = MaterialTheme.typography.labelMedium, color = accentInk)
+            targetBounds?.let { bounds ->
+                AcousticPlacementComparisonCard(bounds, observedF1, observedF2, isRecording)
+            }
+            Text(if (VocalTractLabMeshes.isDerived(phoneme)) "Derived teaching pose" else "VocalTractLab reference",
+                style = MaterialTheme.typography.labelMedium, color = accentInk)
+            if (VocalTractLabMeshes.isDerived(phoneme)) {
+                Text("${VocalTractLabMeshes.poseDescription(phoneme)} Approximate and unvalidated; not an exact English speaker pose.",
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            }
             if (sourceShape == null || reference == null) {
                 Text("This vowel does not yet have a matching VocalTractLab pose. Use the illustrated reference below.",
                     style = MaterialTheme.typography.bodyMedium)

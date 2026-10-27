@@ -1,0 +1,4 @@
+-r requirements.txt
+# Optional CPU model inference, Python 3.11–3.13. Model weights are installed separately.
+torch==2.9.1
+transformers==4.57.3

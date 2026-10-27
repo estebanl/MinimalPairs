@@ -73,7 +73,7 @@ private class IosLipCamera(val onFrame: (LipCameraFrame) -> Unit) : NSObject(), 
         }
     }
     private val observers = mutableListOf<NSObjectProtocol>()
-    private var lastFrameTime = 0.0
+    private val pacer = LipFramePacer()
 
     fun start() {
         val center = NSNotificationCenter.defaultCenter
@@ -133,19 +133,21 @@ private class IosLipCamera(val onFrame: (LipCameraFrame) -> Unit) : NSObject(), 
 
     override fun captureOutput(output: AVCaptureOutput, didOutputSampleBuffer: CMSampleBufferRef?, fromConnection: AVCaptureConnection) {
         if (!alive.value || didOutputSampleBuffer == null) return
-        val now = CACurrentMediaTime()
-        if (now - lastFrameTime < .18) return
-        lastFrameTime = now
+        val capturedAt = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(didOutputSampleBuffer))
+        if (!pacer.shouldAnalyze(capturedAt)) return
+        val startedAt = CACurrentMediaTime()
+        fun analyzed(frame: LipCameraFrame) = report(frame.copy(capturedAtSeconds = capturedAt,
+            inferenceDurationMs = (CACurrentMediaTime() - startedAt) * 1000))
         val buffer = CMSampleBufferGetImageBuffer(didOutputSampleBuffer) ?: return
         val request = VNDetectFaceLandmarksRequest()
         val handler = VNImageRequestHandler(cVPixelBuffer = buffer, options = emptyMap<Any?, Any?>())
         if (!handler.performRequests(listOf(request), error = null)) {
-            report(LipCameraFrame(LipCameraStatus.ERROR))
+            analyzed(LipCameraFrame(LipCameraStatus.ERROR))
             return
         }
         val faces = request.results?.filterIsInstance<VNFaceObservation>().orEmpty()
         if (faces.isEmpty()) {
-            report(LipCameraFrame(LipCameraStatus.NO_FACE))
+            analyzed(LipCameraFrame(LipCameraStatus.NO_FACE))
             return
         }
         val face = faces.singleOrNull()
@@ -153,7 +155,7 @@ private class IosLipCamera(val onFrame: (LipCameraFrame) -> Unit) : NSObject(), 
         val height = CVPixelBufferGetHeight(buffer).toDouble()
         if (face == null || face.confidence < .6f || (face.landmarks?.confidence ?: 0f) < .5f || abs(face.yaw?.doubleValue ?: 0.0) > .35 ||
             abs(face.roll?.doubleValue ?: 0.0) > .35 || abs(face.pitch?.doubleValue ?: 0.0) > .35 || face.boundingBox.useContents { size.width * width } < 150) {
-            report(LipCameraFrame(LipCameraStatus.ADJUST_POSITION))
+            analyzed(LipCameraFrame(LipCameraStatus.ADJUST_POSITION))
             return
         }
         fun points(region: VNFaceLandmarkRegion2D?): List<LipPoint> {
@@ -163,12 +165,13 @@ private class IosLipCamera(val onFrame: (LipCameraFrame) -> Unit) : NSObject(), 
             }
         }
         val sample = LipShapeAnalyzer.measure(points(face.landmarks?.outerLips), points(face.landmarks?.innerLips))
-        report(LipCameraFrame(if (sample == null) LipCameraStatus.ADJUST_POSITION else LipCameraStatus.TRACKING, sample))
+        analyzed(LipCameraFrame(if (sample == null) LipCameraStatus.ADJUST_POSITION else LipCameraStatus.TRACKING, sample))
     }
 
-    private fun report(frame: LipCameraFrame) {
-        dispatch_async(dispatch_get_main_queue()) { if (alive.value) onFrame(frame) }
+    private val delivery = LipFrameMailbox({ block -> dispatch_async(dispatch_get_main_queue()) { block() } }) {
+        if (alive.value) onFrame(it)
     }
+    private fun report(frame: LipCameraFrame) = delivery.offer(frame)
 
     fun close() {
         alive.value = false

@@ -159,9 +159,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAcousticRegion(
     )
 }
 
-/**
- * Articulatory Biofeedback Card showing lip aperture and jaw drop indicators.
- */
+/** Static phoneme-specific guidance; no calibrated camera measurements are implied. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun ArticulatoryBiofeedbackCard(
     indicators: VisualIndicators,
@@ -169,70 +168,18 @@ fun ArticulatoryBiofeedbackCard(
     phoneme2: String,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
-    val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = scheme.surface
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Mouth position reference",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(10.dp))
-
-            // Lip Aperture
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Lip opening",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = scheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${(indicators.lipApertureRatio * 100).toInt()}% (${if (indicators.lipApertureRatio < 0.25f) "Spread / Unrounded" else "Open / Rounded"})",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = scheme.surface) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Mouth position reference", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            listOf(phoneme1, phoneme2).distinct().forEach { phoneme ->
+                val reference = com.minimalpairs.app.ui.reference.MouthPositionReferences.forPhoneme(phoneme)
+                Text("/$phoneme/", style = MaterialTheme.typography.labelLarge)
+                Text(reference?.placementCue ?: "Explore this vowel with the sound map.",
+                    style = MaterialTheme.typography.bodySmall)
             }
-            Spacer(Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = { indicators.lipApertureRatio.coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = colors.accentInk,
-                trackColor = scheme.surface
-            )
-
-            Spacer(Modifier.height(14.dp))
-
-            // Jaw Drop
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Jaw opening",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = scheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${indicators.jawDropMinMm.toInt()} – ${indicators.jawDropMaxMm.toInt()} mm",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = { (indicators.jawDropMaxMm / 30f).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = colors.warning,
-                trackColor = scheme.surface
-            )
+            Text("These are teaching cues. The camera measures visible lip shape; it does not measure jaw distance or tongue position.",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
         }
     }
 }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlinx.serialization.json.Json
@@ -26,6 +27,44 @@ import kotlinx.serialization.decodeFromString
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ArticulatorLabComponentTest {
+    @Test
+    fun scoreExplainsItsSourceAndSelectionClearsTheExplanation() = runTest {
+        val f = Fixture(this)
+        try {
+            f.scorer.method = "acoustic_estimate"
+            f.scorer.feedback = "Remote scoring was unavailable."
+            f.record(f.samples)
+            assertTrue(f.state.scoringDescription!!.contains("Offline acoustic estimate"))
+            assertTrue(f.state.scoringDescription!!.contains("Remote scoring was unavailable"))
+            f.component.selectExamplePair(1)
+            assertNull(f.state.scoringDescription)
+            f.scorer.method = "neural_ctc"
+            f.scorer.feedback = null
+            f.record(f.samples)
+            assertTrue(f.state.scoringDescription!!.contains("Model confidence"))
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun shortOrAbandonedRecordingDoesNotDisplayARecordedPlacement() = runTest {
+        val f = Fixture(this)
+        try {
+            f.record(ShortArray(100))
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+            assertTrue(f.scorer.words.isEmpty())
+            f.component.toggleRecording()
+            runCurrent()
+            f.recorder.emit(f.samples)
+            runCurrent()
+            assertTrue(f.state.liveF1 > 0f)
+            f.lifecycle.stop()
+            runCurrent()
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     @Test
     fun recordsSelectedWordAndLocksTargetUntilReviewCompletes() = runTest {
         val f = Fixture(this)
@@ -251,6 +290,110 @@ class ArticulatorLabComponentTest {
         assertNull(old.targetPhoneme)
     }
 
+    @Test
+    fun choosingContrastAndExampleScoresAndSavesTheSelectedWord() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.selectContrast("ae_vs_e")
+            f.component.selectExamplePair(1)
+            f.component.switchTargetPhoneme(false)
+            f.record(f.samples)
+            assertEquals("men", f.scorer.words.single())
+            assertEquals("e", f.scorer.phonemes.single())
+            assertEquals("ae_vs_e", f.saved.single().contrastId)
+            assertEquals("men", f.saved.single().targetWord)
+            f.component.selectExamplePair(2)
+            assertNull(f.state.overallGopScore)
+            assertNull(f.state.feedback)
+            assertFalse(f.state.hasRecording)
+            assertEquals(0f, f.state.liveF1)
+            assertFalse(f.state.isTargetPhoneme1)
+            f.component.selectContrast("u_vs_uu")
+            assertEquals(0, f.state.selectedPairIndex)
+            assertTrue(f.state.isTargetPhoneme1)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun invalidSelectionsAndChangesDuringRecordingOrScoringAreIgnored() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.selectExamplePair(-1)
+            f.component.selectExamplePair(100)
+            f.component.selectContrast("unknown")
+            assertEquals("i_vs_I", f.state.contrast.id)
+            assertEquals(0, f.state.selectedPairIndex)
+            f.component.selectExamplePair(2)
+            f.component.toggleRecording()
+            runCurrent()
+            f.component.selectContrast("ae_vs_e")
+            f.component.selectExamplePair(1)
+            assertEquals("i_vs_I", f.state.contrast.id)
+            assertEquals(2, f.state.selectedPairIndex)
+            f.recorder.emit(f.samples)
+            runCurrent()
+            f.scorer.gate = CompletableDeferred()
+            f.component.toggleRecording()
+            runCurrent()
+            f.component.selectContrast("ae_vs_e")
+            f.component.selectExamplePair(1)
+            assertEquals("i_vs_I", f.state.contrast.id)
+            assertEquals(2, f.state.selectedPairIndex)
+            f.scorer.gate!!.complete(Unit)
+            runCurrent()
+            assertEquals("seat", f.scorer.words.single())
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun retainedRouteRestoresRequestedContrastAfterManualSelection() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.selectContrast("ae_vs_e")
+            f.component.selectExamplePair(2)
+            f.lifecycle.stop()
+            f.component.preparePracticeTarget("ɪ", "i_vs_I")
+            f.lifecycle.resume()
+            runCurrent()
+            assertEquals("i_vs_I", f.state.contrast.id)
+            assertEquals(0, f.state.selectedPairIndex)
+            assertFalse(f.state.isTargetPhoneme1)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun silenceClearsLiveFormantsInsteadOfLeavingAStaleComparison() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.toggleRecording()
+            runCurrent()
+            f.recorder.emit(f.samples)
+            runCurrent()
+            assertTrue(f.state.liveF1 > 0f)
+            f.recorder.emit(ShortArray(512))
+            runCurrent()
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+            assertEquals(0f, f.state.liveF3)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun stalledCaptureClearsLiveFormantsAfterFreshnessWindow() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.toggleRecording()
+            runCurrent()
+            f.recorder.emit(f.samples)
+            runCurrent()
+            assertTrue(f.state.liveF1 > 0f)
+            advanceTimeBy(751)
+            runCurrent()
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     private class Fixture(val scope: TestScope, targetPhoneme: String? = null) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
@@ -277,13 +420,16 @@ class ArticulatorLabComponentTest {
         var gate: CompletableDeferred<Unit>? = null
         var fail = false
         var score = 88f
+        var method = "unknown"
+        var feedback: String? = null
         override suspend fun scoreAudio(audioSamples: ShortArray, targetWord: String, expectedIpa: String,
             contrastId: String?): PhonemeScoringResponse {
             words += targetWord
             phonemes += expectedIpa
             gate?.await()
             check(!fail)
-            return PhonemeScoringResponse(overallScore = score, phonemes = emptyList())
+            return PhonemeScoringResponse(overallScore = score, phonemes = emptyList(),
+                scoringMethod = method, feedback = feedback)
         }
     }
 

@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 static void u32(std::ostream& out, uint32_t n) {
     for (int i = 0; i < 4; ++i) out.put(static_cast<char>((n >> (i * 8)) & 255));
@@ -20,9 +21,50 @@ int main(int argc, char** argv) {
     if (argc != 3) { std::cerr << "usage: export_meshes speaker_file output_directory\n"; return 1; }
     auto tract = std::make_unique<VocalTract>();
     tract->readFromXml(argv[1]);
-    // Explicit source names, not synthesized or interpolated English poses.
+    // Original presets remain byte-for-byte unchanged. Additional English teaching
+    // poses are explicit parameter recipes, not claimed native speaker presets.
+    struct Recipe { std::string name, first, second; double secondWeight; };
+    const std::vector<Recipe> recipes = {
+        {"derived-trap", "a", "E", 0.35},
+        {"derived-palm", "a", "a", 0.0},
+        {"derived-strut", "a", "@", 0.50},
+        {"derived-lot", "a", "O", 0.35}
+    };
+    std::ofstream provenance(std::string(argv[2]) + "/derived-poses.json");
+    provenance << std::setprecision(10) << "{\n";
+    for (size_t r = 0; r < recipes.size(); ++r) {
+        const auto& recipe = recipes[r];
+        const int first = tract->getShapeIndex(recipe.first), second = tract->getShapeIndex(recipe.second);
+        if (first < 0 || second < 0) { std::cerr << "Missing recipe source"; return 2; }
+        VocalTract::Shape shape;
+        shape.name = recipe.name;
+        for (int p = 0; p < VocalTract::NUM_PARAMS; ++p)
+            shape.param[p] = tract->shapes[first].param[p] * (1 - recipe.secondWeight)
+                + tract->shapes[second].param[p] * recipe.secondWeight;
+        if (recipe.name == "derived-palm") {
+            shape.param[VocalTract::TCX] -= 0.45;
+            shape.param[VocalTract::TBX] -= 0.25;
+        }
+        if (recipe.name == "derived-lot") {
+            // Keep the open jaw from /a/ while borrowing the rounded lips of /O/.
+            shape.param[VocalTract::JA] = tract->shapes[first].param[VocalTract::JA];
+            shape.param[VocalTract::LP] = tract->shapes[second].param[VocalTract::LP];
+            shape.param[VocalTract::LD] = tract->shapes[second].param[VocalTract::LD];
+        }
+        provenance << "  \"" << recipe.name << "\": {\"sources\": [\"" << recipe.first << "\", \""
+            << recipe.second << "\"], \"second_weight\": " << recipe.secondWeight << ", \"parameters\": {";
+        for (int p = 0; p < VocalTract::NUM_PARAMS; ++p) {
+            if (shape.param[p] < tract->param[p].min || shape.param[p] > tract->param[p].max) return 4;
+            provenance << (p ? ", " : "") << "\"" << tract->param[p].name << "\": " << shape.param[p];
+        }
+        provenance << "}}" << (r + 1 < recipes.size() ? "," : "") << "\n";
+        tract->shapes.push_back(shape);
+    }
+    provenance << "}\n";
+    if (!provenance) return 3;
     const std::vector<std::pair<std::string, std::string>> presets = {
-        {"i", "fleece"}, {"I", "kit"}, {"E", "dress"}, {"U", "foot"}, {"u", "goose"}, {"O", "thought"}
+        {"i", "fleece"}, {"I", "kit"}, {"E", "dress"}, {"U", "foot"}, {"u", "goose"}, {"O", "thought"},
+        {"derived-trap", "trap"}, {"derived-palm", "palm"}, {"derived-strut", "strut"}, {"derived-lot", "lot"}
     };
     for (const auto& [name, asset] : presets) {
         int shape = tract->getShapeIndex(name);

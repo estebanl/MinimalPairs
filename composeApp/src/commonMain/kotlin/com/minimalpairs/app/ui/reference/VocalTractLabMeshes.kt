@@ -6,10 +6,20 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import minimalpairs.composeapp.generated.resources.Res
 
-/** SAMPA presets from the upstream JD3 speaker; duration is not encoded in geometry. */
+/** Original JD3 presets and explicitly derived teaching poses; duration is not geometry. */
 object VocalTractLabMeshes {
-    val sourceShapes = mapOf("iː" to "i", "ɪ" to "I", "e" to "E", "ʊ" to "U", "uː" to "u", "ɔː" to "O")
-    private val assetFiles = mapOf("i" to "fleece", "I" to "kit", "E" to "dress", "U" to "foot", "u" to "goose", "O" to "thought")
+    val sourceShapes = mapOf("iː" to "i", "ɪ" to "I", "e" to "E", "ʊ" to "U", "uː" to "u", "ɔː" to "O",
+        "æ" to "derived-trap", "ɑː" to "derived-palm", "ʌ" to "derived-strut", "ɒ" to "derived-lot")
+    private val assetFiles = mapOf("i" to "fleece", "I" to "kit", "E" to "dress", "U" to "foot", "u" to "goose", "O" to "thought",
+        "derived-trap" to "trap", "derived-palm" to "palm", "derived-strut" to "strut", "derived-lot" to "lot")
+    fun isDerived(phoneme: String): Boolean = sourceShapes[phoneme]?.startsWith("derived-") == true
+    fun poseDescription(phoneme: String): String = when (phoneme) {
+        "æ" -> "Illustrative blend of JD3 a and E poses."
+        "ɑː" -> "Illustrative JD3 a pose with a more retracted tongue body and blade."
+        "ʌ" -> "Illustrative blend of JD3 a and central @ poses."
+        "ɒ" -> "Illustrative blend of JD3 a and O, with an open jaw and rounded lips."
+        else -> "Original JD3 ${sourceShapes[phoneme] ?: "unknown"} preset."
+    }
     private val cache = mutableMapOf<String, List<OralTriangle>>()
     private val mutex = Mutex()
 

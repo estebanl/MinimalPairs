@@ -3,6 +3,8 @@ package com.minimalpairs.app.core.hal
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.SystemClock
+import android.util.Size
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
@@ -10,6 +12,8 @@ import androidx.camera.core.CameraState
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.*
@@ -46,7 +50,7 @@ actual fun LipCameraPreview(modifier: Modifier, onFrame: (LipCameraFrame) -> Uni
     val orientation = LocalConfiguration.current.orientation
     AndroidView(factory = { previewView }, modifier = modifier)
     DisposableEffect(previewView, lifecycleOwner, orientation) {
-        var disposed = false
+        val disposed = AtomicBoolean(false)
         val mainExecutor = ContextCompat.getMainExecutor(context)
         val executor = Executors.newSingleThreadExecutor()
         val detector = FaceDetection.getClient(FaceDetectorOptions.Builder()
@@ -55,25 +59,34 @@ actual fun LipCameraPreview(modifier: Modifier, onFrame: (LipCameraFrame) -> Uni
             .setMinFaceSize(.2f).build())
         val preview = Preview.Builder().setTargetRotation(previewView.display?.rotation ?: 0).build()
         val analysis = ImageAnalysis.Builder().setTargetRotation(previewView.display?.rotation ?: 0)
+            .setResolutionSelector(ResolutionSelector.Builder().setResolutionStrategy(
+                ResolutionStrategy(Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)).build())
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
-        var lastFrame = 0L
-        fun report(frame: LipCameraFrame) { if (!disposed) callback(frame) }
+        val pacer = LipFramePacer()
+        val delivery = LipFrameMailbox({ mainExecutor.execute(it) }) { frame ->
+            if (!disposed.get()) callback(frame)
+        }
+        fun report(frame: LipCameraFrame) = delivery.offer(frame)
         analysis.setAnalyzer(executor) { image ->
-            val now = SystemClock.elapsedRealtime()
+            val capturedAt = image.imageInfo.timestamp / 1_000_000_000.0
+            val startedAt = SystemClock.elapsedRealtimeNanos()
             val mediaImage = image.image
-            if (mediaImage == null || now - lastFrame < 180) {
+            if (disposed.get() || mediaImage == null || !pacer.shouldAnalyze(capturedAt)) {
                 image.close()
             } else {
-                lastFrame = now
+                // Keep the ImageProxy open until inference completes: CameraX drops older
+                // frames instead of queuing concurrent detector tasks.
+                fun analyzed(frame: LipCameraFrame) = report(frame.copy(capturedAtSeconds = capturedAt,
+                    inferenceDurationMs = (SystemClock.elapsedRealtimeNanos() - startedAt) / 1_000_000.0))
                 try {
                     detector.process(InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees))
-                        .addOnSuccessListener(mainExecutor) { faces ->
-                            if (!disposed) {
+                        .addOnSuccessListener(executor) { faces ->
+                            if (!disposed.get()) {
                                 val face = faces.singleOrNull()
-                                if (faces.isEmpty()) report(LipCameraFrame(LipCameraStatus.NO_FACE))
+                                if (faces.isEmpty()) analyzed(LipCameraFrame(LipCameraStatus.NO_FACE))
                                 else if (face == null || abs(face.headEulerAngleY) > 20f || abs(face.headEulerAngleZ) > 20f ||
                                     abs(face.headEulerAngleX) > 20f || face.boundingBox.width() < 180) {
-                                    report(LipCameraFrame(LipCameraStatus.ADJUST_POSITION))
+                                    analyzed(LipCameraFrame(LipCameraStatus.ADJUST_POSITION))
                                 } else {
                                     fun contour(type: Int) = face.getContour(type)?.points.orEmpty().map { LipPoint(it.x, it.y) }
                                     fun join(upper: List<LipPoint>, lower: List<LipPoint>): List<LipPoint> {
@@ -85,14 +98,14 @@ actual fun LipCameraPreview(modifier: Modifier, onFrame: (LipCameraFrame) -> Uni
                                     val sample = LipShapeAnalyzer.measure(
                                         join(contour(FaceContour.UPPER_LIP_TOP), contour(FaceContour.LOWER_LIP_BOTTOM)),
                                         join(contour(FaceContour.UPPER_LIP_BOTTOM), contour(FaceContour.LOWER_LIP_TOP)))
-                                    report(LipCameraFrame(if (sample == null) LipCameraStatus.ADJUST_POSITION else LipCameraStatus.TRACKING, sample))
+                                    analyzed(LipCameraFrame(if (sample == null) LipCameraStatus.ADJUST_POSITION else LipCameraStatus.TRACKING, sample))
                                 }
                             }
-                        }.addOnFailureListener(mainExecutor) { report(LipCameraFrame(LipCameraStatus.ERROR)) }
+                        }.addOnFailureListener(executor) { analyzed(LipCameraFrame(LipCameraStatus.ERROR)) }
                         .addOnCompleteListener { image.close() }
                 } catch (_: Exception) {
                     image.close()
-                    mainExecutor.execute { report(LipCameraFrame(LipCameraStatus.ERROR)) }
+                    mainExecutor.execute { analyzed(LipCameraFrame(LipCameraStatus.ERROR)) }
                 }
             }
         }
@@ -103,7 +116,7 @@ actual fun LipCameraPreview(modifier: Modifier, onFrame: (LipCameraFrame) -> Uni
             if (state.error != null) report(LipCameraFrame(LipCameraStatus.ERROR))
         }
         future.addListener({
-            if (!disposed) {
+            if (!disposed.get()) {
                 try {
                     val cameraProvider = future.get()
                     provider = cameraProvider
@@ -119,7 +132,7 @@ actual fun LipCameraPreview(modifier: Modifier, onFrame: (LipCameraFrame) -> Uni
             }
         }, mainExecutor)
         onDispose {
-            disposed = true
+            disposed.set(true)
             analysis.clearAnalyzer()
             camera?.cameraInfo?.cameraState?.removeObserver(cameraObserver)
             provider?.unbind(preview, analysis)

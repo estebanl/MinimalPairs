@@ -1,6 +1,7 @@
 package com.minimalpairs.app.core.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class PhoneticBounds(
@@ -54,13 +55,22 @@ enum class PlaybackSpeed(val multiplier: Float, val label: String) {
 @Serializable
 data class PhonemeScore(
     val phoneme: String,
-    val gopScore: Float,
-    val startTime: Float,
-    val endTime: Float
+    @SerialName("gop_score") val gopScore: Float,
+    @SerialName("start_time") val startTime: Float,
+    @SerialName("end_time") val endTime: Float
 )
 
 @Serializable
 data class PhonemeScoringResponse(
-    val overallScore: Float,
-    val phonemes: List<PhonemeScore>
-)
+    @SerialName("overall_score") val overallScore: Float,
+    val phonemes: List<PhonemeScore>,
+    @SerialName("scoring_method") val scoringMethod: String = "unknown",
+    @SerialName("model_id") val modelId: String? = null,
+    val feedback: String? = null
+) {
+    val scoringDescription: String get() = when (scoringMethod) {
+        "neural_ctc" -> "Model confidence (experimental) · ${modelId ?: "phoneme CTC"}. ${feedback ?: "Not validated for isolated-vowel coaching or calibrated pronunciation grading."}"
+        "acoustic_estimate" -> "Offline acoustic estimate. ${feedback ?: "Based on vowel formants and duration, not word recognition."}"
+        else -> "Scoring method unavailable."
+    }
+}

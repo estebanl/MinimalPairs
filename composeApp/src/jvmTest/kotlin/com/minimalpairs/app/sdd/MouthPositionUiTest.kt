@@ -180,6 +180,11 @@ class MouthPositionUiTest {
                         continue
                     }
                     scene.awaitModel(phoneme)
+                    assertEquals(VocalTractLabMeshes.isDerived(phoneme),
+                        scene.nodes().any { it.text() == "Derived teaching pose" })
+                    if (VocalTractLabMeshes.isDerived(phoneme)) {
+                        assertTrue(scene.nodes().any { it.text()?.contains("Approximate and unvalidated") == true })
+                    }
                     val preview = scene.render()
                     val previewFile = File("build/reports/mouth-position/model-vowel-${VocalTractLabMeshes.sourceShapes.keys.indexOf(phoneme)}.png")
                     previewFile.parentFile.mkdirs()

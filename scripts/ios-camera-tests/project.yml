@@ -1,0 +1,27 @@
+name: ArticulatorDeviceTests
+options:
+  deploymentTarget:
+    iOS: "18.2"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  ArticulatorDeviceTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - ArticulatorDeviceTests.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.estebanl.minimalpairs.devicesmoke
+schemes:
+  ArticulatorDeviceTests:
+    build:
+      targets:
+        ArticulatorDeviceTests: [test]
+    test:
+      targets: [ArticulatorDeviceTests]
+      gatherCoverageData: false

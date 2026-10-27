@@ -30,6 +30,8 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
         LipCameraPreview(viewModifier, callback)
     }) {
     val state by controller.state.collectAsState()
+    // A reference belongs to one sound and one camera session; never compare another vowel/session.
+    var comparisonReference by remember(phoneme, state.session) { mutableStateOf<LipMeasurement?>(null) }
     val reference = MouthPositionReferences.forPhoneme(phoneme)
     val scheme = MaterialTheme.colorScheme
     val ink = PracticeTheme.colors.accentInk
@@ -71,6 +73,27 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
             state.measurement?.let { measurement ->
                 Text("Lip opening: ${(measurement.openingRatio * 100).toInt()}% of mouth width",
                     style = MaterialTheme.typography.labelLarge)
+                Text("Lip contour circularity: ${(measurement.roundingIndex * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelLarge)
+                Text("A higher circularity means a rounder outline in this view; it does not measure lip protrusion.",
+                    style = MaterialTheme.typography.bodySmall)
+                comparisonReference?.let { saved ->
+                    val comparison = measurement.compareWith(saved)
+                    fun change(value: Float): String {
+                        val points = (value * 100).toInt()
+                        return if (points > 0) "+$points" else "$points"
+                    }
+                    Text("Compared with your saved pose: opening ${change(comparison.openingChange)} percentage points; circularity ${change(comparison.roundingChange)} percentage points.",
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+                OutlinedButton(onClick = { comparisonReference = measurement }) {
+                    Text(if (comparisonReference == null) "Use this pose for comparison" else "Replace comparison pose")
+                }
+                if (comparisonReference != null) {
+                    Text("Your saved pose is a personal practice reference, not a verified pronunciation target.",
+                        style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { comparisonReference = null }) { Text("Clear comparison pose") }
+                }
                 Canvas(Modifier.fillMaxWidth().height(100.dp).semantics {
                     contentDescription = "Live outline of your lips. Opening ${(measurement.openingRatio * 100).toInt()} percent of mouth width."
                 }) {
@@ -100,7 +123,21 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
             }, colors = ButtonDefaults.outlinedButtonColors(contentColor = ink)) {
                 Text(if (state.status.active) "Stop camera" else "Start camera")
             }
-            Text("Frames are analyzed on this device and are not saved. Lip opening is an estimate, not a pronunciation score. Use the sound map for vowel feedback.",
+            state.performance?.let { performance ->
+                PracticeDetails("Tracking details") {
+                    Text("Processed frames: ${performance.sampleCount}", style = MaterialTheme.typography.bodySmall)
+                    performance.framesPerSecond?.let { fps ->
+                        Text("Analysis rate: ${(fps * 10).toInt() / 10.0} frames/s", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Text("Analysis time: ${performance.meanInferenceMs.toInt()} ms average · ${performance.maxInferenceMs.toInt()} ms maximum",
+                        style = MaterialTheme.typography.bodySmall)
+                    Text("Recent processed frames, including frames with no face. Camera capture and screen refresh may run at different rates. A 30 frames/s target is not a measured guarantee.",
+                        style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                }
+            }
+            Text("Jaw distance and tongue position are unavailable from this camera view. Compare the target illustration and placement cue; use the sound map for acoustic feedback.",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            Text("Frames are analyzed on this device and are not saved. Lip measurements and the temporary comparison pose are not pronunciation scores.",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
         }
     }

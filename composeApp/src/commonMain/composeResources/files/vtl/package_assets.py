@@ -15,13 +15,14 @@ def digest(path):
 
 DEST.mkdir(parents=True, exist_ok=True)
 files = {}
-for name in ('dress', 'fleece', 'foot', 'goose', 'kit', 'thought'):
+for name in ('dress', 'fleece', 'foot', 'goose', 'kit', 'thought', 'trap', 'palm', 'strut', 'lot'):
     path = PREVIEW / 'meshes' / f'{name}.vtlm'
     data = path.read_bytes()
     assert data[:8] == b'VTLM\x01\x00\x00\x00'
     files[path.name] = {'bytes': len(data), 'sha256': digest(path)}
     shutil.copyfile(path, DEST / path.name)
-assert len({entry['sha256'] for entry in files.values()}) == 6, 'Presets must be distinct'
+assert len({entry['sha256'] for entry in files.values()}) == 10, 'Poses must be distinct'
+recipes = json.loads((PREVIEW / 'meshes' / 'derived-poses.json').read_text())
 manifest = {
     'upstream': 'https://github.com/TUD-STKS/VocalTractLabBackend-dev',
     'commit': 'df30392f18dc5e175b577c3ba734caaa65a3927f',
@@ -32,6 +33,8 @@ manifest = {
     'license': 'GPL-3.0-or-later (upstream source; no separate asset exception found)',
     'format_version': 1,
     'files': files,
+    'derived_teaching_poses': recipes,
+    'derived_pose_status': 'Unvalidated illustrative parameter recipes, not exact English presets or learner anatomy',
 }
 for folder in (PREVIEW, DEST):
     (folder / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')

@@ -79,10 +79,20 @@ Do not describe them as clinically or anatomically certified.
 
 The **3D model** tab loads actual VocalTractLab JD3 speaker meshes. The imported
 SAMPA presets i, I, E, U, u, and O provide references for /iː/, /ɪ/, /e/ (DRESS),
-/ʊ/, /uː/, and /ɔː/. The selected speaker has no exact imported presets for /æ/,
-/ɑː/, /ʌ/, or /ɒ/; those sounds display the existing illustrations with an explicit
-explanation. These are representative speaker shapes, not validated British
-English realizations or measurements of the learner. Duration is not geometry.
+/ʊ/, /uː/, and /ɔː/. Four additional **Derived teaching poses** cover /æ/, /ɑː/,
+/ʌ/, and /ɒ/. They are explicitly labeled as approximate and unvalidated in the
+UI, not as exact English speaker presets. All ten catalog vowels have a model;
+unsupported future sounds still fall back to illustrations.
+
+The exporter blends JD3 articulation parameters before running the upstream
+geometry generator; it does not interpolate finished triangle meshes. TRAP uses
+65% a + 35% E. PALM starts with a and retracts TCX by 0.45 cm and TBX by 0.25 cm.
+STRUT uses 50% a + 50% @. LOT uses 65% a + 35% O, retains a's jaw angle, and
+uses O's lip protrusion and lip distance. These are design recipes intended to
+illustrate broad placement differences; they have not been fitted acoustically
+or reviewed as British-English articulations. The manifest records every input
+parameter, source preset, and blend weight. The six original meshes retain their
+previous hashes. Duration is not geometry, and no pose measures the learner.
 
 `VocalTractLabMeshes` reads versioned indexed meshes with source corner normals,
 validates their bounds, and caches them. One fixed transform preserves relative
@@ -105,8 +115,8 @@ speaker input, exporter, scripts, manifest, and license in application resources
 and regeneration. Export omits the filling triangles hidden by the original
 viewer, preserving the remaining coordinates and normals.
 
-Verification covers six distinct imported meshes, explicit fallbacks for the
-remaining catalog, malformed files, finite geometry, exact cut-plane clipping,
+Verification covers ten distinct meshes, explicit derived-pose labels, unsupported
+sound fallbacks, malformed files, finite geometry, exact cut-plane clipping,
 sound switching, controls, recording independence, and narrow/wide layouts in
 both themes with enlarged text. Rendered views are in
 `composeApp/build/reports/mouth-position/model-*.png`.
@@ -120,8 +130,11 @@ keeping references and acoustic practice usable. Camera frames are processed
 on-device without recording or uploading them.
 
 The learner sees a mirrored preview, a normalized live lip outline, the inner
-lip opening as a percentage of outer mouth width, and the selected vowel's
-reference image and placement cue. This is a visible-lip comparison, not a
+lip opening as a percentage of outer mouth width, contour circularity, and the
+selected vowel's reference image and placement cue. A temporary personal pose
+can be captured for repeatability comparisons; it is not a verified target.
+See [camera measurements](ARTICULATOR_CAMERA.md) for smoothing and metric limits.
+This is a visible-lip comparison, not a
 pronunciation score, an anatomical reconstruction, or calibrated jaw distance.
 The older `FacialLandmarkAnalyzer` uses assumed geometry and fallback landmarks;
 it is intentionally not used for live measurements.

@@ -30,3 +30,18 @@ Defines the computer vision contract for real-time facial landmark analysis meas
 ## Performance Budget
 - Inference time $\le 33\text{ms}$ per frame (30 FPS tracking).
 - Jitter smoothing via 1-Euro filter ($\beta = 0.05, f_c = 1.0\text{ Hz}$).
+
+## Current supported camera contract
+
+The shipping camera adapters use ML Kit lip contours on Android and Vision lip
+landmarks on iOS, not the MediaPipe index map above. The supported measurements
+are projected lip aperture and outer-contour circularity, with an optional
+self-captured comparison pose. They do not provide calibrated jaw millimeters,
+lip protrusion, tongue tracking or numerical pronunciation correctness. See
+[`docs/ARTICULATOR_CAMERA.md`](../../docs/ARTICULATOR_CAMERA.md) for current
+measurement, smoothing, lifecycle and validation behavior. The current pipeline
+uses timestamp-aware 1-Euro filtering with the parameters above, approximately
+30 Hz admission, one in-flight inference, and a latest-result UI mailbox.
+Delivered analysis-result FPS and analysis duration are exposed as optional
+diagnostics. The 33 ms budget and sustained 30 FPS require physical-device
+profiling; the scheduler alone does not establish that performance.

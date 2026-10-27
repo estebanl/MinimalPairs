@@ -4,7 +4,7 @@
   "speaker": "resources/JD3.speaker",
   "speaker_sha256": "e1e592dae13991e981c17bcc326cccc7bce3705e3862eb77fdeaeb238418a503",
   "source_archive_sha256": "dc4c930ce261f31e60ba94af122808490881efb8301e55e18baaa611cf52104b",
-  "exporter_sha256": "da7252019d83fa2fecafd906a375f8c101cfb05616c2a47b77fa19108d88bad1",
+  "exporter_sha256": "ca709457dbeaaedbc47631c4eb73f600dc571a0c4a90eee2f14a1b03c4000613",
   "license": "GPL-3.0-or-later (upstream source; no separate asset exception found)",
   "format_version": 1,
   "files": {
@@ -31,6 +31,137 @@
     "thought.vtlm": {
       "bytes": 156468,
       "sha256": "4a9d64832799f68307efd14ecb7c5925be33d77b413eace808f947b7a0cbf596"
+    },
+    "trap.vtlm": {
+      "bytes": 156468,
+      "sha256": "58c605c1b9a92e853ab914f528e4c9fb4093378ec26d31799d4032b44a7f830d"
+    },
+    "palm.vtlm": {
+      "bytes": 156468,
+      "sha256": "4179aff02c0246e2b9e1ceef3c1e3740e3fe03b6ea25ef95bb15347117148fa8"
+    },
+    "strut.vtlm": {
+      "bytes": 156468,
+      "sha256": "54ce9d741d5e59706a334ce8419dc1ee1f516425efd9f736181757a5b6caa7a4"
+    },
+    "lot.vtlm": {
+      "bytes": 156468,
+      "sha256": "5a9bc7ced936823678cd616205074ebe594f1ce6fd5bbbf0bf27496ec81e5729"
     }
-  }
+  },
+  "derived_teaching_poses": {
+    "derived-trap": {
+      "sources": [
+        "a",
+        "E"
+      ],
+      "second_weight": 0.35,
+      "parameters": {
+        "HX": 0.234285,
+        "HY": -4.15704,
+        "JX": -0.035,
+        "JA": -4.247415,
+        "LP": 0.022205,
+        "LD": 0.98754,
+        "VS": 0.87,
+        "VO": -0.1,
+        "TCX": 0.633195,
+        "TCY": -1.84828,
+        "TTX": 4.36626,
+        "TTY": -1.570625,
+        "TBX": 2.679385,
+        "TBY": -0.34544,
+        "TRX": -2.45672,
+        "TRY": -2.543845,
+        "TS1": 0.17966,
+        "TS2": 0.10616,
+        "TS3": 0.12192
+      }
+    },
+    "derived-palm": {
+      "sources": [
+        "a",
+        "a"
+      ],
+      "second_weight": 0,
+      "parameters": {
+        "HX": 0.1667,
+        "HY": -3.9392,
+        "JX": 0,
+        "JA": -4.1498,
+        "LP": 0.0718,
+        "LD": 0.9937,
+        "VS": 0.8,
+        "VO": -0.1,
+        "TCX": -0.2976,
+        "TCY": -1.8333,
+        "TTX": 4.2474,
+        "TTY": -1.694,
+        "TBX": 2.2988,
+        "TBY": -0.675,
+        "TRX": -2.8371,
+        "TRY": -2.9034,
+        "TS1": 0.2064,
+        "TS2": 0.0384,
+        "TS3": 0.1488
+      }
+    },
+    "derived-strut": {
+      "sources": [
+        "a",
+        "@"
+      ],
+      "second_weight": 0.5,
+      "parameters": {
+        "HX": 0.41975,
+        "HY": -4.68305,
+        "JX": 0,
+        "JA": -4.2283,
+        "LP": 0.0167,
+        "LD": 0.92445,
+        "VS": 0.504,
+        "VO": -0.1,
+        "TCX": 0.61375,
+        "TCY": -1.78075,
+        "TTX": 4.532,
+        "TTY": -1.3943,
+        "TBX": 2.9195,
+        "TBY": -0.4695,
+        "TRX": -2.08885,
+        "TRY": -2.52,
+        "TS1": 0.2512,
+        "TS2": 0.1182,
+        "TS3": 0.1144
+      }
+    },
+    "derived-lot": {
+      "sources": [
+        "a",
+        "O"
+      ],
+      "second_weight": 0.35,
+      "parameters": {
+        "HX": 0.14248,
+        "HY": -4.29417,
+        "JX": 0,
+        "JA": -4.1498,
+        "LP": 0.418,
+        "LD": 0.5159,
+        "VS": 0.87,
+        "VO": -0.1,
+        "TCX": -0.057145,
+        "TCY": -1.820805,
+        "TTX": 4.164835,
+        "TTY": -1.729175,
+        "TBX": 2.47117,
+        "TBY": -0.932215,
+        "TRX": -2.55997,
+        "TRY": -3.077525,
+        "TS1": 0.14256,
+        "TS2": 0.06766,
+        "TS3": 0.12472
+      }
+    }
+  },
+  "derived_pose_status": "Unvalidated illustrative parameter recipes, not exact English presets or learner anatomy"
 }

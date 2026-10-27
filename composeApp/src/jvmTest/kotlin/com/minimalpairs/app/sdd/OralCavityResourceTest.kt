@@ -3,21 +3,48 @@ package com.minimalpairs.app.sdd
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.ui.reference.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import minimalpairs.composeapp.generated.resources.Res
+import java.security.MessageDigest
 import kotlin.test.*
 
 // Packaged-resource integration tests use the desktop resource reader. Android host tests
 // have no Android runtime or asset manager; geometry-only checks remain in commonTest.
 class OralCavityResourceTest {
     @Test
-    fun supportedMeshesAreDistinctAndMissingVowelsDoNotGetGuessedPoses() = runTest {
-        val unsupported = setOf("æ", "ɑː", "ʌ", "ɒ")
+    fun packagedProvenanceMatchesEveryMeshAndIncludesDerivedRecipes() = runTest {
+        val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
+        val files = manifest.getValue("files").jsonObject
+        assertEquals(10, files.size)
+        files.forEach { (name, entry) ->
+            val bytes = Res.readBytes("files/vtl/$name")
+            val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            assertEquals(entry.jsonObject.getValue("sha256").jsonPrimitive.content, hash, name)
+        }
+        val recipes = manifest.getValue("derived_teaching_poses").jsonObject
+        assertEquals(setOf("derived-trap", "derived-palm", "derived-strut", "derived-lot"), recipes.keys)
+        recipes.values.forEach { recipe ->
+            val parameters = recipe.jsonObject.getValue("parameters").jsonObject
+            assertEquals(19, parameters.size)
+            assertTrue(parameters.values.all { it.jsonPrimitive.content.toDouble().isFinite() })
+        }
+        // Anchor an original imported mesh so recipe changes cannot silently replace it.
+        assertEquals("7c88a4bd8022ddf8f30e8dc8b81effe9989fe187b405270e661a3a915f6a7040",
+            files.getValue("fleece.vtlm").jsonObject.getValue("sha256").jsonPrimitive.content)
+    }
+
+    @Test
+    fun allCatalogMeshesAreDistinctAndDerivedPosesAreExplicit() = runTest {
+        val derived = setOf("æ", "ɑː", "ʌ", "ɒ")
         val catalog = VowelContrastsCatalog.defaultContrasts.flatMap { listOf(it.phoneme1, it.phoneme2) }.toSet()
-        assertEquals(catalog, VocalTractLabMeshes.sourceShapes.keys + unsupported)
-        unsupported.forEach { assertNull(VocalTractLabMeshes.load(it)) }
+        assertEquals(catalog, VocalTractLabMeshes.sourceShapes.keys)
+        assertEquals(derived, catalog.filter { VocalTractLabMeshes.isDerived(it) }.toSet())
+        derived.forEach { assertTrue(VocalTractLabMeshes.poseDescription(it).startsWith("Illustrative")) }
         assertNull(VocalTractLabMeshes.load("unknown"))
         val loaded = VocalTractLabMeshes.sourceShapes.keys.map { VocalTractLabMeshes.load(it)!! }
-        assertEquals(6, loaded.toSet().size, "Case-sensitive SAMPA names must not overwrite one another")
+        assertEquals(10, loaded.toSet().size, "Each original or derived pose must be distinct")
         for (mesh in loaded) {
             assertEquals(2804, mesh.size)
             assertEquals(OralPart.entries.toSet(), mesh.map { it.part }.toSet())

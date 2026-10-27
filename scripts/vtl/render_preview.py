@@ -37,12 +37,12 @@ def read(path):
     assert offset == len(data)
     return faces
 
-svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960">',
-       '<rect width="1200" height="960" fill="#f5f3ed"/>',
+svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1800" viewBox="0 0 1200 1800">',
+       '<rect width="1200" height="1800" fill="#f5f3ed"/>',
        '<text x="30" y="38" font-size="25" font-family="sans-serif" fill="#252b2a">VocalTractLab • exported JD3 anatomy</text>',
-       '<text x="30" y="66" font-size="15" font-family="sans-serif" fill="#59615d">Imported JD3 presets • original preset geometry • side cutaway • source terms: GPL-3.0-or-later</text>']
+       '<text x="30" y="66" font-size="15" font-family="sans-serif" fill="#59615d">Six original JD3 presets + four derived teaching poses • side cutaway • GPL-3.0-or-later</text>']
 for index, (shape, label) in enumerate([('fleece','/iː/ — source i'), ('kit','/ɪ/ — source I'), ('dress','/e/ (DRESS) — source E'),
-                                        ('foot','/ʊ/ — source U'), ('goose','/uː/ — source u'), ('thought','/ɔː/ — source O')]):
+                                        ('foot','/ʊ/ — source U'), ('goose','/uː/ — source u'), ('thought','/ɔː/ — source O'), ('trap','/æ/ — derived a + E'), ('palm','/ɑː/ — derived retracted a'), ('strut','/ʌ/ — derived a + @'), ('lot','/ɒ/ — derived a + O')]):
     x0, y0 = (index % 3) * 400, 95 + (index // 3) * 415
     svg.append(f'<rect x="{x0+12}" y="{y0}" width="376" height="398" rx="16" fill="#e8e6df"/>')
     svg.append(f'<text x="{x0+28}" y="{y0+30}" font-family="sans-serif" font-size="19" fill="#252b2a">{label}</text>')
@@ -58,5 +58,5 @@ for index, (shape, label) in enumerate([('fleece','/iː/ — source i'), ('kit',
         fill = '#%02x%02x%02x' % tuple(rgb)
         coords = ' '.join(f'{x0+200+(p[2]-2)*26:.2f},{y0+200-(p[1]+3.7)*26:.2f}' for p in points)
         svg.append(f'<polygon points="{coords}" fill="{fill}" stroke="{fill}" stroke-width="0.3"/>')
-svg += ['<text x="30" y="947" font-size="14" font-family="sans-serif" fill="#59615d">Representative speaker; English realizations need review. No exact imported presets yet for /æ/, /ɑː/, /ʌ/, /ɒ/.</text>', '</svg>']
+svg += ['<text x="30" y="1780" font-size="14" font-family="sans-serif" fill="#59615d">Derived poses are illustrative and unvalidated; they are not exact English presets or learner anatomy.</text>', '</svg>']
 (FOLDER / 'preview.svg').write_text('\n'.join(svg))

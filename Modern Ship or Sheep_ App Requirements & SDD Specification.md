@@ -26,6 +26,23 @@ Provides structural feedback on physical tongue, lip, and jaw placement during p
 * **Acoustic Analysis**: Linear Predictive Coding (LPC) for formant extraction (\$F\_1\$, \$F\_2\$, \$F\_3\$) mapping acoustic output to target vowel trapezoid coordinates.  
 * **Visual Engine**: Interactive 3D oral cavity render displaying target versus actual vocal tract configurations.
 
+Implementation status (October 2026): Speak supports all catalog contrasts and
+example words, isolated-vowel recording, replay, acoustic placement feedback, and
+ten 3D teaching references. Four references are explicitly labeled derived poses.
+The 3D tab compares target and observed formants alongside the reference anatomy;
+it does not reconstruct the learner's internal vocal tract. Camera feedback
+measures projected lip opening and circularity and supports a temporary personal
+comparison pose. Calibrated jaw distance, internal anatomy reconstruction, and
+physical verification of the 30 FPS tracking budget remain open requirements.
+The camera pipeline now targets 30 analyses per second with backpressure,
+timestamp-aware smoothing, and measured-rate diagnostics. Neural scoring is
+an optional local-checkpoint CTC service with forced alignment and uncalibrated
+confidence; the evaluated checkpoint rejects isolated-phoneme requests because
+independent vowel tests found it unreliable, so Speak uses the labeled acoustic
+estimate. MFA and human-calibrated GOP are not implemented. See the
+[Articulator Lab behavior contract](specs/features/articulator_lab.feature) and
+[scoring setup](docs/ARTICULATOR_SCORING.md).
+
 ## **Module 3: The Meaning Trap (Generative Interactive Dialogues)**
 
 Contextualizes pronunciation errors through generative narrative consequences.

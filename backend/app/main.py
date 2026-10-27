@@ -1,147 +1,92 @@
 import io
-import math
+import os
+from pathlib import Path
 import wave
 from typing import List
+
+import numpy as np
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
+
+from .ctc_scorer import InvalidTarget, ModelUnavailable, get_model, model_is_loaded
 
 app = FastAPI(
     title="Phoneme Scorer Service",
-    version="1.0.0",
-    description="Montreal Forced Aligner (MFA) & Goodness of Pronunciation (GOP) scoring API",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    version="2.0.0",
+    description="Local phoneme CTC alignment and uncalibrated posterior confidence",
 )
 
 
 class PhonemeScore(BaseModel):
-    phoneme: str = Field(..., json_schema_extra={"example": "iː"})
-    gop_score: float = Field(..., description="Goodness of Pronunciation score 0-100", json_schema_extra={"example": 92.4})
-    start_time: float = Field(..., description="Start time offset in seconds", json_schema_extra={"example": 0.18})
-    end_time: float = Field(..., description="End time offset in seconds", json_schema_extra={"example": 0.36})
+    phoneme: str
+    gop_score: float = Field(..., ge=0, le=100, description="Aligned posterior confidence; legacy field name, not calibrated GOP")
+    start_time: float = Field(..., ge=0, description="CTC token-emission start; not a validated phonetic boundary")
+    end_time: float = Field(..., ge=0, description="CTC token-emission end; not a vowel-duration measurement")
 
 
 class PhonemeScoringResponse(BaseModel):
-    overall_score: float = Field(..., description="Aggregate GOP score 0-100", json_schema_extra={"example": 88.5})
+    overall_score: float = Field(..., ge=0, le=100)
     phonemes: List[PhonemeScore]
-
-
-IPA_TARGET_FORMANTS = {
-    "iː": {"f1": 310.0, "f2": 2350.0, "min_dur": 0.12, "max_dur": 0.40},
-    "ɪ": {"f1": 450.0, "f2": 1900.0, "min_dur": 0.06, "max_dur": 0.15},
-    "æ": {"f1": 760.0, "f2": 1700.0, "min_dur": 0.14, "max_dur": 0.35},
-    "e": {"f1": 580.0, "f2": 1900.0, "min_dur": 0.08, "max_dur": 0.20},
-    "ɑː": {"f1": 760.0, "f2": 1150.0, "min_dur": 0.15, "max_dur": 0.45},
-    "ʌ": {"f1": 650.0, "f2": 1380.0, "min_dur": 0.07, "max_dur": 0.16},
-    "ʊ": {"f1": 460.0, "f2": 1350.0, "min_dur": 0.06, "max_dur": 0.15},
-    "uː": {"f1": 330.0, "f2": 1000.0, "min_dur": 0.13, "max_dur": 0.40},
-    "ɒ": {"f1": 630.0, "f2": 1050.0, "min_dur": 0.07, "max_dur": 0.18},
-    "ɔː": {"f1": 480.0, "f2": 900.0, "min_dur": 0.14, "max_dur": 0.40},
-}
+    scoring_method: str = "neural_ctc"
+    model_id: str
+    feedback: str = "Experimental model confidence; not validated for isolated-vowel pronunciation coaching or calibrated as a pronunciation grade."
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "phoneme-scorer"}
+    # Liveness is deliberately independent of loading a potentially large model.
+    directory = os.environ.get("PHONEME_MODEL_DIR")
+    model_status = "loaded" if model_is_loaded() else (
+        "not_loaded" if directory and Path(directory).is_dir() else "unavailable")
+    return {"status": "ok", "service": "phoneme-scorer", "model_status": model_status}
+
+
+def decode_audio(audio_bytes):
+    try:
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wav:
+            if (wav.getnchannels(), wav.getsampwidth(), wav.getframerate(), wav.getcomptype()) != (1, 2, 16000, "NONE"):
+                raise ValueError("Expected 16kHz, 16-bit, mono PCM WAV")
+            frames = wav.getnframes()
+            if not 1280 <= frames <= 480000:
+                raise ValueError("Recording must be between 80ms and 30 seconds")
+            raw = wav.readframes(frames)
+            if len(raw) != frames * 2:
+                raise ValueError("Truncated WAV audio")
+    except (wave.Error, EOFError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error) or "Invalid WAV audio") from error
+    samples = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768
+    if float(np.sqrt(np.mean(samples ** 2))) < 0.001:
+        raise HTTPException(status_code=400, detail="No audible speech detected")
+    return samples
 
 
 @app.post("/v1/score/phoneme", response_model=PhonemeScoringResponse)
 async def score_phoneme(
-    target_transcript: str = Form(...),
-    expected_ipa: str = Form(...),
+    target_transcript: str = Form(..., max_length=200),
+    expected_ipa: str = Form(..., max_length=500),
     audio_file: UploadFile = File(...),
 ):
-    """
-    Evaluates phoneme pronunciation quality using Goodness of Pronunciation (GOP).
-    Expects 16kHz 16-bit mono PCM WAV audio.
-    """
-    audio_bytes = await audio_file.read()
-    if len(audio_bytes) < 44:
-        raise HTTPException(status_code=400, detail="Invalid audio file (too small for WAV header)")
-
+    audio_bytes = await audio_file.read(1_000_001)
+    if len(audio_bytes) > 1_000_000:
+        raise HTTPException(status_code=413, detail="Audio upload exceeds 1 MB")
+    samples = decode_audio(audio_bytes)
+    phonemes = expected_ipa.strip().strip("/").split()
+    if not target_transcript.strip() or not phonemes or len(phonemes) > 128:
+        raise HTTPException(status_code=400, detail="Provide a transcript and space-separated IPA phonemes")
+    if len(phonemes) == 1:
+        raise HTTPException(status_code=400, detail="This model does not support isolated-phoneme scoring; use the acoustic estimate")
     try:
-        with wave.open(io.BytesIO(audio_bytes), "rb") as wav:
-            channels = wav.getnchannels()
-            sample_width = wav.getsampwidth()
-            framerate = wav.getframerate()
-            num_frames = wav.getnframes()
-            duration_sec = num_frames / float(framerate) if framerate > 0 else 0.0
-
-            raw_frames = wav.readframes(num_frames)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse WAV audio: {str(e)}")
-
-    if duration_sec < 0.05:
-        raise HTTPException(status_code=400, detail="Audio duration is too short (< 50ms)")
-
-    # Parse expected phonemes from IPA string (space-separated or characters)
-    tokens = [t for t in expected_ipa.replace("/", "").split() if t]
-    if not tokens:
-        tokens = [expected_ipa.strip()]
-
-    # Montreal Forced Aligner time-slice partitioning
-    num_phonemes = len(tokens)
-    segment_duration = duration_sec / num_phonemes
-
-    phoneme_scores: List[PhonemeScore] = []
-    total_gop = 0.0
-
-    # Calculate signal RMS energy
-    sample_count = len(raw_frames) // 2
-    if sample_count > 0:
-        sum_sq = 0.0
-        for i in range(0, len(raw_frames), 2):
-            val = int.from_bytes(raw_frames[i : i + 2], byteorder="little", signed=True)
-            sum_sq += val * val
-        rms = math.sqrt(sum_sq / sample_count)
-    else:
-        rms = 500.0
-
-    # Minimum energy penalty if mic was muted/silent
-    energy_factor = min(1.0, max(0.2, rms / 1500.0))
-
-    for idx, phoneme in enumerate(tokens):
-        start_t = round(idx * segment_duration, 3)
-        end_t = round((idx + 1) * segment_duration, 3)
-        actual_dur = end_t - start_t
-
-        target_info = IPA_TARGET_FORMANTS.get(phoneme)
-        if target_info:
-            min_d = target_info["min_dur"]
-            max_d = target_info["max_dur"]
-            dur_score = 1.0
-            if actual_dur < min_d:
-                dur_score = max(0.5, actual_dur / min_d)
-            elif actual_dur > max_d:
-                dur_score = max(0.5, max_d / actual_dur)
-
-            base_acoustic = 92.0 * energy_factor * dur_score
-            # Confidence bounded between 20.0 and 98.0
-            gop = round(min(98.0, max(20.0, base_acoustic)), 1)
-        else:
-            # Consonant or untracked phoneme: baseline energy check
-            gop = round(min(95.0, max(30.0, 88.0 * energy_factor)), 1)
-
-        phoneme_scores.append(
-            PhonemeScore(
-                phoneme=phoneme,
-                gop_score=gop,
-                start_time=start_t,
-                end_time=end_t,
-            )
+        model = await run_in_threadpool(get_model)
+        scores = await run_in_threadpool(model.score, samples, phonemes)
+        return PhonemeScoringResponse(
+            overall_score=sum(score["gop_score"] for score in scores) / len(scores),
+            phonemes=scores,
+            model_id=model.model_id,
         )
-        total_gop += gop
-
-    overall = round(total_gop / num_phonemes, 1)
-
-    return PhonemeScoringResponse(
-        overall_score=overall,
-        phonemes=phoneme_scores,
-    )
+    except InvalidTarget as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except ModelUnavailable as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="The phoneme model could not evaluate this recording") from error

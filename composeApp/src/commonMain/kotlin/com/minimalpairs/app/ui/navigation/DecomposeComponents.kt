@@ -184,8 +184,10 @@ class DefaultRootComponent(
     override fun onNavigateToArticulatorLab(contrastId: String?, targetPhoneme: String?) {
         navigation.bringToFront(RootConfig.ArticulatorLab(contrastId, targetPhoneme))
         // A retained component may have had its target changed manually since the last visit.
-        if (targetPhoneme != null) {
-            (childStack.value.active.instance as? RootChild.ArticulatorLab)?.component?.preparePracticeTarget(targetPhoneme)
+        val requestedPhoneme = targetPhoneme ?: contrastId?.let { VowelContrastsCatalog.getContrastById(it)?.phoneme1 }
+        if (requestedPhoneme != null) {
+            (childStack.value.active.instance as? RootChild.ArticulatorLab)?.component
+                ?.preparePracticeTarget(requestedPhoneme, contrastId)
         }
     }
     override fun onNavigateToConfusionMatrix() = navigation.bringToFront(RootConfig.ConfusionMatrix)
@@ -484,8 +486,12 @@ data class ArticulatorLabUiState(
     val hasRecording: Boolean = false,
     val feedback: String? = null,
     val progressSaveError: String? = null,
-    val error: String? = null
-)
+    val error: String? = null,
+    val selectedPairIndex: Int = 0,
+    val scoringDescription: String? = null
+) {
+    val selectedPair: MinimalPairWord get() = contrast.pairs[selectedPairIndex]
+}
 
 interface ArticulatorLabComponent {
     val state: StateFlow<ArticulatorLabUiState>
@@ -494,7 +500,10 @@ interface ArticulatorLabComponent {
     fun testSynthesizedVowel(isPhoneme1: Boolean)
     fun playRecording() {}
     fun switchTargetPhoneme(isPhoneme1: Boolean)
-    fun preparePracticeTarget(phoneme: String) {
+    fun selectContrast(contrastId: String) {}
+    fun selectExamplePair(index: Int) {}
+    fun preparePracticeTarget(phoneme: String, contrastId: String? = null) {
+        contrastId?.let(::selectContrast)
         if (phoneme == state.value.contrast.phoneme1 || phoneme == state.value.contrast.phoneme2) {
             switchTargetPhoneme(phoneme == state.value.contrast.phoneme1)
         }
@@ -516,7 +525,7 @@ class DefaultArticulatorLabComponent(
     private val initialTargetPhoneme: String? = null
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
-    private val contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
+    private var contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
         ?: VowelContrastsCatalog.defaultContrasts.first()
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val _state = MutableStateFlow(ArticulatorLabUiState(contrast = contrast,
@@ -528,6 +537,8 @@ class DefaultArticulatorLabComponent(
     private var operation: Job? = null
     private var cleanup: Job? = null
     private var generation = 0L
+    private var frameSequence = 0L
+    private var formantExpiry: Job? = null
     private var acceptingSamples = false
     private var closed = false
 
@@ -583,11 +594,14 @@ class DefaultArticulatorLabComponent(
             _state.value = _state.value.copy(hasRecording = samples.isNotEmpty(), isScoring = true)
             val analysis = withContext(analysisDispatcher) { LpcFormantExtractor.extract(samples) }
             if (analysis.voicedRatio == 0f || analysis.durationMs < 80) {
-                _state.value = _state.value.copy(error = "No clear vowel detected. Hold the sound a little longer and try again.")
+                _state.value = _state.value.copy(liveF1 = 0f, liveF2 = 0f, liveF3 = 0f,
+                    error = "No clear vowel detected. Hold the sound a little longer and try again.")
                 return@runOperation
             }
+            _state.value = _state.value.copy(liveF1 = analysis.f1Hz, liveF2 = analysis.f2Hz,
+                liveF3 = analysis.f3Hz, liveDurationMs = analysis.durationMs)
             val first = _state.value.isTargetPhoneme1
-            val pair = contrast.pairs.first()
+            val pair = _state.value.selectedPair
             val scoring = withContext(analysisDispatcher) {
                 scorerApi.scoreAudio(samples, if (first) pair.word1 else pair.word2,
                     if (first) contrast.phoneme1 else contrast.phoneme2, contrast.id)
@@ -603,13 +617,16 @@ class DefaultArticulatorLabComponent(
             _state.value = _state.value.copy(
                 liveF1 = analysis.f1Hz, liveF2 = analysis.f2Hz, liveF3 = analysis.f3Hz,
                 liveDurationMs = analysis.durationMs, overallGopScore = scoring.overallScore,
-                feedback = placementFeedback(analysis, first)
+                feedback = placementFeedback(analysis, first),
+                scoringDescription = scoring.scoringDescription
             )
         } else {
             accumulatedSamples.clear()
             recordedSamples = ShortArray(0)
             _state.value = ArticulatorLabUiState(contrast, recorderState = recorder.state.value,
-                isTargetPhoneme1 = _state.value.isTargetPhoneme1, isBusy = true)
+                isTargetPhoneme1 = _state.value.isTargetPhoneme1, isBusy = true,
+                selectedPairIndex = _state.value.selectedPairIndex,
+                progressSaveError = _state.value.progressSaveError)
             if (recorder.state.value != AudioRecorderState.READY) {
                 recorder.release()
                 if (!recorder.prepare()) {
@@ -630,10 +647,20 @@ class DefaultArticulatorLabComponent(
                         toggleRecording()
                         return@launch
                     }
+                    val frame = ++frameSequence
                     val analysis = withContext(analysisDispatcher) { LpcFormantExtractor.extract(copy) }
-                    if (acceptingSamples && token == generation && analysis.voicedRatio > 0f) {
-                        _state.value = _state.value.copy(liveF1 = analysis.f1Hz,
-                            liveF2 = analysis.f2Hz, liveF3 = analysis.f3Hz)
+                    if (acceptingSamples && token == generation && frame == frameSequence) {
+                        val voiced = analysis.voicedRatio > 0f
+                        _state.value = _state.value.copy(liveF1 = if (voiced) analysis.f1Hz else 0f,
+                            liveF2 = if (voiced) analysis.f2Hz else 0f,
+                            liveF3 = if (voiced) analysis.f3Hz else 0f)
+                        formantExpiry?.cancel()
+                        formantExpiry = scope.launch {
+                            kotlinx.coroutines.delay(750)
+                            if (acceptingSamples && token == generation && frame == frameSequence) {
+                                _state.value = _state.value.copy(liveF1 = 0f, liveF2 = 0f, liveF3 = 0f)
+                            }
+                        }
                     }
                 }
             }
@@ -679,24 +706,52 @@ class DefaultArticulatorLabComponent(
         }
     }
 
-    override fun preparePracticeTarget(phoneme: String) {
-        if (closed || (phoneme != contrast.phoneme1 && phoneme != contrast.phoneme2)) return
+    override fun preparePracticeTarget(phoneme: String, contrastId: String?) {
+        val requestedContrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) } ?: contrast
+        if (closed || (phoneme != requestedContrast.phoneme1 && phoneme != requestedContrast.phoneme2)) return
         scope.launch {
             cleanup?.join()
-            if (!closed) switchTargetPhoneme(phoneme == contrast.phoneme1)
+            if (!closed) {
+                selectContrast(requestedContrast.id)
+                switchTargetPhoneme(phoneme == requestedContrast.phoneme1)
+            }
         }
     }
 
-    override fun switchTargetPhoneme(isPhoneme1: Boolean) {
-        if (closed || acceptingSamples || _state.value.isBusy || cleanup?.isActive == true) return
-        if (_state.value.isTargetPhoneme1 == isPhoneme1) return
+    private fun canChangeSelection(): Boolean =
+        !closed && !acceptingSamples && !_state.value.isBusy && cleanup?.isActive != true
+
+    private fun resetPracticeSelection(first: Boolean, pairIndex: Int) {
+        accumulatedSamples.clear()
         recordedSamples = ShortArray(0)
         _state.value = ArticulatorLabUiState(contrast, recorderState = recorder.state.value,
-            isTargetPhoneme1 = isPhoneme1)
+            isTargetPhoneme1 = first, selectedPairIndex = pairIndex,
+            progressSaveError = _state.value.progressSaveError)
+    }
+
+    override fun selectContrast(contrastId: String) {
+        if (!canChangeSelection() || contrast.id == contrastId) return
+        val selected = VowelContrastsCatalog.getContrastById(contrastId) ?: return
+        contrast = selected
+        resetPracticeSelection(first = true, pairIndex = 0)
+    }
+
+    override fun selectExamplePair(index: Int) {
+        if (!canChangeSelection() || index !in contrast.pairs.indices || index == _state.value.selectedPairIndex) return
+        resetPracticeSelection(_state.value.isTargetPhoneme1, index)
+    }
+
+    override fun switchTargetPhoneme(isPhoneme1: Boolean) {
+        if (!canChangeSelection() || _state.value.isTargetPhoneme1 == isPhoneme1) return
+        resetPracticeSelection(isPhoneme1, _state.value.selectedPairIndex)
     }
 
     private fun stopSession() {
+        if (acceptingSamples) {
+            _state.value = _state.value.copy(liveF1 = 0f, liveF2 = 0f, liveF3 = 0f)
+        }
         acceptingSamples = false
+        formantExpiry?.cancel()
         generation++
         val pending = operation
         pending?.cancel()
