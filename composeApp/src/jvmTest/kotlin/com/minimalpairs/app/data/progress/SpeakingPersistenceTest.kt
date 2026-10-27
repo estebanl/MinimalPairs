@@ -12,6 +12,40 @@ import kotlin.test.*
 
 class SpeakingPersistenceTest {
     @Test
+    fun versionThreePreservesLegacyScoresAndPersistsSelectedPhonemeMethod() = runBlocking {
+        val directory = Files.createTempDirectory("speaking-v3-migration").toFile()
+        val path = directory.resolve("progress.db").absolutePath
+        val schema = Json.parseToJsonElement(File("schemas/com.minimalpairs.app.data.local.AppDatabase/3.json").readText())
+            .jsonObject.getValue("database").jsonObject
+        BundledSQLiteDriver().open(path).use { connection ->
+            fun execute(sql: String) { connection.prepare(sql).use { it.step() } }
+            schema.getValue("entities").jsonArray.forEach { entity ->
+                val table = entity.jsonObject
+                execute(table.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table.getValue("tableName").jsonPrimitive.content))
+                table["indices"]?.jsonArray.orEmpty().forEach { index ->
+                    execute(index.jsonObject.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table.getValue("tableName").jsonPrimitive.content))
+                }
+            }
+            schema.getValue("setupQueries").jsonArray.forEach { execute(it.jsonPrimitive.content) }
+            execute("INSERT INTO speaking_records VALUES (1, 'p_vs_b', 'pear', 'p', 80, 500, 1000)")
+            execute("PRAGMA user_version = 3")
+        }
+        fun open() = createDatabase(Room.databaseBuilder<AppDatabase>(name = path))
+        var database = open()
+        try {
+            val old = database.progressDao().readSpeaking().single()
+            assertEquals(80f, old.score)
+            assertEquals("unknown", old.scoringMethod)
+            database.progressDao().recordSpeaking(old.copy(id = 2, score = 72f, scoringMethod = "neural_ctc_phoneme"))
+            database.close()
+            database = open()
+            val records = database.progressDao().readSpeaking()
+            assertEquals("neural_ctc_phoneme", records.single { it.id == 2L }.scoringMethod)
+            assertEquals(2, summarizeSpeaking(records).size)
+        } finally { database.close(); directory.deleteRecursively() }
+    }
+
+    @Test
     fun versionOneMigratesWithoutLosingListeningAndSpeakingSurvivesReopening() = runBlocking {
         val directory = Files.createTempDirectory("speaking-migration").toFile()
         val path = directory.resolve("progress.db").absolutePath
@@ -22,6 +56,9 @@ class SpeakingPersistenceTest {
             schema.getValue("entities").jsonArray.forEach { entity ->
                 val table = entity.jsonObject
                 execute(table.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table.getValue("tableName").jsonPrimitive.content))
+                table["indices"]?.jsonArray.orEmpty().forEach { index ->
+                    execute(index.jsonObject.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table.getValue("tableName").jsonPrimitive.content))
+                }
             }
             schema.getValue("setupQueries").jsonArray.forEach { execute(it.jsonPrimitive.content) }
             execute("INSERT INTO trial_records VALUES (1, 'i_vs_I', 'sheep', 'ship', 0, 1000, 'FORCED_CHOICE', 1000)")

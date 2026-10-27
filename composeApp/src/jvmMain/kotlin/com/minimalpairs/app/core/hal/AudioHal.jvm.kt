@@ -15,7 +15,7 @@ import javax.sound.sampled.DataLine
 import javax.sound.sampled.SourceDataLine
 import javax.sound.sampled.TargetDataLine
 
-class JvmAudioRecorder : AudioRecorder {
+class JvmAudioRecorder(private val inputDeviceName: String? = null) : AudioRecorder {
     private val _state = MutableStateFlow(AudioRecorderState.UNINITIALIZED)
     override val state: StateFlow<AudioRecorderState> = _state.asStateFlow()
 
@@ -39,7 +39,11 @@ class JvmAudioRecorder : AudioRecorder {
                 _state.value = AudioRecorderState.ERROR
                 return@withContext false
             }
-            val line = AudioSystem.getLine(info) as TargetDataLine
+            val line = if (inputDeviceName == null) AudioSystem.getLine(info) as TargetDataLine else {
+                val device = AudioSystem.getMixerInfo().first { it.name == inputDeviceName &&
+                    AudioSystem.getMixer(it).isLineSupported(info) }
+                AudioSystem.getMixer(device).getLine(info) as TargetDataLine
+            }
             line.open(audioFormat, 1024)
             targetLine = line
             _state.value = AudioRecorderState.READY
@@ -56,6 +60,7 @@ class JvmAudioRecorder : AudioRecorder {
         }
         val line = targetLine ?: return@withContext false
         activeCallback = onBuffer
+        line.flush()
         line.start()
         _state.value = AudioRecorderState.RECORDING
 

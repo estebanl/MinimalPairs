@@ -30,7 +30,7 @@ internal fun SpeakingProgressCard(
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Speaking progress", style = MaterialTheme.typography.titleLarge)
             Text("${records.size} scored ${if (records.size == 1) "recording" else "recordings"}", style = MaterialTheme.typography.titleMedium)
-            Text("Scores are estimates out of 100. Vowels use acoustic or model estimates; consonants use whole-word reference similarity. They are separate from listening accuracy and do not affect listening streaks or reviews.", style = MaterialTheme.typography.bodySmall)
+            Text("Scores are estimates out of 100. Vowels use acoustic or model estimates; consonants use selected-phoneme model confidence. Older scores may use a different method. They are separate from listening accuracy and do not affect listening streaks or reviews.", style = MaterialTheme.typography.bodySmall)
             if (records.isEmpty()) {
                 Text("Complete a recording in Speak to start your speaking history.")
                 Button(onClick = onStartSpeaking, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -44,9 +44,13 @@ internal fun SpeakingProgressCard(
                     Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium) {
                         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("/${sound.phoneme}/ · ${sound.latest.targetWord}", style = MaterialTheme.typography.titleMedium)
-                            if (ListeningContrastsCatalog.getContrastById(sound.contrastId)?.vowelReference == null) {
-                                Text("Word similarity · experimental", style = MaterialTheme.typography.bodySmall)
-                            }
+                            Text(when (sound.latest.scoringMethod) {
+                                "neural_ctc_phoneme" -> "Selected-phoneme confidence · experimental"
+                                "word_similarity" -> "Previous word similarity score"
+                                "acoustic_estimate" -> "Vowel acoustic estimate"
+                                "neural_ctc" -> "Model confidence · experimental"
+                                else -> "Earlier score · method not recorded"
+                            }, style = MaterialTheme.typography.bodySmall)
                             Text("Recent average: ${sound.recentAverage}/100", style = MaterialTheme.typography.bodyLarge)
                             Text("Based on the latest ${sound.recentCount} ${if (sound.recentCount == 1) "recording" else "recordings"}.", style = MaterialTheme.typography.bodySmall)
                             Text("Latest: ${sound.latest.score.roundToInt()}/100 · Best: ${sound.bestScore}/100 · Attempts: ${sound.attempts}", style = MaterialTheme.typography.bodySmall)

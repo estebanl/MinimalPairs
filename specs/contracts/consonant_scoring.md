@@ -1,42 +1,72 @@
-# Consonant word similarity
+# Selected-consonant scoring
 
-Speak scores every consonant contrast in `ListeningContrastsCatalog` offline,
-using the selected word and the other word from the same pair. The result is
-labeled **Word similarity**, not consonant recognition or pronunciation accuracy.
-The comparison includes the entire word; pairs such as shoe/measure differ in
-more than one sound. Speaker, accent, microphone, and noise differences affect it.
+Speak records the whole example word as context, but evaluates only the selected
+consonant occurrence. It no longer computes whole-word reference similarity.
+All consonant examples have a full broad British-English transcript in
+`ConsonantScoringTargets`, including explicit initial, medial and final target
+positions. Ambiguous or mismatched targets are rejected. The model maps public
+/e/, /r/, and /ɪə/ to [ɛ], [ɹ], and [iə] respectively while retaining public labels.
 
-## Signal and score
+## Request and score
 
-- Input and both bundled references are 16 kHz, signed 16-bit mono PCM.
-- Reject recordings shorter than 80 ms or longer than 30 seconds. Require six
-  overlapping 25 ms frames with non-DC RMS of at least 0.002 (normalized PCM).
-  No voiced-vowel or formant requirement applies to consonants.
-- Trim edge silence using the larger of RMS 0.002 and 3% of peak frame RMS;
-  retain silence inside the word, including stop closures.
-- Use 25 ms Hann windows at 10 ms intervals, 512-point spectra, and 26 triangular
-  mel-frequency bands spanning 80–7600 Hz. Normalize each frame to its peak band,
-  floor relative power at 0.0001, and compare normalized log energy.
-- Bound each sequence to 200 frames. Dynamic time warping uses frame RMS spectral
-  distance and divides accumulated cost by the longer sequence length.
-- Let T be distance to the selected word and A distance to the alternative.
-  The score is `100 * A / (T + A) * exp(-T)`, bounded to 0–100. If both distances
-  are zero, use a relative match of 0.5. This is a heuristic similarity scale,
-  not a calibrated probability. Exact target audio gives 100; the exact opposite
-  reference gives 0; an equal match gives at most 50.
+`POST /v1/score/phoneme` receives the full, space-separated `expected_ipa`, WAV
+recording and zero-based `target_phoneme_index`. The index must be within the
+multi-phoneme transcript. Isolated-phoneme tasks remain unsupported.
 
-## App behavior
+CTC forced alignment locates each phoneme's emission frames. For selected-phoneme
+scoring, inter-token blank gaps are divided halfway between adjacent emission
+spans. The selected score is 100 times the geometric mean of the selected token's
+posterior on its aligned frames plus greedy nonblank frames in that local region.
+This includes local substitutions that alignment might otherwise push into blank
+states. Silence does not dilute this penalty. Confidence for other segments is
+not averaged or multiplied into the selected score.
 
-The scorer returns method `word_similarity`, with no invented phoneme boundaries
-or per-phoneme scores. It needs no remote service. Missing/invalid references,
-silent or unusable input, cancellation, and invalid results never become fallback
-scores. Audio remains available for replay after a scoring failure.
+Before inference, selected-phoneme requests use DC-independent 20ms energy
+windows at 10ms hops to locate one word and supply a fixed 150ms context on both
+ends (padding if necessary). The cropped waveform is centered and RMS normalized.
+Returned emission timestamps include the crop offset and remain inside the
+original recording; replay and saved duration retain the original audio.
 
-Valid results use the existing speaking-history persistence and retry flow, with
-contrast ID, word, selected phoneme, score, duration, and time. Progress labels
-consonant results as experimental word similarity and reopens the selected sound.
-Vowel scoring and listening progress are unchanged.
+Conservative quality gates reject peak window RMS below .003, more than 1%
+full-scale clipping, peak-to-20th-percentile energy below 20, fewer than six
+active windows, sustained activity cores separated by over 650ms, or word
+activity spanning over three seconds. Cores require six windows above 20% of
+peak energy (joining gaps up to 50ms); boundaries expand at 6% of peak or three
+times background energy, joining gaps up to 100ms. Weaker distant events do not
+extend the word. This is energy-based endpointing, not semantic verification of
+the word count; sufficiently quiet extra speech can be missed.
+These are engineering safeguards, not validated SNR or speech-detection metrics.
+The selected region also needs a greedy nonblank emission with posterior at least
+.6; otherwise alignment is uncertain. Low target posterior with a confident
+competing sound can still produce a low score. No score floor or boost is applied.
 
-Regression tests exercise all bundled consonant example pairs, gain and silence
-changes, invalid input, missing resources, cancellation, UI labels, saved targets,
-and navigation. These checks do not establish accuracy across human speakers.
+Quality failures return HTTP 400 with `detail.code` and `detail.message`. Speak
+maps known codes to recording guidance, retains replay, clears stale scores, and
+saves nothing to Progress. Unknown failures retain the generic service error.
+
+The result has method `neural_ctc_phoneme`, echoes the selected index, includes
+ordered emission spans, and sets `overall_score` to that selected entry's score.
+The client validates the method, model ID, transcript, index, finite scores,
+ordered in-bounds spans, and equality of the selected and overall scores.
+
+These are experimental model confidence scores, not calibrated pronunciation
+accuracy. CTC emission intervals are not validated anatomical/phonetic boundaries.
+Forced alignment can still mislocate a sound when pronunciation differs strongly
+from the expected word. A successful request does not validate coaching accuracy.
+
+## Availability and persistence
+
+Consonant scoring requires a configured, reachable phoneme service with a locally
+provisioned model. There is no word-similarity, fixed-score, or vowel-formant
+fallback. Silence, invalid input, service failure, and malformed responses show a
+recoverable error without saving a score. Audio remains available for replay.
+
+Valid results save the target, duration, score, and scoring method. Database v4
+adds `scoringMethod`; earlier rows and old imports default to `unknown` instead
+of being relabeled as phoneme scores. Summaries group by method as well as target,
+so legacy similarity results never become trends in phoneme confidence.
+
+Run JVM tests, `python -m pytest tests` from backend, and optionally
+`build/phoneme-model-venv/bin/python scripts/validate_consonant_scoring.py` with the
+provisioned local model. The smoke script compares bundled target and opposite
+word recordings; it is integration evidence, not held-out human validation.

@@ -2,11 +2,9 @@ package com.minimalpairs.app.data.remote
 
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
 import com.minimalpairs.app.core.dsp.WavCodec
-import com.minimalpairs.app.core.dsp.WordSimilarityScorer
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.core.dsp.SpeechAudioValidation
+import com.minimalpairs.app.data.catalog.ConsonantScoringTargets
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import com.minimalpairs.app.core.model.PhonemeScore
 import com.minimalpairs.app.core.model.PhonemeScoringResponse
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
@@ -14,6 +12,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.post
@@ -22,6 +22,8 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlin.math.abs
 import kotlin.math.exp
@@ -49,8 +51,7 @@ class PhonemeScorerClient(
                 isLenient = true
             })
         }
-    },
-    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
+    }
 ) : PhonemeScorerApi {
 
     override suspend fun scoreAudio(
@@ -60,46 +61,33 @@ class PhonemeScorerClient(
         contrastId: String?
     ): PhonemeScoringResponse {
         val practice = contrastId?.let(ListeningContrastsCatalog::getContrastById)
-        if (practice != null && practice.vowelReference == null) {
-            val first = when (expectedIpa) {
-                practice.phoneme1 -> true
-                practice.phoneme2 -> false
-                else -> throw PracticeScoringException("The selected sound does not match this sound pair.")
-            }
-            val pair = practice.pairs.firstOrNull {
-                (if (first) it.word1 else it.word2).equals(targetWord, ignoreCase = true)
-            } ?: throw PracticeScoringException("The selected word does not match this sound pair.")
-            if (!WordSimilarityScorer.hasUsableAudio(audioSamples)) {
+        val consonant = practice != null && practice.vowelReference == null
+        val target = if (consonant) {
+            ConsonantScoringTargets.find(practice.id, targetWord, expectedIpa)
+                ?: throw PracticeScoringException("The selected sound has no matching word transcript.")
+        } else null
+        if (consonant) {
+            if (!SpeechAudioValidation.hasUsableAudio(audioSamples)) {
                 throw PracticeScoringException("No clear sound detected. Record the whole word and try again.")
             }
-            val target = loadWordPcm(if (first) pair.word1 else pair.word2)
-            currentCoroutineContext().ensureActive()
-            val alternative = loadWordPcm(if (first) pair.word2 else pair.word1)
-            currentCoroutineContext().ensureActive()
-            if (target == null || alternative == null || !WordSimilarityScorer.hasUsableAudio(target) ||
-                !WordSimilarityScorer.hasUsableAudio(alternative)) {
-                throw PracticeScoringException("The example audio needed for scoring is unavailable. Please try again.")
+            if (baseUrl.isNullOrBlank()) {
+                throw PracticeScoringException("Consonant scoring needs the phoneme service. Configure its address, then record again. Your recording can still be replayed.")
             }
-            val score = WordSimilarityScorer.score(audioSamples, target, alternative)
-            currentCoroutineContext().ensureActive()
-            return PhonemeScoringResponse(
-                overallScore = score,
-                phonemes = emptyList(), // Whole-word comparison has no isolated phoneme scores or boundaries.
-                scoringMethod = "word_similarity",
-                feedback = "Compare your recording with “$targetWord”, then try again. Keep the whole word clear and focus on /$expectedIpa/."
-            )
         }
+        val requestIpa = target?.ipa ?: expectedIpa
         // Remote failure remains visible when falling back to the local estimate.
         var fallbackMessage: String? = null
         if (!baseUrl.isNullOrBlank()) {
             try {
                 val wavBytes = WavCodec.encodePcmToWav(audioSamples)
-                val response: PhonemeScoringResponse = client.post("${baseUrl.trimEnd('/')}/v1/score/phoneme") {
+                val httpResponse = client.post("${baseUrl.trimEnd('/')}/v1/score/phoneme") {
+                    expectSuccess = false
                     setBody(
                         MultiPartFormDataContent(
                             formData {
                                 append("target_transcript", targetWord)
-                                append("expected_ipa", expectedIpa)
+                                append("expected_ipa", requestIpa)
+                                target?.let { append("target_phoneme_index", it.index.toString()) }
                                 append("audio_file", wavBytes, Headers.build {
                                     append(HttpHeaders.ContentType, "audio/wav")
                                     append(HttpHeaders.ContentDisposition, "filename=\"audio.wav\"")
@@ -107,10 +95,27 @@ class PhonemeScorerClient(
                             }
                         )
                     )
-                }.body()
+                }
+                if (consonant && httpResponse.status.value == 400) {
+                    val code = runCatching {
+                        Json.parseToJsonElement(httpResponse.bodyAsText()).jsonObject["detail"]
+                            ?.jsonObject?.get("code")?.jsonPrimitive?.content
+                    }.getOrNull()
+                    val guidance = when (code) {
+                        "no_clear_speech" -> "No clear voice was captured. Check your microphone and record the whole word again."
+                        "noisy_audio" -> "Background noise is too strong for a reliable score. Move closer to the microphone and try in a quieter place."
+                        "clipped_audio" -> "The microphone is clipping. Move farther away or lower its input level."
+                        "multiple_utterances" -> "Say the selected word once, without other speech."
+                        "uncertain_alignment" -> "The model could not identify /$expectedIpa/ reliably. Record the word again."
+                        else -> null
+                    }
+                    if (guidance != null) throw PracticeScoringException("$guidance No score was saved. You can replay your recording.")
+                }
+                require(httpResponse.status.value == 200)
+                val response: PhonemeScoringResponse = httpResponse.body()
                 require(response.overallScore.isFinite() && response.overallScore in 0f..100f)
-                require(response.scoringMethod == "neural_ctc" && !response.modelId.isNullOrBlank())
-                val expectedTokens = expectedIpa.trim().trim('/').split(Regex("\\s+")).filter { it.isNotBlank() }
+                require(response.scoringMethod == (if (consonant) "neural_ctc_phoneme" else "neural_ctc") && !response.modelId.isNullOrBlank())
+                val expectedTokens = requestIpa.trim().trim('/').split(Regex("\\s+")).filter { it.isNotBlank() }
                 require(response.phonemes.map { it.phoneme } == expectedTokens)
                 require(response.phonemes.zipWithNext().all { (before, after) -> before.endTime <= after.startTime })
                 require(response.phonemes.isNotEmpty() && response.phonemes.all {
@@ -119,10 +124,22 @@ class PhonemeScorerClient(
                         it.startTime >= 0f && it.endTime > it.startTime &&
                         it.endTime <= audioSamples.size / 16000f + .001f
                 })
+                if (target != null) {
+                    require(response.targetPhonemeIndex == target.index)
+                    val selected = response.phonemes[target.index]
+                    require(selected.phoneme == expectedIpa)
+                    require(abs(response.overallScore - selected.gopScore) < .001f)
+                    return response.copy(overallScore = selected.gopScore,
+                        feedback = "Selected /$expectedIpa/ in “$targetWord”. Listen to the example and practise that sound within the word.")
+                }
                 return response
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: PracticeScoringException) {
+                throw e
             } catch (e: Exception) {
+                if (consonant) throw PracticeScoringException(
+                    "The phoneme service could not score /$expectedIpa/ in this word. Check the service and try recording again. No word-similarity score was substituted.")
                 fallbackMessage = "The model service was unavailable or returned an invalid result; used formants and duration instead."
             }
         }

@@ -1,5 +1,6 @@
 package com.minimalpairs.app.data.local
 
+import androidx.room3.ColumnInfo
 import androidx.room3.AutoMigration
 import androidx.room3.ConstructedBy
 import androidx.room3.Dao
@@ -59,7 +60,8 @@ data class SpeakingRecordEntity(
     val targetPhoneme: String,
     val score: Float,
     val durationMs: Int,
-    val timestampEpochMs: Long
+    val timestampEpochMs: Long,
+    @ColumnInfo(defaultValue = "'unknown'") val scoringMethod: String = "unknown"
 )
 
 @Dao
@@ -332,8 +334,8 @@ abstract class ProgressDao {
 
 @Database(
     entities = [Sm2CardEntity::class, ConfusionMatrixEntryEntity::class, TrialRecordEntity::class, SpeakingRecordEntity::class, ModulePracticeRecordEntity::class, PendingProgressWriteEntity::class, ProgressChangeEntity::class],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)]
+    version = 4,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -8,6 +8,18 @@ class SpeakingSummaryTest {
         SpeakingRecordEntity(index.toLong(), contrast, "sheep", phoneme, score, 200, index * 1000L)
 
     @Test
+    fun selectedPhonemeScoresDoNotMixWithOldWordSimilarityOrUnknownScores() {
+        val records = listOf(
+            record(1, 100f, "p_vs_b", "p"),
+            record(2, 90f, "p_vs_b", "p").copy(scoringMethod = "word_similarity"),
+            record(3, 60f, "p_vs_b", "p").copy(scoringMethod = "neural_ctc_phoneme")
+        )
+        val summaries = summarizeSpeaking(records)
+        assertEquals(3, summaries.size)
+        assertTrue(summaries.all { it.attempts == 1 && it.changePoints == null })
+    }
+
+    @Test
     fun comparesTwoRecentSamplesAndKeepsBestAcrossAllAttempts() {
         val records = listOf(record(0, 100f)) + (1..10).map { record(it, if (it <= 5) 40f else 80f) }
         val summary = summarizeSpeaking(records.shuffled()).single()

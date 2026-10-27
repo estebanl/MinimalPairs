@@ -9,11 +9,11 @@ from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from .ctc_scorer import InvalidTarget, ModelUnavailable, get_model, model_is_loaded
+from .ctc_scorer import InvalidTarget, ModelUnavailable, RecordingQualityError, get_model, model_is_loaded
 
 app = FastAPI(
     title="Phoneme Scorer Service",
-    version="2.0.0",
+    version="2.1.0",
     description="Local phoneme CTC alignment and uncalibrated posterior confidence",
 )
 
@@ -30,6 +30,7 @@ class PhonemeScoringResponse(BaseModel):
     phonemes: List[PhonemeScore]
     scoring_method: str = "neural_ctc"
     model_id: str
+    target_phoneme_index: int | None = None
     feedback: str = "Experimental model confidence; not validated for isolated-vowel pronunciation coaching or calibrated as a pronunciation grade."
 
 
@@ -56,7 +57,9 @@ def decode_audio(audio_bytes):
     except (wave.Error, EOFError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error) or "Invalid WAV audio") from error
     samples = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768
-    if float(np.sqrt(np.mean(samples ** 2))) < 0.001:
+    # Whole-clip RMS falls as the user waits before/after speaking. Only reject
+    # effectively silent input here; word-level quality checks follow endpointing.
+    if float(np.max(np.abs(samples - samples.mean()))) < 0.001:
         raise HTTPException(status_code=400, detail="No audible speech detected")
     return samples
 
@@ -66,6 +69,7 @@ async def score_phoneme(
     target_transcript: str = Form(..., max_length=200),
     expected_ipa: str = Form(..., max_length=500),
     audio_file: UploadFile = File(...),
+    target_phoneme_index: int | None = Form(None, ge=0),
 ):
     audio_bytes = await audio_file.read(1_000_001)
     if len(audio_bytes) > 1_000_000:
@@ -76,14 +80,28 @@ async def score_phoneme(
         raise HTTPException(status_code=400, detail="Provide a transcript and space-separated IPA phonemes")
     if len(phonemes) == 1:
         raise HTTPException(status_code=400, detail="This model does not support isolated-phoneme scoring; use the acoustic estimate")
+    if target_phoneme_index is not None and target_phoneme_index >= len(phonemes):
+        raise HTTPException(status_code=400, detail="Target phoneme index is outside the word transcript")
     try:
         model = await run_in_threadpool(get_model)
+        if target_phoneme_index is not None:
+            scores = await run_in_threadpool(model.score, samples, phonemes, target_phoneme_index)
+            return PhonemeScoringResponse(
+                overall_score=scores[target_phoneme_index]["gop_score"],
+                phonemes=scores,
+                model_id=model.model_id,
+                scoring_method="neural_ctc_phoneme",
+                target_phoneme_index=target_phoneme_index,
+                feedback="Experimental confidence for the selected phoneme aligned within the word; not calibrated pronunciation accuracy.",
+            )
         scores = await run_in_threadpool(model.score, samples, phonemes)
         return PhonemeScoringResponse(
             overall_score=sum(score["gop_score"] for score in scores) / len(scores),
             phonemes=scores,
             model_id=model.model_id,
         )
+    except RecordingQualityError as error:
+        raise HTTPException(status_code=400, detail={"code": error.code, "message": str(error)}) from error
     except InvalidTarget as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except ModelUnavailable as error:

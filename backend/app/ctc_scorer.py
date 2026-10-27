@@ -19,7 +19,66 @@ class InvalidTarget(ValueError):
     pass
 
 
-def align_posteriors(logits, targets, blank_id, duration):
+class RecordingQualityError(ValueError):
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
+def prepare_word_audio(samples):
+    """Conservative single-word endpointing, with fixed 150ms model context.
+
+    This energy gate is not a speech recognizer or a calibrated SNR estimator.
+    Reject poor input rather than treating microphone conditions as pronunciation.
+    Return the crop's (possibly negative, for padding) original sample offset.
+    """
+    samples = np.asarray(samples, dtype=np.float32)
+    if samples.ndim != 1 or len(samples) < 1280 or not np.isfinite(samples).all():
+        raise RecordingQualityError("no_clear_speech", "Record one complete word clearly.")
+    if np.mean(np.abs(samples) >= .999) > .01:
+        raise RecordingQualityError("clipped_audio", "The microphone is clipping. Move farther away or lower its input level.")
+    hop, window, context = 160, 320, 2400
+    frames = np.lib.stride_tricks.sliding_window_view(samples, window)[::hop]
+    energy = np.std(frames, axis=1)  # Ignore DC offset when locating activity.
+    peak, floor = float(energy.max()), float(np.quantile(energy, .2))
+    if peak < .003:
+        raise RecordingQualityError("no_clear_speech", "No clear voice was captured. Check the microphone and record again.")
+    if peak < 20 * max(floor, 1e-8):
+        raise RecordingQualityError("noisy_audio", "Background noise is too strong for a reliable score. Move closer and try in a quieter place.")
+    active = np.flatnonzero(energy > max(peak * .06, floor * 3))
+    if len(active) < 6:
+        raise RecordingQualityError("no_clear_speech", "Record one complete word clearly.")
+    # Anchor on sustained activity, not isolated taps or weak room sounds.
+    # Expand at the lower threshold to retain quiet fricatives/releases.
+    strong = np.flatnonzero(energy > max(peak * .2, floor * 3))
+    groups = np.split(strong, np.flatnonzero(np.diff(strong) > 5) + 1)
+    cores = [group for group in groups if len(group) >= 6]
+    if not cores:
+        raise RecordingQualityError("no_clear_speech", "Record one complete word clearly.")
+    if any(right[0] - left[-1] > 65 for left, right in zip(cores, cores[1:])):
+        raise RecordingQualityError("multiple_utterances", "Say the selected word once, without other speech.")
+    first, last = int(cores[0][0]), int(cores[-1][-1])
+    for frame in active[active < first][::-1]:
+        if first - frame > 10:
+            break
+        first = int(frame)
+    for frame in active[active > last]:
+        if frame - last > 10:
+            break
+        last = int(frame)
+    if (last - first) * hop > 48000:
+        raise RecordingQualityError("multiple_utterances", "Say the selected word once, without other speech.")
+    start = first * hop - context
+    end = last * hop + window + context
+    audio = np.pad(samples[max(0, start):min(len(samples), end)],
+                   (max(0, -start), max(0, end - len(samples))),
+                   constant_values=float(np.median(samples)))
+    audio = audio - audio.mean()
+    audio = audio * (.1 / max(float(np.sqrt(np.mean(audio ** 2))), 1e-8))
+    return audio.astype(np.float32), start
+
+
+def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=False, selected_index=None):
     """Return per-target posterior confidence and true CTC frame intervals.
 
     Expanded states alternate blank and target; repeated adjacent targets must
@@ -75,12 +134,27 @@ def align_posteriors(logits, targets, blank_id, duration):
     aligned_logp = logp[np.arange(frames), aligned_tokens]
     sequence_agreement = float(np.exp((aligned_logp[speech_frames] - logp.max(axis=1)[speech_frames]).mean()))
     results = []
+    token_times = [np.flatnonzero(path == index * 2 + 1) for index in range(len(targets))]
     for index, target in enumerate(targets):
         times = np.flatnonzero(path == index * 2 + 1)
         if not times.size:
             raise InvalidTarget("A target phoneme has no aligned frames")
+        confidence = float(np.exp(logp[times, target].mean()) * sequence_agreement)
+        if segment_scores:
+            # Split inter-token blank gaps halfway. Include local competing speech
+            # so a single forced target spike cannot hide a substitution. Other
+            # phonemes' confidence never enters this selected segment's score.
+            left = 0 if index == 0 else (token_times[index - 1][-1] + times[0] + 1) // 2
+            right = frames if index == len(targets) - 1 else (times[-1] + token_times[index + 1][0] + 1) // 2
+            local = np.arange(left, right)
+            evaluated = np.union1d(times, local[speech_frames[local]])
+            confidence = float(np.exp(logp[evaluated, target].mean()))
+            if index == selected_index:
+                evidence = local[speech_frames[local]]
+                if not len(evidence) or float(np.exp(logp[evidence].max(axis=1)).max()) < .6:
+                    raise RecordingQualityError("uncertain_alignment", "The model could not identify the selected sound reliably. Record the word again.")
         results.append({
-            "gop_score": float(100 * np.exp(logp[times, target].mean()) * sequence_agreement),
+            "gop_score": float(100 * confidence),
             "start_time": float(times[0] * duration / frames),
             "end_time": float((times[-1] + 1) * duration / frames),
         })
@@ -124,7 +198,7 @@ class LocalPhonemeModel:
                 raise ModelUnavailable("Model emissions do not match its vocabulary")
         return logits
 
-    def score(self, samples, phonemes):
+    def score(self, samples, phonemes, target_phoneme_index=None):
         # Independent isolated-nucleus evaluation found this checkpoint largely
         # blank and unreliable. Do not turn its occasional token spike into a
         # learner grade. The app can explicitly fall back to acoustic estimates.
@@ -132,12 +206,26 @@ class LocalPhonemeModel:
             raise InvalidTarget("This model does not support isolated-phoneme scoring; use the acoustic estimate")
         # App DRESS /e/ is British broad transcription for [ɛ]. Keep the public
         # label while using the correct narrow model token.
-        model_tokens = ["ɛ" if token == "e" else token for token in phonemes]
+        if target_phoneme_index is not None and not 0 <= target_phoneme_index < len(phonemes):
+            raise InvalidTarget("Target phoneme index is outside the word transcript")
+        aliases = {"e": "ɛ", "r": "ɹ", "ɪə": "iə"}
+        model_tokens = [aliases.get(token, token) for token in phonemes]
         if any(token not in self.vocab or token.startswith("<") for token in model_tokens):
             raise InvalidTarget("An IPA token is not supported by this model")
         targets = [self.vocab[token] for token in model_tokens]
+        duration = len(samples) / 16000
+        offset = 0
+        if target_phoneme_index is not None:
+            samples, offset = prepare_word_audio(samples)
         logits = self.infer_logits(samples)
-        aligned = align_posteriors(logits, targets, self.blank_id, len(samples) / 16000)
+        aligned = align_posteriors(logits, targets, self.blank_id, len(samples) / 16000,
+                                   segment_scores=target_phoneme_index is not None,
+                                   selected_index=target_phoneme_index)
+        for score in aligned:
+            score["start_time"] = max(0., score["start_time"] + offset / 16000)
+            score["end_time"] = min(duration, score["end_time"] + offset / 16000)
+            if score["end_time"] <= score["start_time"]:
+                raise RecordingQualityError("uncertain_alignment", "The model could not locate the sound inside the recording.")
         return [dict(phoneme=phoneme, **score) for phoneme, score in zip(phonemes, aligned)]
 
 

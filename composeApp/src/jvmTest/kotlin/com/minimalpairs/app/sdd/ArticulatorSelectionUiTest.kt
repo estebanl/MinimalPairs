@@ -228,11 +228,11 @@ class ArticulatorSelectionUiTest {
         component.selectContrast("p_vs_b")
         component.state.value = component.state.value.copy(
             overallGopScore = 72f, hasRecording = true,
-            scoringDescription = "Offline word similarity (experimental).")
+            scoringDescription = "Selected-phoneme model confidence (experimental).")
         ImageComposeScene(390, 844) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
             scene.render().close()
-            assertTrue(scene.nodes().any { it.matches("Word similarity · 72/100") })
-            assertTrue(scene.nodes().any { it.matches("Offline word similarity (experimental).") })
+            assertTrue(scene.nodes().any { it.matches("Selected sound /p/ · 72/100") })
+            assertTrue(scene.nodes().any { it.matches("Selected-phoneme model confidence (experimental).") })
             scene.nodes().first { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
                 .config[SemanticsActions.ScrollBy].action!!.invoke(0f, 600f)
             val start = System.nanoTime()

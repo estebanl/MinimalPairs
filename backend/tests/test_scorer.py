@@ -196,3 +196,65 @@ def test_simultaneous_first_requests_share_one_model_allocation(monkeypatch):
     finally:
         release.set()
         _load_model.cache_clear()
+
+
+@pytest.mark.parametrize("selected", [0, 1, 2])
+def test_selected_segment_confidence_does_not_average_other_phonemes(selected):
+    logits = np.full((15, 5), -5.)
+    logits[:, 0] = 5.
+    for index in range(3):
+        logits[index * 5 + 1:index * 5 + 4, :] = -5.
+        logits[index * 5 + 1:index * 5 + 4, index + 1] = 5.
+    good = align_posteriors(logits, [1, 2, 3], 0, .3, segment_scores=True)
+    unrelated = (selected + 1) % 3
+    weakened = logits.copy()
+    weakened[unrelated * 5 + 1:unrelated * 5 + 4, unrelated + 1] = -3.
+    changed = align_posteriors(weakened, [1, 2, 3], 0, .3, segment_scores=True)
+    assert good[selected]["gop_score"] > 99
+    assert changed[selected]["gop_score"] == pytest.approx(good[selected]["gop_score"])
+    assert changed[unrelated]["gop_score"] < good[unrelated]["gop_score"]
+    wrong = logits.copy()
+    wrong[selected * 5 + 1:selected * 5 + 4, selected + 1] = -5.
+    wrong[selected * 5 + 1:selected * 5 + 4, 4] = 5.
+    substituted = align_posteriors(wrong, [1, 2, 3], 0, .3, segment_scores=True)
+    assert substituted[selected]["gop_score"] < 1
+
+
+def test_selected_segment_penalizes_competing_speech_around_a_single_target_spike():
+    logits = np.full((24, 4), -5.)
+    logits[:20, 3] = 5.
+    logits[10, :] = [-5., 5., -5., -5.]
+    logits[20:, 2] = 5.
+    scores = align_posteriors(logits, [1, 2], 0, .5, segment_scores=True)
+    assert scores[0]["gop_score"] < 1
+
+
+def test_api_returns_selected_occurrence_not_word_mean():
+    class SelectedModel:
+        model_id = "selected-test"
+
+        def score(self, samples, phonemes, target_phoneme_index):
+            assert phonemes == ["m", "e", "ʒ", "ə"]
+            assert target_phoneme_index == 2
+            return [dict(phoneme=p, gop_score=81 if i == 2 else 12,
+                         start_time=i * .05, end_time=(i + 1) * .05) for i, p in enumerate(phonemes)]
+
+    with patch("app.main.get_model", return_value=SelectedModel()):
+        response = client.post("/v1/score/phoneme",
+            data={"target_transcript": "measure", "expected_ipa": "m e ʒ ə", "target_phoneme_index": "2"},
+            files={"audio_file": ("test.wav", generate_test_wav(), "audio/wav")})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["overall_score"] == 81
+    assert body["target_phoneme_index"] == 2
+    assert body["scoring_method"] == "neural_ctc_phoneme"
+
+
+@pytest.mark.parametrize("index", [-1, 3, 999])
+def test_invalid_selected_index_rejected_before_model_loading(index):
+    with patch("app.main.get_model") as loader:
+        response = client.post("/v1/score/phoneme",
+            data={"target_transcript": "ship", "expected_ipa": "ʃ ɪ p", "target_phoneme_index": str(index)},
+            files={"audio_file": ("test.wav", generate_test_wav(), "audio/wav")})
+    assert response.status_code in (400, 422)
+    loader.assert_not_called()

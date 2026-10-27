@@ -308,7 +308,7 @@ fun ArticulatorLabScreen(
                             Text(state.contrast.soundTip, style = MaterialTheme.typography.bodyMedium)
                             Text("Listen to the example, record the word, then play yours to compare.",
                                 style = MaterialTheme.typography.bodyMedium)
-                            Text("Record the whole word for an experimental similarity score against the two examples.",
+                            Text("Record the whole word. The phoneme service aligns it and scores the selected sound.",
                                 style = MaterialTheme.typography.bodySmall)
                         }
                     }
@@ -337,7 +337,7 @@ fun ArticulatorLabScreen(
                     Text(it, style = MaterialTheme.typography.bodyMedium)
                 }
                 state.overallGopScore?.let { score ->
-                    Text("${if (isVowel) "Your sound score" else "Word similarity"} · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
+                    Text("${if (isVowel) "Your sound score" else "Selected sound /$targetPhoneme/"} · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
                 }
                 state.scoringDescription?.let { description ->
                     Text(description, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)

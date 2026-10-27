@@ -532,11 +532,12 @@ class ArticulatorLabComponentTest {
             assertTrue(f.saved.isEmpty())
             assertTrue(f.state.hasRecording)
             f.scorer.score = 82f
-            f.scorer.method = "word_similarity"
+            f.scorer.method = "neural_ctc_phoneme"
             f.record(f.samples)
             assertEquals(82f, f.state.overallGopScore)
-            assertTrue(f.state.scoringDescription!!.contains("Offline word similarity"))
+            assertTrue(f.state.scoringDescription!!.contains("Selected-phoneme model confidence"))
             assertEquals("p_vs_b", f.saved.single().contrastId)
+            assertEquals("neural_ctc_phoneme", f.saved.single().scoringMethod)
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 

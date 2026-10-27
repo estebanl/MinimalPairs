@@ -21,7 +21,7 @@ data class SpeakingSoundSummary(
 /** Compare the same sound within the same contrast; never pool different speaking targets. */
 fun summarizeSpeaking(records: List<SpeakingRecordEntity>): List<SpeakingSoundSummary> = records
     .filter { it.score.isFinite() && it.score in 0f..100f }
-    .groupBy { it.contrastId to it.targetPhoneme }
+    .groupBy { Triple(it.contrastId, it.targetPhoneme, it.scoringMethod) }
     .map { (target, attempts) ->
         val ordered = attempts.sortedWith(compareByDescending<SpeakingRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
         val recent = ordered.take(5)

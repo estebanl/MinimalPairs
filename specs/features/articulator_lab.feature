@@ -144,10 +144,11 @@ Feature: Articulator Lab guided speaking practice
     And vowel sound maps, vowel anatomy models, and formant targets are hidden
     When I record and stop
     Then I can replay my recording without passing a voiced-vowel detection gate
-    And an offline word similarity score compares the recording with both example words
-    And the score is labeled experimental whole-word similarity rather than consonant accuracy
+    And the phoneme service aligns the full word transcript and scores the selected consonant occurrence
+    And the score is labeled experimental selected-phoneme confidence rather than word similarity
+    And errors on other phonemes are not averaged into the selected score
     And the score, selected word, consonant, contrast, and recording duration are saved to Progress
     And Progress can reopen the selected consonant practice target
-    And silence, missing reference audio, and invalid scores show a retryable error without saving a score
+    And silence, unavailable phoneme service, and invalid scores show a retryable error without saving a score
     When I switch sound pairs
     Then previous audio and feedback are cleared

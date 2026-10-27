@@ -13,7 +13,7 @@ import com.arkivanov.essenty.lifecycle.doOnDestroy
 import com.arkivanov.essenty.lifecycle.doOnStop
 import com.minimalpairs.app.data.audio.PhonemeAudioRepository
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
-import com.minimalpairs.app.core.dsp.WordSimilarityScorer
+import com.minimalpairs.app.core.dsp.SpeechAudioValidation
 import com.minimalpairs.app.data.remote.PracticeScoringException
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.hal.AudioPlayer
@@ -603,7 +603,7 @@ class DefaultArticulatorLabComponent(
                     error = "No clear vowel detected. Hold the sound a little longer and try again.")
                 return@runOperation
             }
-            if (!vowelPractice && !withContext(analysisDispatcher) { WordSimilarityScorer.hasUsableAudio(samples) }) {
+            if (!vowelPractice && !withContext(analysisDispatcher) { SpeechAudioValidation.hasUsableAudio(samples) }) {
                 _state.value = _state.value.copy(error = "No clear sound detected. Record the whole word and try again.")
                 return@runOperation
             }
@@ -623,7 +623,7 @@ class DefaultArticulatorLabComponent(
             }
             onScored(SpeakingRecordEntity(0, contrast.id, if (first) pair.word1 else pair.word2,
                 if (first) contrast.phoneme1 else contrast.phoneme2, scoring.overallScore,
-                durationMs, Clock.System.now().toEpochMilliseconds()))
+                durationMs, Clock.System.now().toEpochMilliseconds(), scoringMethod = scoring.scoringMethod))
             _state.value = _state.value.copy(
                 liveF1 = analysis?.f1Hz ?: 0f, liveF2 = analysis?.f2Hz ?: 0f, liveF3 = analysis?.f3Hz ?: 0f,
                 liveDurationMs = durationMs, overallGopScore = scoring.overallScore,

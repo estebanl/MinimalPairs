@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Phoneme Scorer Service
-  version: 2.0.0
+  version: 2.1.0
   description: Local phoneme CTC alignment and uncalibrated posterior confidence; no model downloads during requests
 
 paths:
@@ -31,6 +31,10 @@ paths:
                   type: string
                   example: "ʃ iː p"
                   description: Space-separated model IPA tokens matching the utterance. The current model rejects single-phoneme tasks as unsupported; multi-phoneme scoring remains experimental.
+                target_phoneme_index:
+                  type: integer
+                  minimum: 0
+                  description: Optional zero-based occurrence in expected_ipa. Returns segment-local confidence for this phoneme, not a word average. Requires a full multi-phoneme word transcript.
       responses:
         '200':
           description: Successful evaluation
@@ -39,7 +43,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/PhonemeScoringResponse'
         '400':
-          description: Bad request, unsupported audio format, or unsupported isolated-phoneme task
+          description: Invalid/unsupported input, or a recording that cannot be scored reliably. No score is returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [detail]
+                properties:
+                  detail:
+                    oneOf:
+                      - type: string
+                      - type: object
+                        required: [code, message]
+                        properties:
+                          code:
+                            type: string
+                            enum: [no_clear_speech, noisy_audio, clipped_audio, multiple_utterances, uncertain_alignment]
+                          message:
+                            type: string
         '413':
           description: Audio exceeds 1 MB
         '503':
@@ -61,7 +82,7 @@ components:
         gop_score:
           type: number
           format: float
-          description: Uncalibrated aligned posterior confidence with sequence-agreement penalty, 0-100; legacy field name
+          description: Uncalibrated model confidence, 0-100. Segment-local posterior for neural_ctc_phoneme; sequence-penalized posterior for neural_ctc. Legacy field name.
           example: 92.4
         start_time:
           type: number
@@ -85,7 +106,7 @@ components:
         overall_score:
           type: number
           format: float
-          description: Mean phoneme confidence 0-100; not a calibrated pronunciation grade
+          description: Selected phoneme confidence when target_phoneme_index is supplied; otherwise mean phoneme confidence. Not a calibrated pronunciation grade.
           example: 88.5
         phonemes:
           type: array
@@ -93,7 +114,11 @@ components:
             $ref: '#/components/schemas/PhonemeScore'
         scoring_method:
           type: string
-          enum: [neural_ctc]
+          enum: [neural_ctc, neural_ctc_phoneme]
+        target_phoneme_index:
+          type: integer
+          nullable: true
+          description: Echoes the selected occurrence for neural_ctc_phoneme; null otherwise.
         model_id:
           type: string
           description: Operator-supplied checkpoint and revision identifier
