@@ -1,0 +1,21 @@
+{
+  "name": "vocal-tract-viewer-build",
+  "version": "1.0.0",
+  "description": "Pinned offline 3D viewer build dependencies",
+  "keywords": [],
+  "author": "",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "0.25.10",
+    "gltf-validator": "2.0.0-dev.3.10",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "jsdom": "27.0.0"
+  },
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test.mjs && node test-lifecycle.mjs"
+  }
+}

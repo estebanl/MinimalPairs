@@ -35,6 +35,8 @@ Listening streaks and reviews exclude speaking, Stories, and Rhythm. Histories s
 
 ## Documentation & Deployment
 
+- Optional iOS sheep/ship prototype: [scope, verification, and review gates](docs/MOUTH_POSITION_3D_PROTOTYPE.md). It is offered within Mouth position, independently of the existing VocalTractLab model and Camera tabs.
+
 - Articulator Lab: [practice selection](docs/ARTICULATOR_PRACTICE.md), [camera measurements](docs/ARTICULATOR_CAMERA.md), [acoustic comparison](docs/ARTICULATOR_COMPARISON.md), [model assets](docs/MOUTH_POSITION_ARTWORK.md), [scoring setup](docs/ARTICULATOR_SCORING.md), and [device validation](docs/ARTICULATOR_DEVICE_VALIDATION.md). The behavior contract is in [articulator_lab.feature](specs/features/articulator_lab.feature). Camera measurements and acoustic estimates do not reconstruct internal anatomy or provide calibrated jaw distances.
 
 - Run on connected iOS device: [`./scripts/run_on_device.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/run_on_device.sh) (defaults to connected iPhone `esteban.lopez`).

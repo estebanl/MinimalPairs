@@ -394,6 +394,62 @@ class ArticulatorLabComponentTest {
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 
+    @Test
+    fun referenceAudioLocksTargetAndCancelsLoadingOnStopWithoutSavingProgress() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.switchTargetPhoneme(false)
+            f.referenceGate = CompletableDeferred()
+            f.component.playReferenceWord()
+            runCurrent()
+            assertEquals(listOf("ship"), f.referenceWords)
+            assertTrue(f.state.isBusy)
+            assertTrue(f.state.isPlaying)
+            f.component.switchTargetPhoneme(true)
+            f.component.selectExamplePair(1)
+            f.component.toggleRecording()
+            runCurrent()
+            assertFalse(f.state.isTargetPhoneme1)
+            assertEquals(0, f.state.selectedPairIndex)
+            assertEquals(0, f.recorder.starts)
+            f.lifecycle.stop()
+            runCurrent()
+            f.referenceGate!!.complete(Unit)
+            runCurrent()
+            assertTrue(f.player.samples.isEmpty(), "A late load cannot play after leaving the screen")
+            assertFalse(f.state.isBusy)
+            f.lifecycle.resume()
+            f.component.playReferenceWord()
+            runCurrent()
+            assertContentEquals(f.samples, f.player.samples.single())
+            assertTrue(f.saved.isEmpty(), "A reference demonstration is not speaking progress")
+            assertTrue(f.scorer.words.isEmpty())
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun referencePlaybackStopsWithTheComponentAndCannotStartDuringRecording() = runTest {
+        val f = Fixture(this)
+        try {
+            f.player.gate = CompletableDeferred()
+            f.component.playReferenceWord()
+            runCurrent()
+            assertTrue(f.state.isBusy)
+            assertEquals(1, f.player.samples.size)
+            f.lifecycle.stop()
+            runCurrent()
+            assertTrue(f.player.stops > 0)
+            assertFalse(f.state.isBusy)
+            f.lifecycle.resume()
+            f.component.toggleRecording()
+            runCurrent()
+            f.component.playReferenceWord()
+            runCurrent()
+            assertEquals(1, f.referenceWords.size)
+            assertEquals(AudioRecorderState.RECORDING, f.state.recorderState)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     private class Fixture(val scope: TestScope, targetPhoneme: String? = null) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
@@ -401,8 +457,11 @@ class ArticulatorLabComponentTest {
         val scorer = FakeScorer()
         val samples = FormantSynthesizer.synthesizeVowel(310f, 2350f, durationMs = 200)
         val saved = mutableListOf<SpeakingRecordEntity>()
+        val referenceWords = mutableListOf<String>()
+        var referenceGate: CompletableDeferred<Unit>? = null
         val component = DefaultArticulatorLabComponent(DefaultComponentContext(lifecycle), null, scorer, {},
-            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme)
+            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme,
+            loadReferenceWord = { word -> referenceWords += word; referenceGate?.await(); samples })
         val state get() = component.state.value
         fun record(samples: ShortArray) {
             component.toggleRecording()
@@ -436,8 +495,10 @@ class ArticulatorLabComponentTest {
     private class FakePlayer : AudioPlayer {
         val samples = mutableListOf<ShortArray>()
         var stops = 0
+        var gate: CompletableDeferred<Unit>? = null
         override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
             this.samples += samples.copyOf()
+            gate?.await()
             onComplete()
         }
         override suspend fun stop() { stops++ }

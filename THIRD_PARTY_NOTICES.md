@@ -15,3 +15,12 @@ credits & license** to view attribution and license terms.
 The repository's MIT license continues to apply to its original code. This
 notice does not grant an exception to the GPL terms for distributing a combined
 application.
+
+## Optional iOS mouth-position prototype
+
+The separately supplied version-2 vocal-tract model is MIT licensed; Three.js
+0.180.0 is MIT licensed. Their complete original notices are retained in
+`scripts/mouth-position/MODEL-LICENSE.txt` and `THREE-LICENSE.txt` and embedded in
+the shipped `iosApp/iosApp/MouthPosition/mouth-position.html` resource under
+`third-party-notices`. This is independent of the VocalTractLab assets and
+licenses above.

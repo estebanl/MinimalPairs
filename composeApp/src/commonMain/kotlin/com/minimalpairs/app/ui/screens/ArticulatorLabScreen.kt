@@ -246,7 +246,11 @@ fun ArticulatorLabScreen(
                     phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
                     exampleWord = state.selectedPair.let {
                         if (state.isTargetPhoneme1) it.word1 else it.word2
-                    }
+                    },
+                    isRecording = isRecording,
+                    isPlayingReference = state.isPlaying,
+                    canPlayReference = !state.isBusy,
+                    onPlayReference = component::playReferenceWord
                 )
             }
 

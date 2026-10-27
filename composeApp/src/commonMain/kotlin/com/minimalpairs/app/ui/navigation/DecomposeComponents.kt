@@ -499,6 +499,7 @@ interface ArticulatorLabComponent {
     fun toggleRecording()
     fun testSynthesizedVowel(isPhoneme1: Boolean)
     fun playRecording() {}
+    fun playReferenceWord() {}
     fun switchTargetPhoneme(isPhoneme1: Boolean)
     fun selectContrast(contrastId: String) {}
     fun selectExamplePair(index: Int) {}
@@ -522,7 +523,8 @@ class DefaultArticulatorLabComponent(
     private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val progressRepository: ProgressRepository? = null,
     private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) },
-    private val initialTargetPhoneme: String? = null
+    private val initialTargetPhoneme: String? = null,
+    private val loadReferenceWord: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private var contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
@@ -695,6 +697,29 @@ class DefaultArticulatorLabComponent(
             }
             _state.value = _state.value.copy(isPlaying = true)
             audioPlayer.play(samples)
+        }
+    }
+
+    /** Bundled reference audio shares target locking and lifecycle cleanup with recording. */
+    override fun playReferenceWord() {
+        if (acceptingSamples) return
+        runOperation {
+            _state.value = _state.value.copy(isPlaying = true)
+            val current = _state.value
+            val word = if (current.isTargetPhoneme1) current.selectedPair.word1 else current.selectedPair.word2
+            val samples = withContext(analysisDispatcher) { loadReferenceWord(word) }
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            if (samples == null || samples.isEmpty()) {
+                _state.value = _state.value.copy(error = "Word audio unavailable.")
+                return@runOperation
+            }
+            try {
+                val completed = kotlinx.coroutines.CompletableDeferred<Unit>()
+                audioPlayer.play(samples) { completed.complete(Unit) }
+                completed.await()
+            } finally {
+                withContext(NonCancellable) { audioPlayer.stop() }
+            }
         }
     }
 

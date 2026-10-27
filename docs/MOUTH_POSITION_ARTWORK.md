@@ -161,3 +161,12 @@ devices: permission grant/denial/retry, front-camera mirroring, portrait/landsca
 rotation, low light and face loss, background/foreground, rapid tab changes, and
 simultaneous microphone recording. Actual camera capture has not been validated
 by those JVM tests.
+
+## Optional iOS mouth-position prototype
+
+Mouth position additionally offers an unreviewed sheep/ship prototype on iOS,
+with an Illustration alternative. This is separate from the VocalTractLab
+**3D model** tab described above. See [MOUTH_POSITION_3D_PROTOTYPE.md](MOUTH_POSITION_3D_PROTOTYPE.md)
+for the supplied model's provenance, authored weights, offline bridge, and
+remaining phonetic and device review gates. Existing VocalTractLab and Camera
+references, licensing, progress storage, and lifecycle behavior remain available.
