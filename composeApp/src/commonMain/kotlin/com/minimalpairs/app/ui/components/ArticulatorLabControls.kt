@@ -74,7 +74,7 @@ fun LabTarget(word: String, phoneme: String, selected: Boolean, enabled: Boolean
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("/$phoneme/", fontFamily = FontFamily.Serif, fontSize = 27.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
-                Text(word, fontSize = 15.sp, lineHeight = 20.sp)
+                Text("as in $word", fontSize = 15.sp, lineHeight = 20.sp)
             }
             if (!largeText) LabIcon(if (selected) LabIcon.Selected else LabIcon.Unselected, Modifier.size(20.dp))
         }
@@ -110,7 +110,7 @@ fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-fun LabPlayback(phoneme: String, enabled: Boolean, onClick: () -> Unit) {
+fun LabRecordingCredits() {
     var showCredits by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf("") }
     val uriHandler = LocalUriHandler.current
@@ -132,26 +132,9 @@ fun LabPlayback(phoneme: String, enabled: Boolean, onClick: () -> Unit) {
             confirmButton = { TextButton(onClick = { showCredits = false }) { Text("Close") } }
         )
     }
-    Column {
-        val scheme = MaterialTheme.colorScheme
-        Surface(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp), color = scheme.background,
-            border = BorderStroke(1.dp, scheme.outlineVariant)) {
-            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Surface(Modifier.size(46.dp), shape = CircleShape, color = scheme.onBackground, contentColor = scheme.background) {
-                    Box(contentAlignment = Alignment.Center) { LabIcon(LabIcon.Play, Modifier.size(24.dp)) }
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text("Listen to example", fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Hear the /$phoneme/ sound.", fontSize = 13.sp, lineHeight = 18.sp, color = scheme.onSurfaceVariant)
-                }
-            }
-        }
-        TextButton(onClick = { showCredits = true },
-            colors = ButtonDefaults.textButtonColors(contentColor = scheme.onSurfaceVariant)) {
-            Text("Recording credits", fontSize = 12.sp)
-        }
+    TextButton(onClick = { showCredits = true },
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) {
+        Text("Recording credits", fontSize = 12.sp)
     }
 }
 

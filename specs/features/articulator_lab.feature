@@ -4,11 +4,14 @@ Feature: Articulator Lab guided speaking practice
   I want to choose a contrast and compare my sound with a reference
   So that I can practise without confusing estimates with measured anatomy
 
-  Scenario: Choose a contrast and example pair
+  Scenario: Choose a sound pair and vowel
     Given the Speak screen is idle
-    When I select a catalog contrast and one of its example pairs
+    When I select a catalog sound pair
     And I select either sound
-    Then the labels and references show the selected word and phoneme
+    Then the labels and references show the default reference word and selected phoneme
+    And there is no Example words selector
+    And the playback button says Hear followed by the selected vowel
+    And the screen asks me to say the vowel on its own
     And recording scores and saves that word, phoneme, and contrast
     And an old recording and score are cleared when the selection changes
 
@@ -60,7 +63,7 @@ Feature: Articulator Lab guided speaking practice
     And the preview area explains how to start the practice mirror
     And the selected vowel has a nearby lip reference and placement cue
     And recorded phoneme example playback is available outside sound measurement details
-    And the recording action remains pinned while the content scrolls
+    And example playback and recording remain side by side in the pinned bottom bar while the content scrolls
 
   Scenario: Match the practice mirror visual hierarchy
     Given the Camera mode is selected
@@ -69,7 +72,9 @@ Feature: Articulator Lab guided speaking practice
     And larger accessibility text uses two rows without clipping labels
     And camera status and start or stop controls overlay the preview
     And the lip reference is beside the serif practice heading
-    And example playback and expandable sound measurements are separate cards
+    And example playback is an outlined button to the left of the equally wide filled recording button
+    And both bottom actions share a height and allow their labels to wrap on narrow screens
+    And recording credits and expandable sound measurements remain in the scrollable content
     And detailed camera measurements and explanations stay inside sound measurements
     And the dotted lip alignment guide is identified as a guide rather than a measurement
 

@@ -76,7 +76,7 @@ class ArticulatorSelectionUiTest {
             assertTrue(scene.nodes().any { it.text() == "Camera off" })
             assertTrue(scene.nodes().any { it.text() == "Start camera" })
             assertTrue(scene.nodes().any { it.text() == "Match the lip shape" })
-            scene.click("Listen to example")
+            scene.click("Hear /iː/")
             assertEquals(1, component.examplePlays)
             val image = scene.render()
             val output = File("build/reports/articulator/camera-practice.png")
@@ -148,21 +148,27 @@ class ArticulatorSelectionUiTest {
     }
 
     @Test
-    fun selectingWordsUpdatesTargetLabelsAndRecordingDisablesSelectors() {
+    fun selectingSoundPairsUpdatesVowelPlaybackAndRecordingDisablesSelectors() {
         val component = SelectionComponent()
         ImageComposeScene(390, 1800) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
             scene.render().close()
-            scene.click("Change sound")
+            scene.click("Change sound pair")
             scene.render().close()
-            scene.click("feet / fit")
+            assertTrue(scene.nodes().none { it.matches("Example words") || it.matches("feet / fit") })
+            scene.click("bad / bed")
             scene.render().close()
-            assertEquals(1, component.state.value.selectedPairIndex)
-            scene.click("fit /ɪ/")
+            assertEquals(0, component.state.value.selectedPairIndex)
+            assertEquals("ae_vs_e", component.state.value.contrast.id)
+            scene.click("Hear /æ/")
+            assertEquals(true, component.lastPlayedFirst)
+            scene.click("bed /e/")
             scene.render().close()
             assertTrue(!component.state.value.isTargetPhoneme1)
+            scene.click("Hear /e/")
+            assertEquals(false, component.lastPlayedFirst)
             component.state.value = component.state.value.copy(recorderState = AudioRecorderState.RECORDING)
             scene.render().close()
-            for (label in listOf("Change sound", "fit /ɪ/")) {
+            for (label in listOf("Change sound pair", "bed /e/", "Hear /e/")) {
                 assertNotNull(scene.nodes().first { it.matches(label) }.config.getOrNull(SemanticsProperties.Disabled))
             }
             val image = scene.render()
@@ -188,11 +194,14 @@ class ArticulatorSelectionUiTest {
     private class SelectionComponent : ArticulatorLabComponent {
         var recordingToggles = 0
         var examplePlays = 0
+        var lastPlayedFirst: Boolean? = null
         override val state = MutableStateFlow(ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first()))
-        override fun selectExamplePair(index: Int) { state.value = state.value.copy(selectedPairIndex = index) }
+        override fun selectContrast(contrastId: String) {
+            state.value = ArticulatorLabUiState(VowelContrastsCatalog.getContrastById(contrastId)!!)
+        }
         override fun switchTargetPhoneme(isPhoneme1: Boolean) { state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1) }
         override fun toggleRecording() { recordingToggles++ }
-        override fun playPhonemeExample(isPhoneme1: Boolean) { examplePlays++ }
+        override fun playPhonemeExample(isPhoneme1: Boolean) { examplePlays++; lastPlayedFirst = isPhoneme1 }
         override fun onBack() = Unit
     }
 }
