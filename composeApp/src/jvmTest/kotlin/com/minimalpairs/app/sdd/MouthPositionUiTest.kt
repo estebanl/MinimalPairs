@@ -80,7 +80,7 @@ class MouthPositionUiTest {
             MinimalPairsTheme { ArticulatorLabScreen(component) }
         }.use { scene ->
             scene.render().close()
-            assertTrue(scene.descriptions().isEmpty(), "Sound map remains the default")
+            assertTrue(scene.nodes().any { it.text() == "Camera off" }, "Camera practice opens without starting capture")
             scene.click("Mouth position")
             scene.render().close()
             val preview = scene.render()

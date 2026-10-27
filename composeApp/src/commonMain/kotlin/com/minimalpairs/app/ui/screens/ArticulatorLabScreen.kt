@@ -1,6 +1,16 @@
 package com.minimalpairs.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +27,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -30,16 +40,25 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.hal.rememberMicrophonePermissionRequest
 import com.minimalpairs.app.core.hal.AudioRecorderState
+import com.minimalpairs.app.ui.components.LabIcon
+import com.minimalpairs.app.ui.components.LabTarget
+import com.minimalpairs.app.ui.components.LabModeTabs
+import com.minimalpairs.app.ui.components.LabPlayback
+import com.minimalpairs.app.ui.components.LabMeasurements
+import com.minimalpairs.app.ui.components.PracticeIcon
+import com.minimalpairs.app.ui.navigation.ArticulatorLabUiState
 import com.minimalpairs.app.ui.components.ArticulatoryBiofeedbackCard
-import com.minimalpairs.app.ui.components.PracticeDetails
-import com.minimalpairs.app.ui.components.PracticeTopBar
 import com.minimalpairs.app.ui.components.LipCameraFeedbackCard
 import com.minimalpairs.app.ui.components.OralCavityReferenceCard
 import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
@@ -55,13 +74,17 @@ import androidx.compose.foundation.layout.Box
 @Composable
 fun ArticulatorLabScreen(
     component: ArticulatorLabComponent,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topBarWindowInsets: WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
 ) {
+    val largeText = LocalDensity.current.fontScale > 1.3f
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
     val isRecording = state.recorderState == AudioRecorderState.RECORDING
     val canSelectTarget = !isRecording && !state.isBusy
+    var visualMode by rememberSaveable { mutableStateOf(3) }
+    val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
     var permissionDenied by remember { mutableStateOf(false) }
     val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
         permissionDenied = !granted
@@ -70,11 +93,23 @@ fun ArticulatorLabScreen(
 
     Scaffold(
         topBar = {
-            PracticeTopBar("Speak", "Find a comfortable sound", onBack = component::onBack)
+            // A custom top bar must handle the safe area that Material top bars apply internally.
+            Box(Modifier.fillMaxWidth().windowInsetsPadding(topBarWindowInsets), contentAlignment = Alignment.Center) {
+                Row(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(start = 12.dp, end = 20.dp, top = 14.dp, bottom = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = component::onBack) { PracticeIcon(PracticeIcon.Back, "Back") }
+                    Column(Modifier.padding(start = 4.dp)) {
+                        Text("Speak", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold,
+                            fontSize = 34.sp, lineHeight = 38.sp)
+                        Text(if (visualMode == 3) "Camera practice" else "Shape your sound",
+                            fontSize = 15.sp, lineHeight = 20.sp, color = scheme.onSurfaceVariant)
+                    }
+                }
+            }
         },
         bottomBar = {
-            Surface(color = scheme.background, tonalElevation = 2.dp) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            Surface(color = scheme.background) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     if (isRecording) {
                         Text("Recording · ${state.liveDurationMs / 1000}s / 30s",
@@ -90,8 +125,10 @@ fun ArticulatorLabScreen(
                             containerColor = if (isRecording) scheme.error else scheme.primary,
                             contentColor = if (isRecording) scheme.onError else scheme.onPrimary
                         ),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                        modifier = Modifier.widthIn(max = 524.dp).fillMaxWidth().heightIn(min = 56.dp)
                     ) {
+                        PracticeIcon(if (isRecording) PracticeIcon.Stop else PracticeIcon.Speak, modifier = Modifier.size(25.dp))
+                        Spacer(Modifier.width(12.dp))
                         Text(
                             text = when {
                                 state.isScoring -> "Reviewing your sound…"
@@ -105,7 +142,6 @@ fun ArticulatorLabScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
                     if (permissionDenied) {
                         Text("Allow microphone access in app settings, then try again.",
                             style = MaterialTheme.typography.bodySmall, color = scheme.error)
@@ -122,233 +158,212 @@ fun ArticulatorLabScreen(
         },
         modifier = modifier
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Shape your sound.", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.fillMaxWidth())
-            Text("Choose a sound, then practise its vowel on its own.", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp))
-            var contrastMenuOpen by remember { mutableStateOf(false) }
-            Box(Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick = { contrastMenuOpen = true }, enabled = canSelectTarget,
-                    modifier = Modifier.fillMaxWidth()) {
-                    Text("Contrast: /${state.contrast.phoneme1}/ and /${state.contrast.phoneme2}/")
-                }
-                DropdownMenu(expanded = contrastMenuOpen && canSelectTarget,
-                    onDismissRequest = { contrastMenuOpen = false }) {
-                    VowelContrastsCatalog.defaultContrasts.forEach { contrast ->
-                        DropdownMenuItem(
-                            text = { Text("/${contrast.phoneme1}/ and /${contrast.phoneme2}/ · ${contrast.pairs.first().word1} / ${contrast.pairs.first().word2}") },
-                            onClick = {
-                                contrastMenuOpen = false
-                                component.selectContrast(contrast.id)
+        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 18.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                var contrastMenuOpen by remember { mutableStateOf(false) }
+                Box(Modifier.fillMaxWidth()) {
+                    Surface(shape = RoundedCornerShape(22.dp), color = scheme.background,
+                        border = BorderStroke(1.dp, scheme.outlineVariant)) {
+                        Column(Modifier.padding(5.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                LabTarget(state.selectedPair.word1, state.contrast.phoneme1, state.isTargetPhoneme1,
+                                    canSelectTarget, { component.switchTargetPhoneme(true) }, Modifier.weight(1f))
+                                LabTarget(state.selectedPair.word2, state.contrast.phoneme2, !state.isTargetPhoneme1,
+                                    canSelectTarget, { component.switchTargetPhoneme(false) }, Modifier.weight(1f))
+                                if (!largeText) {
+                                    IconButton(onClick = { contrastMenuOpen = true }, enabled = canSelectTarget,
+                                        modifier = Modifier.semantics { contentDescription = "Change sound" }) {
+                                        LabIcon(LabIcon.Chevron)
+                                    }
+                                }
                             }
+                            if (largeText) {
+                                androidx.compose.material3.TextButton(onClick = { contrastMenuOpen = true },
+                                    enabled = canSelectTarget, colors = ButtonDefaults.textButtonColors(contentColor = scheme.onBackground),
+                                    modifier = Modifier.fillMaxWidth()) {
+                                    Text("Change sound")
+                                    LabIcon(LabIcon.Chevron)
+                                }
+                            }
+                        }
+                    }
+                    DropdownMenu(expanded = contrastMenuOpen && canSelectTarget,
+                        onDismissRequest = { contrastMenuOpen = false }) {
+                        Text("Example words", modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.labelLarge)
+                        state.contrast.pairs.forEachIndexed { index, pair ->
+                            DropdownMenuItem(text = { Text("${pair.word1} / ${pair.word2}") },
+                                onClick = {
+                                    contrastMenuOpen = false
+                                    component.selectExamplePair(index)
+                                })
+                        }
+                        Text("Contrasts", modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.labelLarge)
+                        VowelContrastsCatalog.defaultContrasts.forEach { contrast ->
+                            DropdownMenuItem(
+                                text = { Text("/${contrast.phoneme1}/ and /${contrast.phoneme2}/ · ${contrast.pairs.first().word1} / ${contrast.pairs.first().word2}") },
+                                onClick = {
+                                    contrastMenuOpen = false
+                                    component.selectContrast(contrast.id)
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                LabModeTabs(visualMode) { visualMode = it }
+                Spacer(Modifier.height(12.dp))
+
+                if (visualMode != 3) {
+                    Text("Say /${if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2}/ on its own.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp))
+                }
+                if (visualMode == 0) {
+                    VowelTrapezoidPlot(
+                        contrast = state.contrast,
+                        liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
+                        liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
+                    )
+                } else if (visualMode == 3) {
+                    LipCameraFeedbackCard(
+                        phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                        exampleWord = state.selectedPair.let {
+                            if (state.isTargetPhoneme1) it.word1 else it.word2
+                        },
+                        footer = {
+                            LabPlayback(targetPhoneme, !state.isBusy && !isRecording) {
+                                component.testSynthesizedVowel(state.isTargetPhoneme1)
+                            }
+                        },
+                        measurements = { ArticulatorMeasurements(state, isRecording) }
+                    )
+                } else if (visualMode == 2) {
+                    OralCavityReferenceCard(
+                        phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                        exampleWord = state.selectedPair.let {
+                            if (state.isTargetPhoneme1) it.word1 else it.word2
+                        },
+                        targetBounds = if (state.isTargetPhoneme1) state.contrast.boundsPhoneme1 else state.contrast.boundsPhoneme2,
+                        observedF1 = state.liveF1.takeIf { it > 0f },
+                        observedF2 = state.liveF2.takeIf { it > 0f },
+                        isRecording = isRecording
+                    )
+                } else {
+                    MouthPositionReferenceCard(
+                        phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
+                        exampleWord = state.selectedPair.let {
+                            if (state.isTargetPhoneme1) it.word1 else it.word2
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                if (visualMode != 3) {
+                    LabPlayback(targetPhoneme, !state.isBusy && !isRecording) {
+                        component.testSynthesizedVowel(state.isTargetPhoneme1)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    LabMeasurements { ArticulatorMeasurements(state, isRecording) }
+                }
+
+                state.progressSaveError?.let { message ->
+                    Text(message, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = component::retryProgressSaves) { Text("Retry saving") }
+                }
+                state.feedback?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                }
+                if (state.hasRecording) {
+                    OutlinedButton(onClick = component::playRecording, enabled = !state.isBusy && !isRecording) {
+                        Text("Listen to your recording")
+                    }
+                }
+                state.overallGopScore?.let { score ->
+                    Text("Your sound score · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
+                }
+                state.scoringDescription?.let { description ->
+                    Text(description, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                }
+
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArticulatorMeasurements(state: ArticulatorLabUiState, isRecording: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val colors = PracticeTheme.colors
+    // Acoustic Readout & GOP Score Card
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = scheme.surface
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Sound measurements",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                state.overallGopScore?.let { score ->
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (score >= 80f) colors.success.copy(alpha = 0.2f) else colors.warning.copy(alpha = 0.2f),
+                        modifier = Modifier.padding(2.dp)
+                    ) {
+                        Text(
+                            text = "Score: ${score.toInt()}/100",
+                            color = if (score >= 80f) colors.success else colors.warning,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
             }
-            Text("Example words", style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.contrast.pairs.forEachIndexed { index, pair ->
-                    FilterChip(selected = state.selectedPairIndex == index,
-                        onClick = { component.selectExamplePair(index) }, enabled = canSelectTarget,
-                        label = { Text("${pair.word1} / ${pair.word2}") })
-                }
-            }
-            // Target Phoneme Selector
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = state.isTargetPhoneme1,
-                    onClick = { component.switchTargetPhoneme(true) },
-                    enabled = canSelectTarget,
-                    label = { Text("${state.selectedPair.word1} /${state.contrast.phoneme1}/") },
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                FilterChip(
-                    selected = !state.isTargetPhoneme1,
-                    onClick = { component.switchTargetPhoneme(false) },
-                    enabled = canSelectTarget,
-                    label = { Text("${state.selectedPair.word2} /${state.contrast.phoneme2}/") }
-                )
-            }
-
-            Text("Say /${if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2}/ on its own, using “${if (state.isTargetPhoneme1) state.selectedPair.word1 else state.selectedPair.word2}” as a reference.",
-                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
             Spacer(Modifier.height(10.dp))
 
-            var visualMode by rememberSaveable { mutableStateOf(0) }
-
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FilterChip(
-                    selected = visualMode == 0,
-                    onClick = { visualMode = 0 },
-                    label = { Text("Sound map") },
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                FilterChip(
-                    selected = visualMode == 1,
-                    onClick = { visualMode = 1 },
-                    label = { Text("Mouth position") }
-                )
-                FilterChip(
-                    selected = visualMode == 2,
-                    onClick = { visualMode = 2 },
-                    label = { Text("3D model") }
-                )
-                FilterChip(
-                    selected = visualMode == 3,
-                    onClick = { visualMode = 3 },
-                    label = { Text("Camera") }
-                )
+                AcousticMetric(label = "Jaw height · F1", value = "${state.liveF1.toInt()} Hz")
+                AcousticMetric(label = "Tongue position · F2", value = "${state.liveF2.toInt()} Hz")
+                AcousticMetric(label = "F3", value = "${state.liveF3.toInt()} Hz")
+                AcousticMetric(label = if (isRecording) "Recording time" else "Vowel duration", value = "${state.liveDurationMs} ms")
             }
-
-            Spacer(Modifier.height(14.dp))
-
-            if (visualMode == 0) {
-                VowelTrapezoidPlot(
-                    contrast = state.contrast,
-                    liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
-                    liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
-                )
-            } else if (visualMode == 3) {
-                LipCameraFeedbackCard(
-                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
-                    exampleWord = state.selectedPair.let {
-                        if (state.isTargetPhoneme1) it.word1 else it.word2
-                    }
-                )
-            } else if (visualMode == 2) {
-                OralCavityReferenceCard(
-                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
-                    exampleWord = state.selectedPair.let {
-                        if (state.isTargetPhoneme1) it.word1 else it.word2
-                    },
-                    targetBounds = if (state.isTargetPhoneme1) state.contrast.boundsPhoneme1 else state.contrast.boundsPhoneme2,
-                    observedF1 = state.liveF1.takeIf { it > 0f },
-                    observedF2 = state.liveF2.takeIf { it > 0f },
-                    isRecording = isRecording
-                )
-            } else {
-                MouthPositionReferenceCard(
-                    phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
-                    exampleWord = state.selectedPair.let {
-                        if (state.isTargetPhoneme1) it.word1 else it.word2
-                    }
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            state.progressSaveError?.let { message ->
-                Text(message, color = MaterialTheme.colorScheme.error)
-                Button(onClick = component::retryProgressSaves) { Text("Retry saving") }
-            }
-            state.feedback?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium)
-            }
-            if (state.hasRecording) {
-                OutlinedButton(onClick = component::playRecording, enabled = !state.isBusy && !isRecording) {
-                    Text("Listen to your recording")
-                }
-            }
-            state.overallGopScore?.let { score ->
-                Text("Your sound score · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
-            }
-            state.scoringDescription?.let { description ->
-                Text(description, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
-            }
-
-            PracticeDetails("Sound measurements and placement") {
-                // Acoustic Readout & GOP Score Card
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = scheme.surface
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Sound measurements",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            state.overallGopScore?.let { score ->
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (score >= 80f) colors.success.copy(alpha = 0.2f) else colors.warning.copy(alpha = 0.2f),
-                                    modifier = Modifier.padding(2.dp)
-                                ) {
-                                    Text(
-                                        text = "Score: ${score.toInt()}/100",
-                                        color = if (score >= 80f) colors.success else colors.warning,
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            AcousticMetric(label = "Jaw height · F1", value = "${state.liveF1.toInt()} Hz")
-                            AcousticMetric(label = "Tongue position · F2", value = "${state.liveF2.toInt()} Hz")
-                            AcousticMetric(label = "F3", value = "${state.liveF3.toInt()} Hz")
-                            AcousticMetric(label = if (isRecording) "Recording time" else "Vowel duration", value = "${state.liveDurationMs} ms")
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                // Test bench synthesized vowel trigger
-                OutlinedButton(
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
-                    onClick = { component.testSynthesizedVowel(state.isTargetPhoneme1) },
-                    enabled = !state.isBusy && !isRecording,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Listen to a generated example of /${if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2}/")
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                ArticulatoryBiofeedbackCard(
-                    indicators = state.contrast.visualIndicators,
-                    phoneme1 = state.contrast.phoneme1,
-                    phoneme2 = state.contrast.phoneme2
-                )
-
-            }
-
-            Spacer(Modifier.height(24.dp))
         }
     }
+
+    Spacer(Modifier.height(20.dp))
+
+    ArticulatoryBiofeedbackCard(
+        indicators = state.contrast.visualIndicators,
+        phoneme1 = state.contrast.phoneme1,
+        phoneme2 = state.contrast.phoneme2
+    )
 }
 
 @Composable

@@ -1,11 +1,18 @@
 package com.minimalpairs.app.sdd
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
 import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
@@ -22,6 +29,92 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalComposeUiApi::class)
 class ArticulatorSelectionUiTest {
+    @Test
+    fun customHeaderRespectsSafeAreaWithoutApplyingConsumedInsetsTwice() {
+        var baselineTitleTop = 0f
+        var baselineTitleLeft = 0f
+        var baselineBackTop = 0f
+        for ((top, side, parentConsumes) in listOf(
+            Triple(0, 0, false), Triple(44, 0, false), Triple(59, 24, false), Triple(59, 24, true)
+        )) {
+            val insets = WindowInsets(left = side.dp, top = top.dp, right = side.dp)
+            ImageComposeScene(390, 844) {
+                MinimalPairsTheme(darkTheme = true) {
+                    Box(if (parentConsumes) Modifier.windowInsetsPadding(insets) else Modifier) {
+                        ArticulatorLabScreen(SelectionComponent(), topBarWindowInsets = insets)
+                    }
+                }
+            }.use { scene ->
+                scene.render().close()
+                val title = scene.nodes().first { it.text() == "Speak" }.boundsInRoot
+                val back = scene.nodes().first { it.matches("Back") }.boundsInRoot
+                val subtitle = scene.nodes().first { it.text() == "Camera practice" }.boundsInRoot
+                if (top == 0) {
+                    baselineTitleTop = title.top
+                    baselineTitleLeft = title.left
+                    baselineBackTop = back.top
+                }
+                assertEquals(baselineTitleTop + top, title.top, "Safe area must be applied exactly once")
+                assertEquals(baselineTitleLeft + side, title.left)
+                assertEquals(baselineBackTop + top, back.top)
+                assertTrue(title.top >= top && back.top >= top)
+                assertTrue(subtitle.top >= title.bottom)
+                if (top == 59 && !parentConsumes) {
+                    val output = File("build/reports/articulator/header-safe-area.png")
+                    output.parentFile.mkdirs()
+                    scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun cameraPracticeOpensWithCameraOffAndExamplePlaybackAvailable() {
+        val component = SelectionComponent()
+        ImageComposeScene(430, 932) { MinimalPairsTheme(darkTheme = false) { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.text() == "Camera off" })
+            assertTrue(scene.nodes().any { it.text() == "Start camera" })
+            assertTrue(scene.nodes().any { it.text() == "Match the lip shape" })
+            scene.click("Listen to example")
+            assertEquals(1, component.examplePlays)
+            val image = scene.render()
+            val output = File("build/reports/articulator/camera-practice.png")
+            output.parentFile.mkdirs()
+            output.writeBytes(image.encodeToData()!!.bytes)
+            image.close()
+        }
+    }
+
+    @Test
+    fun mirrorLayoutKeepsIconTabsInOneRowAndSupportsLargeText() {
+        for ((width, scale) in listOf(320 to 1f, 390 to 1f, 320 to 1.8f)) {
+            for (dark in listOf(false, true)) {
+                ImageComposeScene(width, 932, density = Density(1f, scale)) {
+                    MinimalPairsTheme(darkTheme = dark) { ArticulatorLabScreen(SelectionComponent()) }
+                }.use { scene ->
+                    scene.render().close()
+                    val output = File("build/reports/articulator/mirror-$width-$scale-$dark.png")
+                    output.parentFile.mkdirs()
+                    scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+                    val tabs = listOf("Sound map", "Mouth position", "3D model", "Camera").map { label ->
+                        scene.nodes().first { it.matches(label) && it.config.getOrNull(SemanticsActions.OnClick) != null }
+                    }
+                    assertEquals(if (scale > 1.3f) 2 else 1, tabs.map { it.boundsInRoot.top }.distinct().size)
+                    assertTrue(tabs.all { it.boundsInRoot.left >= 0 && it.boundsInRoot.right <= width })
+                    val layouts = mutableListOf<TextLayoutResult>()
+                    scene.nodes().forEach { it.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts) }
+                    for (layout in layouts) for (line in 0 until layout.lineCount) {
+                        assertTrue(!layout.isLineEllipsized(line), layout.layoutInput.text.text)
+                        assertTrue(layout.getLineBottom(line) <= layout.size.height + 1f, "$width / $scale / ${layout.layoutInput.text}: bottom ${layout.getLineBottom(line)} > ${layout.size.height}")
+                        assertTrue(layout.getLineRight(line) <= layout.size.width + 1f, "$width / $scale / ${layout.layoutInput.text}: ${layout.getLineRight(line)} > ${layout.size.width}")
+                    }
+
+                }
+            }
+        }
+    }
+
     @Test
     fun recordingControlStaysVisibleWhenReferenceContentScrolls() {
         val component = SelectionComponent()
@@ -59,6 +152,8 @@ class ArticulatorSelectionUiTest {
         val component = SelectionComponent()
         ImageComposeScene(390, 1800) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
             scene.render().close()
+            scene.click("Change sound")
+            scene.render().close()
             scene.click("feet / fit")
             scene.render().close()
             assertEquals(1, component.state.value.selectedPairIndex)
@@ -67,8 +162,8 @@ class ArticulatorSelectionUiTest {
             assertTrue(!component.state.value.isTargetPhoneme1)
             component.state.value = component.state.value.copy(recorderState = AudioRecorderState.RECORDING)
             scene.render().close()
-            for (label in listOf("feet / fit", "fit /ɪ/", "Contrast: /iː/ and /ɪ/")) {
-                assertNotNull(scene.nodes().first { it.text() == label }.config.getOrNull(SemanticsProperties.Disabled))
+            for (label in listOf("Change sound", "fit /ɪ/")) {
+                assertNotNull(scene.nodes().first { it.matches(label) }.config.getOrNull(SemanticsProperties.Disabled))
             }
             val image = scene.render()
             val output = File("build/reports/articulator/selection.png")
@@ -83,17 +178,21 @@ class ArticulatorSelectionUiTest {
         return semanticsOwners.flatMap { flatten(it.rootSemanticsNode) }
     }
     private fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text }
+    private fun SemanticsNode.matches(label: String) =
+        config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true ||
+            config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true
     private fun ImageComposeScene.click(text: String) {
-        val node = nodes().first { it.text() == text && it.config.getOrNull(SemanticsActions.OnClick) != null }
+        val node = nodes().first { it.matches(text) && it.config.getOrNull(SemanticsActions.OnClick) != null }
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
     private class SelectionComponent : ArticulatorLabComponent {
         var recordingToggles = 0
+        var examplePlays = 0
         override val state = MutableStateFlow(ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first()))
         override fun selectExamplePair(index: Int) { state.value = state.value.copy(selectedPairIndex = index) }
         override fun switchTargetPhoneme(isPhoneme1: Boolean) { state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1) }
         override fun toggleRecording() { recordingToggles++ }
-        override fun testSynthesizedVowel(isPhoneme1: Boolean) = Unit
+        override fun testSynthesizedVowel(isPhoneme1: Boolean) { examplePlays++ }
         override fun onBack() = Unit
     }
 }

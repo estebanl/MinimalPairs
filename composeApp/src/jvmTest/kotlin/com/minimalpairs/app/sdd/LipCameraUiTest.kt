@@ -36,6 +36,8 @@ class LipCameraUiTest {
             }
         }.use { scene ->
             scene.render().close()
+            scene.click("Sound measurements")
+            repeat(4) { scene.render().close() }
             scene.click("Start camera")
             repeat(4) { index ->
                 controller.accept(controller.state.value.session, LipCameraFrame(LipCameraStatus.TRACKING, sample,
@@ -47,7 +49,7 @@ class LipCameraUiTest {
             assertTrue(scene.texts().contains("Processed frames: 4"))
             assertTrue(scene.texts().any { it.startsWith("Analysis rate:") })
             assertTrue(scene.texts().any { it.contains("10 ms average") })
-            scene.click("Stop camera")
+            scene.click("Turn off")
             scene.render().close()
             assertFalse(scene.texts().any { it.startsWith("Analysis rate:") })
         }
@@ -76,6 +78,8 @@ class LipCameraUiTest {
                 scene.render().close()
                 assertTrue(scene.texts().contains("Start camera"))
                 assertEquals(LipCameraStatus.OFF, controller.state.value.status)
+                scene.click("Sound measurements")
+                repeat(4) { scene.render().close() }
                 scene.click("Start camera")
                 scene.render().close()
                 controller.accept(controller.state.value.session, LipCameraFrame(LipCameraStatus.TRACKING, sample))
@@ -116,6 +120,8 @@ class LipCameraUiTest {
             }
         }.use { scene ->
             scene.render().close()
+            scene.click("Sound measurements")
+            repeat(4) { scene.render().close() }
             scene.click("Start camera")
             scene.render().close()
             fun track() {
@@ -138,8 +144,10 @@ class LipCameraUiTest {
             assertFalse(scene.texts().any { it.startsWith("Compared with your saved pose:") })
             scene.click("Use this pose for comparison")
             scene.render().close()
-            scene.click("Stop camera")
+            scene.click("Turn off")
             scene.render().close()
+            scene.click("Sound measurements")
+            repeat(4) { scene.render().close() }
             scene.click("Start camera")
             scene.render().close()
             track()
@@ -160,6 +168,8 @@ class LipCameraUiTest {
             }
         }.use { scene ->
             scene.render().close()
+            scene.click("Sound measurements")
+            repeat(4) { scene.render().close() }
             scene.click("Start camera")
             scene.render().close()
             token = controller.state.value.session

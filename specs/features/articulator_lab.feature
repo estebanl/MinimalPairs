@@ -52,3 +52,29 @@ Feature: Articulator Lab guided speaking practice
     Given a physical Android or iOS device is available
     Then permissions, orientation, tracking loss, backgrounding, tab changes, and concurrent audio capture are checked
     And the validation report distinguishes observed passes from checks that could not run
+
+  Scenario: Open camera practice without starting capture
+    Given I open the Speak screen
+    Then Camera is the selected visual mode
+    And the camera remains off until I choose Start camera
+    And the preview area explains how to start the practice mirror
+    And the selected vowel has a nearby lip reference and placement cue
+    And generated example playback is available outside sound measurement details
+    And the recording action remains pinned while the content scrolls
+
+  Scenario: Match the practice mirror visual hierarchy
+    Given the Camera mode is selected
+    Then the two vowel tiles share one selector card with a change-sound control
+    And all four labeled icon tabs remain in one row at standard text sizes
+    And larger accessibility text uses two rows without clipping labels
+    And camera status and start or stop controls overlay the preview
+    And the lip reference is beside the serif practice heading
+    And example playback and expandable sound measurements are separate cards
+    And detailed camera measurements and explanations stay inside sound measurements
+    And the dotted lip alignment guide is identified as a guide rather than a measurement
+
+  Scenario: Keep the custom header below the device status bar
+    Given the device has a top or horizontal safe-area inset
+    When I open the Speak screen
+    Then the title and back control remain inside the safe area
+    And insets already consumed by the host are not applied twice
