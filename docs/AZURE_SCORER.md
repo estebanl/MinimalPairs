@@ -79,6 +79,46 @@ the key from `MINIMAL_PAIRS_SCORER_KEY`; Android and all hosts can supply
 `PhonemeScorerConfiguration.functionKey` at runtime before creating the root.
 No key is stored in Info.plist, resources, source code, or build arguments.
 
+## iPhone Speak connection
+
+An ordinary iOS build has no scorer configured. Shell environment variables on
+the Mac do not automatically reach an app launched on an iPhone. With Azure CLI
+signed in, build, install, and provision the connected device with:
+
+```sh
+./scripts/run_ios.sh
+# Re-provision an already installed build after rotating the Azure key:
+./scripts/run_ios.sh --skip-build
+```
+
+`run_ios.sh` is an alias of `run_on_device.sh`; both enable Azure scoring by
+default. Use `--no-azure-scorer` to launch with the saved connection or a custom
+endpoint without looking up Azure credentials.
+
+The launcher retrieves and validates the existing Azure endpoint and key using
+the same flow as desktop. It forwards them through `DEVICECTL_CHILD_` environment
+variables at launch, keeping the key out of command arguments and build outputs.
+Before Compose creates its root, the iOS host saves the connection to Keychain
+with `WhenUnlockedThisDeviceOnly` accessibility and supplies the shared scorer
+configuration. Opening the app from its icon later restores that connection.
+An explicit new endpoint replaces the entire saved connection and never reuses
+the old endpoint's key. A Keychain write failure logs a credential-free warning;
+the connection still works for that launch and must be provisioned again later.
+
+Xcode launches can instead set `MINIMAL_PAIRS_SCORER_URL` and
+`MINIMAL_PAIRS_SCORER_KEY` in the Run scheme's environment (keep personal schemes
+unshared). The device launcher also forwards these variables when supplied by
+the caller with `--no-azure-scorer`. Persisted connections require HTTPS. No
+credential is embedded for TestFlight or other devices; each device needs runtime
+provisioning. A distributed app still needs an end-user authentication flow.
+
+Configuration regression checks on macOS:
+
+```sh
+bash scripts/test_ios_scorer_connection.sh
+build/phoneme-model-venv/bin/python -m unittest discover -s scripts/tests -p test_azure_speak.py
+```
+
 Verified on 2026-10-27 through the rendered Speak screen and real Azure HTTP
 client: bundled `pear` /p/ 83.01685, `measure` /ʒ/ 81.13979, and `rope` /p/
 97.81593. Original PCM replay matched, all three scores survived reopening the

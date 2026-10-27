@@ -61,6 +61,14 @@ provisioned model. There is no word-similarity, fixed-score, or vowel-formant
 fallback. Silence, invalid input, service failure, and malformed responses show a
 recoverable error without saving a score. Audio remains available for replay.
 
+The iOS host accepts a runtime HTTPS endpoint and optional access key during
+provisioning, stores that connection in device-only Keychain, and restores it
+before constructing the app root on subsequent launches. Explicit endpoint
+changes replace the connection without reusing another endpoint's saved key.
+Keychain failures never expose credentials in diagnostics; a failed save leaves
+the current launch usable but does not promise access after restart. Credentials
+are not included in app resources or distributed binaries.
+
 Valid results save the target, duration, score, and scoring method. Database v4
 adds `scoringMethod`; earlier rows and old imports default to `unknown` instead
 of being relabeled as phoneme scores. Summaries group by method as well as target,

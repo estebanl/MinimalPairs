@@ -185,6 +185,11 @@ variable or a `PhonemeScorerURL` Info.plist entry. Android hosts use the shared
 configuration property. Use an HTTPS endpoint reachable by the device; a mobile
 device's localhost is the device itself. No production endpoint is preconfigured.
 
+For the deployed Azure service on a connected iPhone, run
+`./scripts/run_ios.sh` (Azure scoring is enabled by default). The iOS host keeps the runtime
+connection in device Keychain so subsequent launches from the app icon retain
+scoring access. See [iPhone connection setup](AZURE_SCORER.md#iphone-speak-connection).
+
 Configuring an endpoint sends recorded audio to it for evaluation. Camera frames
 remain local. The backend neither stores audio nor includes audio in responses.
 The current app retains only its existing numerical score/target history; model

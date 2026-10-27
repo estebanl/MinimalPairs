@@ -37,7 +37,7 @@ Listening streaks and reviews exclude speaking, Stories, and Rhythm. Histories s
 
 - Articulator Lab: [practice selection](docs/ARTICULATOR_PRACTICE.md), [camera measurements](docs/ARTICULATOR_CAMERA.md), [acoustic comparison](docs/ARTICULATOR_COMPARISON.md), [model assets](docs/MOUTH_POSITION_ARTWORK.md), [scoring setup](docs/ARTICULATOR_SCORING.md), and [device validation](docs/ARTICULATOR_DEVICE_VALIDATION.md). The behavior contract is in [articulator_lab.feature](specs/features/articulator_lab.feature). Camera measurements and acoustic estimates do not reconstruct internal anatomy or provide calibrated jaw distances.
 
-- Run on connected iOS device: [`./scripts/run_on_device.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/run_on_device.sh) (defaults to connected iPhone `esteban.lopez`).
+- Run on connected iOS device: `./scripts/run_ios.sh` (alias of `./scripts/run_on_device.sh`; defaults to connected iPhone `esteban.lopez` and Azure scoring). Azure CLI must be signed in. The connection is provisioned at runtime and retained in device Keychain for app-icon launches. Use `--no-azure-scorer` to use a saved or caller-provided connection. See [iPhone scorer setup](docs/AZURE_SCORER.md#iphone-speak-connection).
 - [TestFlight Publishing Guide](file:///Users/estebanlopez/dev/MinimalPairs/docs/TESTFLIGHT_PUBLISHING.md) — Comprehensive guide and CLI workflow for building and distributing to Apple TestFlight.
 - Automated TestFlight script: [`./scripts/publish_testflight.sh`](file:///Users/estebanlopez/dev/MinimalPairs/scripts/publish_testflight.sh).
 

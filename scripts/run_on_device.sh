@@ -3,10 +3,10 @@
 # run_on_device.sh
 #
 # Builds, installs, and launches Minimal Pairs on a connected iOS device
-# (defaults to "esteban.lopez").
+# (defaults to "esteban.lopez") with Azure phoneme scoring configured at launch.
 #
 # Usage:
-#   ./scripts/run_on_device.sh [OPTIONS]
+#   ./scripts/run_ios.sh [OPTIONS]
 #
 # Options:
 #   -d, --device <name|udid>       Device name or UDID (default: "esteban.lopez")
@@ -14,6 +14,8 @@
 #   --skip-build                   Skip xcodebuild; install and launch existing app
 #   --clean                        Clean build artifacts before building
 #   --console                      Attach console to stream app stdout/stderr
+#   --azure-scorer                 Configure Azure scoring at launch (default; requires az login)
+#   --no-azure-scorer              Use the saved connection or caller-provided scorer variables
 #   -h, --help                     Show this help message
 # ==============================================================================
 
@@ -47,6 +49,7 @@ CONFIGURATION="Debug"
 SKIP_BUILD=false
 CLEAN_BUILD=false
 ATTACH_CONSOLE=false
+AZURE_SCORER=true
 
 PROJECT_PATH="$ROOT_DIR/iosApp/iosApp.xcodeproj"
 SCHEME="iosApp"
@@ -85,6 +88,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --console)
       ATTACH_CONSOLE=true
+      shift
+      ;;
+    --azure-scorer)
+      AZURE_SCORER=true
+      shift
+      ;;
+    --no-azure-scorer)
+      AZURE_SCORER=false
       shift
       ;;
     -h|--help)
@@ -190,12 +201,31 @@ success "App installed successfully."
 # Launch Phase
 # ------------------------------------------------------------------------------
 info "Launching ${BUNDLE_ID} on device..."
-LAUNCH_ARGS=(device process launch --device "$DEVICE_UDID" --terminate-existing "$BUNDLE_ID")
+if [[ "$AZURE_SCORER" = true ]]; then
+  SCORER_RUNTIME="${SCORER_PYTHON:-$ROOT_DIR/build/phoneme-model-venv/bin/python}"
+  if [[ ! -x "$SCORER_RUNTIME" ]]; then
+    error "Scorer Python runtime not found. Set SCORER_PYTHON to a Python with httpx installed."
+    exit 1
+  fi
+  SCORER_ARGS=(ios --device "$DEVICE_UDID" --bundle-id "$BUNDLE_ID")
+  if [[ "$ATTACH_CONSOLE" = true ]]; then
+    SCORER_ARGS+=(--console)
+  fi
+  exec "$SCORER_RUNTIME" "$ROOT_DIR/scripts/azure_speak.py" "${SCORER_ARGS[@]}"
+fi
+
+# Shell variables are not automatically inherited by an app on the phone.
+if [[ -n "${MINIMAL_PAIRS_SCORER_URL:-}" ]]; then
+  export DEVICECTL_CHILD_MINIMAL_PAIRS_SCORER_URL="$MINIMAL_PAIRS_SCORER_URL"
+  export DEVICECTL_CHILD_MINIMAL_PAIRS_SCORER_KEY="${MINIMAL_PAIRS_SCORER_KEY:-}"
+fi
+LAUNCH_ARGS=(device process launch --device "$DEVICE_UDID" --terminate-existing)
 
 if [[ "$ATTACH_CONSOLE" = true ]]; then
   info "Attaching console (press Ctrl+C to stop streaming)..."
   LAUNCH_ARGS+=(--console)
 fi
+LAUNCH_ARGS+=("$BUNDLE_ID")
 
 xcrun devicectl "${LAUNCH_ARGS[@]}"
 

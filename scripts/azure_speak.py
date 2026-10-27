@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch or verify Speak with Azure credentials held only in process memory."""
+"""Launch or verify Speak without bundling or logging Azure credentials."""
 import argparse
 import json
 import os
@@ -10,12 +10,20 @@ import time
 import httpx
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('mode', choices=['run', 'verify'])
+parser.add_argument('mode', choices=['run', 'verify', 'ios'])
+parser.add_argument('--device', help='Connected iPhone name or UDID (ios mode only)')
+parser.add_argument('--bundle-id', default='com.estebanl.minimalpairs',
+                    help='Installed iOS app bundle identifier (ios mode only)')
+parser.add_argument('--console', action='store_true', help='Stream the iOS app console')
 parser.add_argument('--cold-start', action='store_true',
                     help='Wait for zero replicas before Speak sends its first scoring request')
 args = parser.parse_args()
 if args.cold_start and args.mode != 'verify':
     parser.error('--cold-start requires verify mode')
+if args.mode == 'ios' and not args.device:
+    parser.error('ios mode requires --device')
+if args.mode != 'ios' and (args.device or args.console):
+    parser.error('--device and --console require ios mode')
 root = Path(__file__).resolve().parents[1]
 resource_args = ['-g', 'minimalpairs-scorer-rg', '-n', 'minimalpairs-scorer']
 
@@ -66,6 +74,18 @@ if args.cold_start:
     report.write_text(json.dumps({'revision': revision, 'observations': observations,
                                  'zero_replicas_before_speak': True}, indent=2) + '\n')
 child_env = os.environ.copy()
+if args.mode == 'ios':
+    # devicectl forwards prefixed environment variables without putting the key
+    # in process arguments, build settings, or a temporary file.
+    child_env['DEVICECTL_CHILD_MINIMAL_PAIRS_SCORER_URL'] = base
+    child_env['DEVICECTL_CHILD_MINIMAL_PAIRS_SCORER_KEY'] = key
+    command = ['xcrun', 'devicectl', 'device', 'process', 'launch',
+               '--device', args.device, '--terminate-existing']
+    if args.console:
+        command += ['--console']
+    command += [args.bundle_id]
+    print('Launching iOS Speak with runtime configuration; the app saves it in device Keychain.', flush=True)
+    os.execvpe(command[0], command, child_env)
 child_env['MINIMAL_PAIRS_SCORER_URL'] = base
 child_env['MINIMAL_PAIRS_SCORER_KEY'] = key
 # Azure verification uses bundled PCM only, not previously retained private WAVs.
