@@ -14,6 +14,21 @@ import kotlin.test.assertTrue
 
 class PhonemeAudioResourcesTest {
     @Test
+    fun everyConsonantTargetHasABundledWordExample() = runBlocking {
+        val contrasts = com.minimalpairs.app.data.catalog.ListeningContrastsCatalog.defaultContrasts
+            .filter { it.vowelReference == null }
+        for (contrast in contrasts) {
+            for (pair in contrast.pairs) {
+                for (word in listOf(pair.word1, pair.word2)) {
+                    val samples = assertNotNull(
+                        com.minimalpairs.app.data.audio.ElevenLabsAudioRepository.loadWordPcm(word), word)
+                    assertTrue(samples.any { it.toInt() != 0 }, "$word must not be silent")
+                }
+            }
+        }
+    }
+
+    @Test
     fun everyLabPhonemeLoadsFromPackagedResourcesAsCompletePcm() = runBlocking {
         val words = VowelContrastsCatalog.defaultContrasts
             .flatMap { listOf(it.phoneme1, it.phoneme2) }

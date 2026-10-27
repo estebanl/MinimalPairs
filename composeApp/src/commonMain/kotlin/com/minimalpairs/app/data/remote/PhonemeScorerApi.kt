@@ -2,6 +2,11 @@ package com.minimalpairs.app.data.remote
 
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
 import com.minimalpairs.app.core.dsp.WavCodec
+import com.minimalpairs.app.core.dsp.WordSimilarityScorer
+import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import com.minimalpairs.app.core.model.PhonemeScore
 import com.minimalpairs.app.core.model.PhonemeScoringResponse
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
@@ -21,6 +26,8 @@ import kotlinx.coroutines.CancellationException
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sqrt
+
+class PracticeScoringException(message: String) : Exception(message)
 
 interface PhonemeScorerApi {
     suspend fun scoreAudio(
@@ -42,7 +49,8 @@ class PhonemeScorerClient(
                 isLenient = true
             })
         }
-    }
+    },
+    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
 ) : PhonemeScorerApi {
 
     override suspend fun scoreAudio(
@@ -51,6 +59,36 @@ class PhonemeScorerClient(
         expectedIpa: String,
         contrastId: String?
     ): PhonemeScoringResponse {
+        val practice = contrastId?.let(ListeningContrastsCatalog::getContrastById)
+        if (practice != null && practice.vowelReference == null) {
+            val first = when (expectedIpa) {
+                practice.phoneme1 -> true
+                practice.phoneme2 -> false
+                else -> throw PracticeScoringException("The selected sound does not match this sound pair.")
+            }
+            val pair = practice.pairs.firstOrNull {
+                (if (first) it.word1 else it.word2).equals(targetWord, ignoreCase = true)
+            } ?: throw PracticeScoringException("The selected word does not match this sound pair.")
+            if (!WordSimilarityScorer.hasUsableAudio(audioSamples)) {
+                throw PracticeScoringException("No clear sound detected. Record the whole word and try again.")
+            }
+            val target = loadWordPcm(if (first) pair.word1 else pair.word2)
+            currentCoroutineContext().ensureActive()
+            val alternative = loadWordPcm(if (first) pair.word2 else pair.word1)
+            currentCoroutineContext().ensureActive()
+            if (target == null || alternative == null || !WordSimilarityScorer.hasUsableAudio(target) ||
+                !WordSimilarityScorer.hasUsableAudio(alternative)) {
+                throw PracticeScoringException("The example audio needed for scoring is unavailable. Please try again.")
+            }
+            val score = WordSimilarityScorer.score(audioSamples, target, alternative)
+            currentCoroutineContext().ensureActive()
+            return PhonemeScoringResponse(
+                overallScore = score,
+                phonemes = emptyList(), // Whole-word comparison has no isolated phoneme scores or boundaries.
+                scoringMethod = "word_similarity",
+                feedback = "Compare your recording with “$targetWord”, then try again. Keep the whole word clear and focus on /$expectedIpa/."
+            )
+        }
         // Remote failure remains visible when falling back to the local estimate.
         var fallbackMessage: String? = null
         if (!baseUrl.isNullOrBlank()) {

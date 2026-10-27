@@ -132,3 +132,24 @@ contrast_pairs:
     visual_indicators:
       lip_aperture_ratio: 0.25
       jaw_drop_mm: [10, 16]
+
+  - id: "ae_vs_uh"
+    target_phonemes: ["æ", "ʌ"]
+    description: "Near-open front unrounded vs. Open-mid central unrounded"
+    examples:
+      - pair: ["cat", "cut"]
+      - pair: ["hat", "hut"]
+      - pair: ["match", "much"]
+      - pair: ["ankle", "uncle"]
+    acoustic_bounds:
+      phoneme_1: # /æ/
+        f1_range_hz: [660, 860]
+        f2_range_hz: [1500, 1900]
+        min_duration_ms: 140
+      phoneme_2: # /ʌ/
+        f1_range_hz: [580, 720]
+        f2_range_hz: [1250, 1500]
+        max_duration_ms: 100
+    visual_indicators:
+      lip_aperture_ratio: 0.35
+      jaw_drop_mm: [14, 22]

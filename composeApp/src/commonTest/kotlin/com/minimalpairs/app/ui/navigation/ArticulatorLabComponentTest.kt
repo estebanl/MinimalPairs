@@ -458,6 +458,88 @@ class ArticulatorLabComponentTest {
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 
+    @Test
+    fun everyListeningContrastSupportsSelectionAndConsonantWordPractice() = runTest {
+        val f = Fixture(this)
+        try {
+            for (contrast in com.minimalpairs.app.data.catalog.ListeningContrastsCatalog.defaultContrasts) {
+                f.component.selectContrast(contrast.id)
+                assertEquals(contrast, f.state.contrast)
+                for (first in listOf(true, false)) {
+                    f.component.switchTargetPhoneme(first)
+                    f.component.playPhonemeExample(first)
+                    runCurrent()
+                    if (contrast.vowelReference == null) {
+                        assertEquals(if (first) contrast.pairs.first().word1 else contrast.pairs.first().word2,
+                            f.requestedWords.last())
+                        assertNotNull(com.minimalpairs.app.ui.reference.ConsonantPracticeReferences.forPhoneme(
+                            if (first) contrast.phoneme1 else contrast.phoneme2))
+                        // Unvoiced material must remain replayable without a vowel analysis gate.
+                        val unvoiced = ShortArray(3200) { if (it % 2 == 0) 2000 else -2000 }
+                        f.record(unvoiced)
+                        assertTrue(f.state.hasRecording)
+                        assertNull(f.state.error)
+                        assertEquals(88f, f.state.overallGopScore)
+                        assertEquals(0f, f.state.liveF1)
+                        assertEquals(contrast.id, f.saved.last().contrastId)
+                        assertEquals(if (first) contrast.phoneme1 else contrast.phoneme2, f.saved.last().targetPhoneme)
+                        assertEquals(if (first) contrast.pairs.first().word1 else contrast.pairs.first().word2, f.scorer.words.last())
+                        assertEquals(200, f.saved.last().durationMs)
+                        f.component.playRecording()
+                        runCurrent()
+                        assertContentEquals(unvoiced, f.player.samples.last())
+                    }
+                }
+            }
+            assertEquals(26, f.scorer.words.size)
+            assertEquals(26, f.saved.size)
+            f.component.selectContrast("i_vs_I")
+            assertFalse(f.state.hasRecording)
+            assertNull(f.state.scoringDescription)
+            f.record(f.samples)
+            assertEquals(88f, f.state.overallGopScore)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun targetedPracticeCanReopenAConsonantPair() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.preparePracticeTarget("v", "w_vs_v")
+            runCurrent()
+            assertEquals("w_vs_v", f.state.contrast.id)
+            assertFalse(f.state.isTargetPhoneme1)
+            f.exampleAvailable = false
+            f.component.playPhonemeExample(false)
+            runCurrent()
+            assertNotNull(f.state.error)
+            assertTrue(f.player.samples.isEmpty())
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun consonantSilenceAndInvalidScoresAreNotSavedAndRecordingRemainsReplayable() = runTest {
+        val f = Fixture(this)
+        try {
+            f.component.selectContrast("p_vs_b")
+            f.record(ShortArray(3200))
+            assertNotNull(f.state.error)
+            assertTrue(f.scorer.words.isEmpty())
+            assertTrue(f.saved.isEmpty())
+            f.scorer.score = Float.NaN
+            f.record(f.samples)
+            assertNull(f.state.overallGopScore)
+            assertTrue(f.saved.isEmpty())
+            assertTrue(f.state.hasRecording)
+            f.scorer.score = 82f
+            f.scorer.method = "word_similarity"
+            f.record(f.samples)
+            assertEquals(82f, f.state.overallGopScore)
+            assertTrue(f.state.scoringDescription!!.contains("Offline word similarity"))
+            assertEquals("p_vs_b", f.saved.single().contrastId)
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     private class Fixture(val scope: TestScope, targetPhoneme: String? = null) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
@@ -467,11 +549,15 @@ class ArticulatorLabComponentTest {
         val saved = mutableListOf<SpeakingRecordEntity>()
         val exampleSamples = shortArrayOf(100, -200, 300)
         val requestedPhonemes = mutableListOf<String>()
+        val requestedWords = mutableListOf<String>()
         var exampleAvailable = true
         val component = DefaultArticulatorLabComponent(DefaultComponentContext(lifecycle), null, scorer, {},
             recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme,
             loadPhonemePcm = { phoneme ->
                 requestedPhonemes += phoneme
+                if (exampleAvailable) exampleSamples else null
+            }, loadWordPcm = { word ->
+                requestedWords += word
                 if (exampleAvailable) exampleSamples else null
             })
         val state get() = component.state.value

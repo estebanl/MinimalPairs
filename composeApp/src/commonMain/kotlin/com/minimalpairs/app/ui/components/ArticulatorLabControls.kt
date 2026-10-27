@@ -82,13 +82,13 @@ fun LabTarget(word: String, phoneme: String, selected: Boolean, enabled: Boolean
 }
 
 @Composable
-fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit) {
+fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit, vowelModes: Boolean = true) {
     val scheme = MaterialTheme.colorScheme
     val labels = listOf("Sound map", "Mouth position", "3D model", "Camera")
     val icons = listOf(LabIcon.Sound, LabIcon.Mouth, LabIcon.Model, LabIcon.Camera)
     val columns = if (LocalDensity.current.fontScale > 1.3f) 2 else 4
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        labels.indices.chunked(columns).forEach { indices ->
+        (if (vowelModes) labels.indices.toList() else listOf(1, 3)).chunked(columns).forEach { indices ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 indices.forEach { index ->
                     Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(16.dp),
@@ -110,12 +110,13 @@ fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-fun LabRecordingCredits() {
+fun LabRecordingCredits(wordExamples: Boolean = false) {
     var showCredits by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf("") }
     val uriHandler = LocalUriHandler.current
-    LaunchedEffect(showCredits) {
-        if (showCredits) credits = Res.readBytes("files/audio/phonemes/CREDITS.txt").decodeToString()
+    LaunchedEffect(showCredits, wordExamples) {
+        if (showCredits) credits = if (wordExamples) "Word examples generated with ElevenLabs. These recordings are also used in Listen.\n\nhttps://elevenlabs.io/"
+        else Res.readBytes("files/audio/phonemes/CREDITS.txt").decodeToString()
     }
     if (showCredits) {
         AlertDialog(

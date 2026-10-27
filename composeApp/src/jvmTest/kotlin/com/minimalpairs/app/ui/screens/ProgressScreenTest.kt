@@ -214,6 +214,16 @@ class ProgressScreenTest {
                     assertEquals("ɪ", selectedPhoneme)
                     click("Show fewer sounds")
                     assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
+                    val consonantRecords = listOf(SpeakingRecordEntity(14, "p_vs_b", "bear", "b", 72f, 800, 14000))
+                    component.state.value = component.state.value.copy(
+                        speaking = consonantRecords, speakingSummaries = summarizeSpeaking(consonantRecords))
+                    settle()
+                    assertTrue(nodes().any { it.text() == "Word similarity · experimental" })
+                    click("Practice /b/ · bear")
+                    assertEquals("p_vs_b", selected)
+                    assertEquals("b", selectedPhoneme)
+                    click("Practice speaking again")
+                    assertEquals("p_vs_b", selected)
                     val modules = listOf(
                         ModulePracticeRecordEntity(1, "STORIES", "sheep_vs_ship", "Story practice", "i_vs_I", 80f, true, 200, 1000),
                         ModulePracticeRecordEntity(2, "RHYTHM", "ship_or_sheep_question", "Rhythm practice", null, 70f, true, 200, 2000))

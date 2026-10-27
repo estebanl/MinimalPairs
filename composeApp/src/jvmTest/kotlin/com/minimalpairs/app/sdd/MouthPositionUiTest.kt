@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
 import com.minimalpairs.app.core.hal.AudioRecorderState
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.ui.components.OralCavityReferenceCard
 import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
@@ -110,7 +111,9 @@ class MouthPositionUiTest {
             MinimalPairsTheme { ArticulatorLabScreen(component) }
         }.use { scene ->
             scene.render().close()
-            assertTrue(scene.nodes().any { it.text() == "Camera off" }, "Camera practice opens without starting capture")
+            scene.click("Camera")
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.text() == "Camera off" }, "Selecting Camera must not start capture")
             scene.click("Mouth position")
             scene.render().close()
             val preview = scene.render()
@@ -119,7 +122,7 @@ class MouthPositionUiTest {
             previewFile.writeBytes(preview.encodeToData()!!.bytes)
             preview.close()
             for (contrast in VowelContrastsCatalog.defaultContrasts) {
-                component.state.value = ArticulatorLabUiState(contrast)
+                component.state.value = ArticulatorLabUiState(ListeningContrastsCatalog.getContrastById(contrast.id)!!)
                 for (first in listOf(true, false)) {
                     component.switchTargetPhoneme(first)
                     scene.render().close()
@@ -196,7 +199,7 @@ class MouthPositionUiTest {
             scene.render().close()
             scene.click("3D model")
             for (contrast in VowelContrastsCatalog.defaultContrasts) {
-                component.state.value = ArticulatorLabUiState(contrast)
+                component.state.value = ArticulatorLabUiState(ListeningContrastsCatalog.getContrastById(contrast.id)!!)
                 for (first in listOf(true, false)) {
                     component.switchTargetPhoneme(first)
                     scene.render().close()
@@ -271,7 +274,7 @@ class MouthPositionUiTest {
     }
 
     private class ReferenceScreenComponent : ArticulatorLabComponent {
-        override val state = MutableStateFlow(ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first()))
+        override val state = MutableStateFlow(ArticulatorLabUiState(ListeningContrastsCatalog.defaultContrasts.first()))
         override fun switchTargetPhoneme(isPhoneme1: Boolean) {
             state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1)
         }

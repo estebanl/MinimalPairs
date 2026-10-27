@@ -68,9 +68,9 @@ Do not describe them as clinically or anatomically certified.
   and unsupported-sound handling.
 - JVM resource tests decode all 20 bundled images without network access and
   check image dimensions and consistent aspect ratios.
-- For UI review, switch both sounds in all six contrasts, record with the Mouth
+- For UI review, switch both sounds in all seven contrasts, record with the Mouth
   position tab selected, and check the Sound map still receives live feedback.
-- JVM Compose scene tests exercise both sounds in all six contrasts, recording
+- JVM Compose scene tests exercise both sounds in all seven contrasts, recording
   stability, and returning to the Sound map. They render narrow and wide cards
   in both themes with normal and enlarged text, checking labels for overflow.
   Review images are written to `composeApp/build/reports/mouth-position/`.

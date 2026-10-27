@@ -20,6 +20,7 @@ object ListeningContrastsCatalog {
         "a_vs_uh" to "For “heart,” open your mouth and hold the vowel longer. The vowel in “hut” is shorter and more relaxed.",
         "u_vs_uu" to "Both sounds use rounded lips. For “fool,” round them more and hold the sound longer. For “full,” relax them and keep it short.",
         "o_vs_or" to "Keep your lips rounded. The vowel in “cot” is more open and shorter; the vowel in “caught” is usually held longer.",
+        "ae_vs_uh" to "For “cat,” open your jaw and keep your tongue toward the front. For “cut,” relax your tongue toward the center.",
         "e_vs_I" to "For “pen,” let your jaw open a little more. For “pin,” lift your tongue slightly higher. Both sounds stay near the front."
     )
 
@@ -37,11 +38,6 @@ object ListeningContrastsCatalog {
                 vowelReference = vowel
             )
         } + listOf(
-            ListeningContrast(
-                "ae_vs_uh", "æ", "ʌ", "Open front vs. relaxed central vowel",
-                pairs("cat" to "cut", "hat" to "hut", "match" to "much", "ankle" to "uncle"),
-                "For “cat,” open your jaw and keep your tongue toward the front. For “cut,” relax your tongue toward the center."
-            ),
             ListeningContrast(
                 "p_vs_b", "p", "b", "Voiceless vs. voiced bilabial stop",
                 pairs("pear" to "bear", "pack" to "back", "pig" to "big", "rope" to "robe"),

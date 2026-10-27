@@ -64,7 +64,8 @@ import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
 import com.minimalpairs.app.ui.components.VowelTrapezoidPlot
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.theme.PracticeTheme
-import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
+import com.minimalpairs.app.ui.reference.ConsonantPracticeReferences
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Box
@@ -78,11 +79,16 @@ fun ArticulatorLabScreen(
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
+    val vowel = state.contrast.vowelReference
+    val isVowel = vowel != null
+    val targetWord = if (state.isTargetPhoneme1) state.selectedPair.word1 else state.selectedPair.word2
+    val consonantCue = ConsonantPracticeReferences.forPhoneme(if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2)
     val isRecording = state.recorderState == AudioRecorderState.RECORDING
     val showPlayback = state.hasRecording && !isRecording
     val canSelectTarget = !isRecording && !state.isBusy
     val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
     var visualMode by rememberSaveable { mutableStateOf(0) }
+    val activeVisualMode = if (!isVowel && visualMode != 3) 1 else visualMode
     var permissionDenied by remember { mutableStateOf(false) }
     val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
         permissionDenied = !granted
@@ -124,7 +130,7 @@ fun ArticulatorLabScreen(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.onBackground),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
                             modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
-                                .semantics { contentDescription = "Hear /$targetPhoneme/ example" }
+                                .semantics { contentDescription = if (isVowel) "Hear /$targetPhoneme/ example" else "Hear $targetWord example" }
                         ) {
                             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                                 PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(20.dp))
@@ -226,7 +232,7 @@ fun ArticulatorLabScreen(
                         onDismissRequest = { contrastMenuOpen = false }) {
                         Text("Choose a sound pair", modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.labelLarge)
-                        VowelContrastsCatalog.defaultContrasts.forEach { contrast ->
+                        ListeningContrastsCatalog.defaultContrasts.forEach { contrast ->
                             DropdownMenuItem(
                                 text = {
                                     Column {
@@ -254,42 +260,58 @@ fun ArticulatorLabScreen(
                     LabTarget(state.selectedPair.word2, state.contrast.phoneme2, !state.isTargetPhoneme1,
                         canSelectTarget, { component.switchTargetPhoneme(false) }, Modifier.weight(1f))
                 }
-                Text("Say /$targetPhoneme/ on its own. The word helps you identify the vowel.",
+                Text(if (isVowel) "Say /$targetPhoneme/ on its own. The word helps you identify the vowel."
+                    else "Say “$targetWord” and focus on /$targetPhoneme/. The example plays the whole word.",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
                 Spacer(Modifier.height(12.dp))
-                LabModeTabs(visualMode) { visualMode = it }
+                LabModeTabs(activeVisualMode, { visualMode = it }, vowelModes = isVowel)
                 Spacer(Modifier.height(12.dp))
 
-                if (visualMode == 0) {
+                if (activeVisualMode == 0 && vowel != null) {
                     VowelTrapezoidPlot(
-                        contrast = state.contrast,
+                        contrast = vowel,
                         targetPhoneme = targetPhoneme,
                         liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
                         liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
                     )
-                } else if (visualMode == 3) {
+                } else if (activeVisualMode == 3) {
                     LipCameraFeedbackCard(
+                        practiceInstruction = if (isVowel) "Say /$targetPhoneme/ on its own." else "Say “$targetWord” and focus on /$targetPhoneme/.",
+                        placementCue = consonantCue,
                         phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
                         exampleWord = state.selectedPair.let {
                             if (state.isTargetPhoneme1) it.word1 else it.word2
                         },
                         footer = {
-                            LabRecordingCredits()
+                            LabRecordingCredits(wordExamples = !isVowel)
                         },
                         measurements = { ArticulatorMeasurements(state, isRecording) }
                     )
-                } else if (visualMode == 2) {
+                } else if (activeVisualMode == 2 && vowel != null) {
                     OralCavityReferenceCard(
                         phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
                         exampleWord = state.selectedPair.let {
                             if (state.isTargetPhoneme1) it.word1 else it.word2
                         },
-                        targetBounds = if (state.isTargetPhoneme1) state.contrast.boundsPhoneme1 else state.contrast.boundsPhoneme2,
+                        targetBounds = if (state.isTargetPhoneme1) vowel.boundsPhoneme1 else vowel.boundsPhoneme2,
                         observedF1 = state.liveF1.takeIf { it > 0f },
                         observedF2 = state.liveF2.takeIf { it > 0f },
                         isRecording = isRecording
                     )
+                } else if (!isVowel) {
+                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = scheme.surface)) {
+                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("$targetWord /$targetPhoneme/", style = MaterialTheme.typography.titleLarge)
+                            Text(consonantCue.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+                            Text(state.contrast.soundTip, style = MaterialTheme.typography.bodyMedium)
+                            Text("Listen to the example, record the word, then play yours to compare.",
+                                style = MaterialTheme.typography.bodyMedium)
+                            Text("Record the whole word for an experimental similarity score against the two examples.",
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 } else {
                     MouthPositionReferenceCard(
                         phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
@@ -301,8 +323,8 @@ fun ArticulatorLabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                if (visualMode != 3) {
-                    LabRecordingCredits()
+                if (activeVisualMode != 3) {
+                    LabRecordingCredits(wordExamples = !isVowel)
                     Spacer(Modifier.height(12.dp))
                     LabMeasurements { ArticulatorMeasurements(state, isRecording) }
                 }
@@ -315,7 +337,7 @@ fun ArticulatorLabScreen(
                     Text(it, style = MaterialTheme.typography.bodyMedium)
                 }
                 state.overallGopScore?.let { score ->
-                    Text("Your sound score · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
+                    Text("${if (isVowel) "Your sound score" else "Word similarity"} · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)
                 }
                 state.scoringDescription?.let { description ->
                     Text(description, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
@@ -331,6 +353,13 @@ fun ArticulatorLabScreen(
 private fun ArticulatorMeasurements(state: ArticulatorLabUiState, isRecording: Boolean) {
     val scheme = MaterialTheme.colorScheme
     val colors = PracticeTheme.colors
+    val vowel = state.contrast.vowelReference
+    if (vowel == null) {
+        Text("Recording time · ${state.liveDurationMs} ms", style = MaterialTheme.typography.bodyMedium)
+        Text("Compare the example with your recording. Vowel formants do not assess this consonant.",
+            style = MaterialTheme.typography.bodySmall)
+        return
+    }
     // Acoustic Readout & GOP Score Card
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -385,7 +414,7 @@ private fun ArticulatorMeasurements(state: ArticulatorLabUiState, isRecording: B
     Spacer(Modifier.height(20.dp))
 
     ArticulatoryBiofeedbackCard(
-        indicators = state.contrast.visualIndicators,
+        indicators = vowel.visualIndicators,
         phoneme1 = state.contrast.phoneme1,
         phoneme2 = state.contrast.phoneme2
     )

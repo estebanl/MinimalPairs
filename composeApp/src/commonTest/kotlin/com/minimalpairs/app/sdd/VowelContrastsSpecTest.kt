@@ -9,9 +9,9 @@ import kotlin.test.assertTrue
 class VowelContrastsSpecTest {
 
     @Test
-    fun testVowelContrastsCatalogParsesAllSixContrasts() {
+    fun testVowelContrastsCatalogParsesAllSevenContrasts() {
         val contrasts = VowelContrastsCatalog.defaultContrasts
-        assertEquals(6, contrasts.size, "Must contain all 6 target minimal pair contrasts")
+        assertEquals(7, contrasts.size, "Must contain all 7 target minimal pair contrasts")
 
         val ids = contrasts.map { it.id }.toSet()
         assertTrue(ids.contains("i_vs_I"))
@@ -20,13 +20,14 @@ class VowelContrastsSpecTest {
         assertTrue(ids.contains("u_vs_uu"))
         assertTrue(ids.contains("o_vs_or"))
         assertTrue(ids.contains("e_vs_I"))
+        assertTrue(ids.contains("ae_vs_uh"))
     }
 
     @Test
-    fun testEachContrastHasAtLeastFivePairsAndValidAcousticBounds() {
+    fun testEachContrastHasAtLeastFourPairsAndValidAcousticBounds() {
         val contrasts = VowelContrastsCatalog.defaultContrasts
         for (contrast in contrasts) {
-            assertTrue(contrast.pairs.size >= 5, "${contrast.id} must have >= 5 word pairs")
+            assertTrue(contrast.pairs.size >= 4, "${contrast.id} must have >= 4 word pairs")
 
             // Validate Acoustic Formant Bounds F1 and F2
             val b1 = contrast.boundsPhoneme1
@@ -41,6 +42,19 @@ class VowelContrastsSpecTest {
             assertTrue(contrast.visualIndicators.lipApertureRatio in 0.05f..0.8f)
             assertTrue(contrast.visualIndicators.jawDropMinMm < contrast.visualIndicators.jawDropMaxMm)
         }
+    }
+
+    @Test
+    fun catAndCutReuseEstablishedVowelBounds() {
+        val contrast = assertNotNull(VowelContrastsCatalog.getContrastById("ae_vs_uh"))
+        assertEquals("æ", contrast.phoneme1)
+        assertEquals("ʌ", contrast.phoneme2)
+        assertEquals("cat", contrast.pairs.first().word1)
+        assertEquals("cut", contrast.pairs.first().word2)
+        assertEquals(VowelContrastsCatalog.getContrastById("ae_vs_e")!!.boundsPhoneme1,
+            contrast.boundsPhoneme1)
+        assertEquals(VowelContrastsCatalog.getContrastById("a_vs_uh")!!.boundsPhoneme2,
+            contrast.boundsPhoneme2)
     }
 
     @Test

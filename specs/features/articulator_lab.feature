@@ -6,7 +6,7 @@ Feature: Articulator Lab guided speaking practice
 
   Scenario: Choose a sound pair and vowel
     Given the Speak screen is idle
-    When I select a catalog sound pair
+    When I select a catalog vowel sound pair
     And I select either sound
     Then the labels and references show the default reference word and selected phoneme
     And there is no Example words selector
@@ -58,6 +58,7 @@ Feature: Articulator Lab guided speaking practice
 
   Scenario: Open camera practice without starting capture
     Given I open the Speak screen
+    When I select Camera
     Then Camera is the selected visual mode
     And the camera remains off until I choose Start camera
     And the preview area explains how to start the practice mirror
@@ -119,3 +120,34 @@ Feature: Articulator Lab guided speaking practice
     And the actions are disabled during processing or playback
     When I record again or select a different practice target
     Then Play mine is hidden until a recording is available outside recording mode
+
+  Scenario: Practise the curriculum's cat and cut vowel contrast
+    Given the Speak screen is idle
+    When I choose cat / cut from the sound pair menu
+    Then I can practise /æ/ and /ʌ/ with their matching audio and mouth references
+    And acoustic guidance uses the existing bounds for each vowel
+    And the catalog includes cat / cut, hat / hut, match / much, and ankle / uncle
+    And Listen uses the same contrast without duplicating it
+
+  Scenario: Speak offers every sound pair available in Listen
+    Given the Speak screen is idle
+    When I open the sound pair menu
+    Then all 20 Listen contrasts appear in the same order with the same reference words
+    And either target can be selected for every pair
+
+  Scenario: Practise consonants in words
+    Given a consonant contrast is selected
+    Then each target has its own placement cue and the pair has contrast guidance
+    And Example plays the selected bundled word used in Listen
+    And the instruction asks me to say the word and focus on the selected consonant
+    And Mouth position and Camera are available
+    And vowel sound maps, vowel anatomy models, and formant targets are hidden
+    When I record and stop
+    Then I can replay my recording without passing a voiced-vowel detection gate
+    And an offline word similarity score compares the recording with both example words
+    And the score is labeled experimental whole-word similarity rather than consonant accuracy
+    And the score, selected word, consonant, contrast, and recording duration are saved to Progress
+    And Progress can reopen the selected consonant practice target
+    And silence, missing reference audio, and invalid scores show a retryable error without saving a score
+    When I switch sound pairs
+    Then previous audio and feedback are cleared

@@ -37,6 +37,8 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifier = Modifier,
+    practiceInstruction: String = "Say /$phoneme/ on its own.",
+    placementCue: String? = null,
     footer: @Composable () -> Unit = {},
     measurements: @Composable () -> Unit = {},
     controller: LipCameraController = remember { LipCameraController() },
@@ -121,7 +123,7 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
                 LipCameraStatus.NO_FACE -> "Bring your face into view."
                 LipCameraStatus.ADJUST_POSITION -> "Face the camera straight on, move a little closer, and keep your mouth visible."
                 LipCameraStatus.PERMISSION_DENIED -> "Camera access is off. Allow it in app settings, then try again."
-                LipCameraStatus.UNAVAILABLE -> "Live camera feedback is not available on this device. The reference and sound map are still available."
+                LipCameraStatus.UNAVAILABLE -> "Live camera feedback is not available on this device. You can still use the practice guidance and audio examples."
                 LipCameraStatus.ERROR -> "Camera feedback stopped. Try starting the camera again."
                 LipCameraStatus.PAUSED -> "Camera paused while the app was away. Start it again when you’re ready."
                 else -> ""
@@ -132,7 +134,7 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Match the lip shape", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold,
                     fontSize = 24.sp, lineHeight = 27.sp)
-                Text("Say /$phoneme/ on its own.", fontSize = 17.sp, lineHeight = 22.sp)
+                Text(practiceInstruction, fontSize = 17.sp, lineHeight = 22.sp)
             }
             reference?.let {
                 Surface(Modifier.width(112.dp), shape = RoundedCornerShape(18.dp),
@@ -150,7 +152,7 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
         footer()
         LabMeasurements {
             Text("$exampleWord /$phoneme/", style = MaterialTheme.typography.titleMedium)
-            Text(reference?.placementCue ?: "Use the sound map to explore this vowel.",
+            Text(placementCue ?: reference?.placementCue ?: "Use the sound map to explore this vowel.",
                 style = MaterialTheme.typography.bodyMedium)
             measurements()
             state.measurement?.let { measurement ->

@@ -70,6 +70,7 @@ data class PhonemeScoringResponse(
 ) {
     val scoringDescription: String get() = when (scoringMethod) {
         "neural_ctc" -> "Model confidence (experimental) · ${modelId ?: "phoneme CTC"}. ${feedback ?: "Not validated for isolated-vowel coaching or calibrated pronunciation grading."}"
+        "word_similarity" -> "Offline word similarity (experimental). Compares the whole recording with both example words; does not isolate the consonant or measure pronunciation accuracy. Voice and microphone differences can affect the score."
         "acoustic_estimate" -> "Offline acoustic estimate. ${feedback ?: "Based on vowel formants and duration, not word recognition."}"
         else -> "Scoring method unavailable."
     }

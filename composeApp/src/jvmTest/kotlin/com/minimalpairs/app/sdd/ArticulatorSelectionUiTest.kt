@@ -15,6 +15,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
 import com.minimalpairs.app.core.hal.AudioRecorderState
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.navigation.ArticulatorLabUiState
@@ -178,6 +179,71 @@ class ArticulatorSelectionUiTest {
     }
 
     @Test
+    fun catAndCutCanBeSelectedWithBothVowelExamples() {
+        val component = SelectionComponent()
+        ImageComposeScene(390, 1800) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.render().close()
+            scene.click("Change sound pair")
+            scene.render().close()
+            scene.click("cat / cut")
+            scene.render().close()
+            assertEquals("ae_vs_uh", component.state.value.contrast.id)
+            scene.click("Example")
+            assertEquals(true, component.lastPlayedFirst)
+            scene.click("cut /ʌ/")
+            scene.render().close()
+            scene.click("Example")
+            assertEquals(false, component.lastPlayedFirst)
+            assertTrue(scene.nodes().any { it.matches("Hear /ʌ/ example") })
+            val output = File("build/reports/articulator/cat-cut-selection.png")
+            output.parentFile.mkdirs()
+            scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+        }
+    }
+
+    @Test
+    fun menuIncludesEveryListenPairAndConsonantsUseWordGuidance() {
+        val component = SelectionComponent()
+        ImageComposeScene(390, 1800) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.render().close()
+            scene.click("Change sound pair")
+            scene.render().close()
+            for (contrast in ListeningContrastsCatalog.defaultContrasts) {
+                val pair = contrast.pairs.first()
+                assertTrue(scene.nodes().any { it.matches("${pair.word1} / ${pair.word2}") }, contrast.id)
+            }
+            scene.click("wet / vet")
+            scene.render().close()
+            assertEquals("w_vs_v", component.state.value.contrast.id)
+            scene.click("vet /v/")
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.matches("Hear vet example") })
+            assertTrue(scene.nodes().any { it.text()?.contains("Say “vet” and focus on /v/") == true })
+            assertTrue(scene.nodes().none { it.matches("Sound map") || it.matches("3D model") })
+            scene.click("Camera")
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.matches("Camera off") })
+            assertTrue(scene.nodes().none { it.text()?.contains("Say /v/ on its own") == true })
+        }
+        component.selectContrast("p_vs_b")
+        component.state.value = component.state.value.copy(
+            overallGopScore = 72f, hasRecording = true,
+            scoringDescription = "Offline word similarity (experimental).")
+        ImageComposeScene(390, 844) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.matches("Word similarity · 72/100") })
+            assertTrue(scene.nodes().any { it.matches("Offline word similarity (experimental).") })
+            scene.nodes().first { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
+                .config[SemanticsActions.ScrollBy].action!!.invoke(0f, 600f)
+            val start = System.nanoTime()
+            repeat(15) { scene.render(start + it * 50_000_000L).close() }
+            val output = File("build/reports/articulator/consonant-practice.png")
+            output.parentFile.mkdirs()
+            scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+        }
+    }
+
+    @Test
     fun recordedPlaybackAppearsInBottomControlsOnlyAfterRecording() {
         val component = SelectionComponent()
         ImageComposeScene(320, 640) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
@@ -218,7 +284,7 @@ class ArticulatorSelectionUiTest {
             assertTrue(scene.nodes().none { it.matches("Play my recording") })
             scene.click("Stop recording")
             assertEquals(1, component.recordingToggles)
-            component.state.value = ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first())
+            component.state.value = ArticulatorLabUiState(ListeningContrastsCatalog.defaultContrasts.first())
             scene.render().close()
             assertTrue(scene.nodes().none { it.matches("Play my recording") })
         }
@@ -242,9 +308,9 @@ class ArticulatorSelectionUiTest {
         override fun playRecording() { recordingPlays++ }
         var examplePlays = 0
         var lastPlayedFirst: Boolean? = null
-        override val state = MutableStateFlow(ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first()))
+        override val state = MutableStateFlow(ArticulatorLabUiState(ListeningContrastsCatalog.defaultContrasts.first()))
         override fun selectContrast(contrastId: String) {
-            state.value = ArticulatorLabUiState(VowelContrastsCatalog.getContrastById(contrastId)!!)
+            state.value = ArticulatorLabUiState(ListeningContrastsCatalog.getContrastById(contrastId)!!)
         }
         override fun switchTargetPhoneme(isPhoneme1: Boolean) { state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1) }
         override fun toggleRecording() { recordingToggles++ }
