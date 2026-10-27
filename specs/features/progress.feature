@@ -19,11 +19,18 @@ Feature: Persistent listening and speaking progress
 
   Scenario: Failed saves can be retried
     Given a practice result cannot be saved
-    Then the result remains queued while the app stays open
+    Then the result is staged durably when local storage permits
     And a retry action and unsaved-result message are shown
     When saving succeeds after a retry
     Then the result is saved once
     And listening mastery is not applied twice
+
+  Scenario: Durably staged saves recover after restart
+    Given a practice result was staged but could not be applied
+    When the app is reopened
+    Then the result is retried from the durable queue
+    And a previously committed result is not applied twice
+    But if staging itself fails the learner is told to keep the app open and retry
 
   Scenario: Failed reads preserve visible progress
     Given Progress has successfully loaded saved totals
@@ -121,3 +128,31 @@ Feature: Persistent listening and speaking progress
     Then a filtered empty state offers a way to clear the filters
     When the filters change
     Then history browsing starts from the newest matching results
+
+  Scenario: History updates avoid reloading unaffected records
+    Given a loaded progress snapshot
+    When a new practice result is saved
+    Then changed database rows are read consistently with their review updates
+    And unaffected history lists are reused
+    And listening counts and sound patterns are updated from changed answers
+
+  Scenario: Portable backup and reset
+    When the learner exports progress
+    Then all saved results and review schedules are written to a versioned JSON file
+    And filters do not restrict the backup
+    And audio and unsaved results are excluded
+    When the learner confirms importing a valid backup
+    Then identical records are merged once and conflicting records reject the entire import
+    When the learner cancels resetting progress
+    Then no data changes
+    When the learner confirms resetting progress
+    Then saved results, schedules, and pending saves are removed atomically
+    And exercises and settings remain available
+
+  Scenario: Stories and Rhythm have separate progress
+    Given a real voiced recording completes with a valid evaluation in Stories or Rhythm
+    Then its score and target are saved in that module's history
+    And listening accuracy, streaks, reviews, and speaking summaries are unchanged
+    And demonstrations, cancelled evaluations, silence, and invalid scores are excluded
+    When the learner chooses a module practice action in Progress
+    Then the corresponding story or rhythm pattern opens

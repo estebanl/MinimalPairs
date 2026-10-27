@@ -38,6 +38,7 @@ data class ProgressState(
     val hasLoadedProgress: Boolean = false,
     val error: String? = null,
     val pendingAnswers: Int = 0,
+    val durablePendingAnswers: Int = 0,
     val isSaving: Boolean = false,
     val canRetrySave: Boolean = false,
     val canRetryLoad: Boolean = false,
@@ -51,6 +52,8 @@ data class ProgressState(
     val activity: PracticeActivity = PracticeActivity(),
     val reviews: ReviewSchedule = ReviewSchedule(),
     val speaking: List<SpeakingRecordEntity> = emptyList(),
+    val modules: List<ModulePracticeRecordEntity> = emptyList(),
+    val moduleSummaries: List<ModuleTargetSummary> = emptyList(),
     val speakingSummaries: List<SpeakingSoundSummary> = emptyList(),
     val nowEpochMs: Long = Clock.System.now().toEpochMilliseconds()
 ) {
@@ -119,14 +122,16 @@ class ProgressRepository(
     refresh: Flow<Unit> = reviewRefreshes(),
     aggregationDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private data class PendingAnswer(val trial: TrialRecordEntity? = null, val quality: Int = 0, val speaking: SpeakingRecordEntity? = null)
-    private data class SaveStatus(val pending: Int, val saving: Boolean, val failed: Boolean)
-    private val pending = MutableStateFlow<List<PendingAnswer>>(emptyList())
+    private data class PendingEntry(val write: PendingProgressWrite, val durable: Boolean = false)
+    private data class SaveStatus(val pending: Int, val durable: Int, val saving: Boolean, val failed: Boolean, val recoveryFailed: Boolean)
+    private val pending = MutableStateFlow<List<PendingEntry>>(emptyList())
+    private val recoveryFailed = MutableStateFlow(false)
+    private var recoveredPending = false
     private val saving = MutableStateFlow(false)
     private val saveFailed = MutableStateFlow(false)
     private val saveMutex = Mutex()
-    private val saveStatus = combine(pending, saving, saveFailed) { answers, active, failed ->
-        SaveStatus(answers.size, active, failed)
+    private val saveStatus = combine(pending, saving, saveFailed, recoveryFailed) { answers, active, failed, recoveryError ->
+        SaveStatus(answers.size, answers.count { it.durable }, active, failed, recoveryError)
     }
     private data class LoadedSnapshot(
         val snapshot: ProgressSnapshot? = null,
@@ -153,9 +158,10 @@ class ProgressRepository(
         }
     }
     private var lastAggregated: LoadedProgress? = null
+    private val aggregator = ProgressAggregator()
     private val progress = combine(snapshots, calendar, filters) { loaded, day, selected ->
         try {
-            val summary = loaded.snapshot?.let { summarizeFilteredProgress(it, day, selected, nowEpochMs()) }
+            val summary = loaded.snapshot?.let { aggregator.summarize(it, day, selected, nowEpochMs()) }
                 ?: ProgressState(loading = !loaded.canRetryLoad, filters = selected)
             LoadedProgress(summary.copy(
                 isRefreshing = loaded.isRefreshing,
@@ -179,31 +185,80 @@ class ProgressRepository(
         // Read the wall clock on every data/status update, not just on the periodic tick.
         val now = nowEpochMs()
         val progress = loaded.progress
-        val saveMessage = if (saves.failed && saves.pending > 0)
-            "${saves.pending} ${if (saves.pending == 1) "practice result hasn't" else "practice results haven't"} been saved. Free up device storage, then retry. Unsaved results are kept only while this app stays open."
-        else null
+        val saveMessage = when {
+            saves.recoveryFailed -> "Couldn't restore pending practice results. Retry saving to recover them."
+            saves.failed && saves.pending > 0 -> {
+                val durability = if (saves.durable == saves.pending) "These results are stored on this device and will be retried when the app reopens."
+                    else "${saves.pending - saves.durable} pending results are not yet stored safely. Keep the app open and retry."
+                "${saves.pending} ${if (saves.pending == 1) "practice result hasn't" else "practice results haven't"} been added to progress. Free up device storage, then retry. $durability"
+            }
+            else -> null
+        }
         progress.copy(
             reviews = reviewSchedule(loaded.cards, now),
             nowEpochMs = now,
             error = listOfNotNull(progress.error, saveMessage).joinToString("\n").ifEmpty { null },
             pendingAnswers = saves.pending,
+            durablePendingAnswers = saves.durable,
             isSaving = saves.saving,
-            canRetrySave = saves.failed && saves.pending > 0
+            canRetrySave = saves.recoveryFailed || (saves.failed && saves.pending > 0)
         )
     }.stateIn(scope, SharingStarted.Eagerly, ProgressState())
 
     fun record(trial: TrialRecordEntity, quality: Int) {
         // Negative IDs leave SQLite's positive auto-generated ID sequence untouched.
         val identified = if (trial.id == 0L) trial.copy(id = Random.nextLong(Long.MIN_VALUE, 0)) else trial
-        pending.update { it + PendingAnswer(identified, quality) }
+        enqueue(PendingProgressWrite(trial = identified, quality = quality))
         drainPending()
     }
 
     fun recordSpeaking(record: SpeakingRecordEntity) {
         require(record.score.isFinite() && record.score in 0f..100f && record.durationMs > 0)
         val identified = if (record.id == 0L) record.copy(id = Random.nextLong(Long.MIN_VALUE, 0)) else record
-        pending.update { it + PendingAnswer(speaking = identified) }
+        enqueue(PendingProgressWrite(speaking = identified))
         drainPending()
+    }
+
+    init { drainPending() }
+
+    fun recordModule(record: ModulePracticeRecordEntity) {
+        require(record.module in setOf("STORIES", "RHYTHM") && record.score.isFinite() && record.score in 0f..100f && record.durationMs > 0)
+        val identified = if (record.id == 0L) record.copy(id = Random.nextLong(Long.MIN_VALUE, 0)) else record
+        enqueue(PendingProgressWrite(module = identified))
+        drainPending()
+    }
+
+    private fun enqueue(write: PendingProgressWrite) {
+        pending.update { entries ->
+            val existing = entries.firstOrNull { it.write.key == write.key }
+            check(existing == null || existing.write == write) { "Pending result ID collision" }
+            if (existing == null) entries + PendingEntry(write) else entries
+        }
+    }
+
+    suspend fun exportSnapshot(): ProgressSnapshot = saveMutex.withLock {
+        check(recoveredPending && !recoveryFailed.value && pending.value.isEmpty()) { "Save pending results before exporting progress" }
+        store.exportSnapshot()
+    }
+
+    suspend fun importSnapshot(snapshot: ProgressSnapshot) = saveMutex.withLock {
+        check(recoveredPending && !recoveryFailed.value && pending.value.isEmpty()) { "Save pending results before importing progress" }
+        com.minimalpairs.app.data.backup.ProgressBackupCodec.validate(snapshot)
+        store.importSnapshot(snapshot)
+    }
+
+    suspend fun resetProgress() = saveMutex.withLock {
+        // Clearing the durable queue and visible data is one database transaction.
+        // Holding this lock prevents an old in-memory write from replaying afterward.
+        val erasedKeys = pending.value.map { it.write.key }.toSet()
+        store.resetProgress()
+        pending.update { entries -> entries.filterNot { it.write.key in erasedKeys } }
+        recoveredPending = true
+        recoveryFailed.value = false
+        saveFailed.value = false
+        lastSnapshot = null
+        lastAggregated = null
+        reload.update { it + 1 }
     }
 
     fun retrySaves() = drainPending()
@@ -224,19 +279,57 @@ class ProgressRepository(
             // Finish accepted writes even when the exercise or root is leaving.
             withContext(NonCancellable) {
                 saveMutex.withLock {
-                    if (pending.value.isEmpty()) return@withLock
                     saving.value = true
                     try {
-                        while (true) {
-                            val answer = pending.value.firstOrNull() ?: break
+                        if (!recoveredPending) {
                             try {
-                                if (answer.speaking != null) store.recordSpeaking(answer.speaking)
-                                else store.record(answer.trial!!, answer.quality)
+                                val restored = store.readPending().map { PendingEntry(it, durable = true) }
+                                pending.update { current ->
+                                    val restoredByKey = restored.associateBy { it.write.key }
+                                    current.forEach { entry ->
+                                        val saved = restoredByKey[entry.write.key]
+                                        check(saved == null || saved.write == entry.write) { "Pending result ID collision" }
+                                    }
+                                    restored + current.filterNot { it.write.key in restoredByKey }
+                                }
+                                recoveredPending = true
+                                recoveryFailed.value = false
+                            } catch (_: Exception) {
+                                recoveryFailed.value = true
+                                return@withLock
+                            }
+                        }
+                        // Stage every accepted result before processing, so a failed first
+                        // result cannot leave later results unnecessarily memory-only.
+                        for (entry in pending.value) {
+                            if (!entry.durable) {
+                                try {
+                                    val durable = store.stage(entry.write)
+                                    if (durable) pending.update { entries -> entries.map {
+                                        if (it.write.key == entry.write.key) it.copy(durable = true) else it
+                                    } }
+                                } catch (_: Exception) {
+                                    saveFailed.value = true
+                                    return@withLock
+                                }
+                            }
+                        }
+                        while (true) {
+                            val entry = pending.value.firstOrNull() ?: break
+                            try {
+                                // Entries may arrive while staging/finishing another entry.
+                                if (!entry.durable) {
+                                    val durable = store.stage(entry.write)
+                                    if (durable) pending.update { entries -> entries.map {
+                                        if (it.write.key == entry.write.key) it.copy(durable = true) else it
+                                    } }
+                                }
+                                store.finish(entry.write)
                             } catch (_: Exception) {
                                 saveFailed.value = true
                                 return@withLock
                             }
-                            pending.update { it.drop(1) }
+                            pending.update { entries -> entries.filterNot { it.write.key == entry.write.key } }
                         }
                         saveFailed.value = false
                     } finally {

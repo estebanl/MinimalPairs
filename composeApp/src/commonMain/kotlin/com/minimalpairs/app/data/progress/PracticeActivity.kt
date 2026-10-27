@@ -29,10 +29,15 @@ data class PracticeCalendar(val today: LocalDate, val zone: TimeZone) {
 }
 
 fun summarizeActivity(trials: List<TrialRecordEntity>, calendar: PracticeCalendar): PracticeActivity {
-    val today = calendar.today.toEpochDays()
     val counts = trials.groupingBy {
         Instant.fromEpochMilliseconds(it.timestampEpochMs).toLocalDateTime(calendar.zone).date.toEpochDays()
-    }.eachCount().filterKeys { it <= today }
+    }.eachCount()
+    return summarizeActivityCounts(counts, calendar)
+}
+
+internal fun summarizeActivityCounts(allCounts: Map<Long, Int>, calendar: PracticeCalendar): PracticeActivity {
+    val today = calendar.today.toEpochDays()
+    val counts = allCounts.filter { (day, count) -> day <= today && count > 0 }
     val active = counts.keys.sorted()
     var longest = 0
     var run = 0

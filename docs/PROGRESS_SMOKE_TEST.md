@@ -109,3 +109,43 @@ saving, physical-device behavior, iOS Dynamic Type/VoiceOver operation, and
 runtime failed-write recovery or disk-full behavior. Synthetic score persistence
 does not establish that the recording/scoring pipeline works. Android host tests
 and compilation do not establish Android device runtime behavior.
+
+## Backup controls and schema 3 verification — 2026-10-26
+
+An updated simulator build was installed over the same isolated fixture, without
+uninstalling the app or clearing its database. The Xcode build passed. Progress
+retained 45 listening answers, 45 speaking scores, and the one-day listening
+streak. A read-only SQLite check confirmed schema version 3, with the original
+45 rows in each history and empty module-result and pending-write tables.
+
+The following native iOS flows passed:
+
+1. Expand **Manage progress** and choose **Export backup**.
+2. In the native document picker, save to **On My iPhone**. The app reports
+   **Backup exported.** No cloud service or account is involved.
+3. Choose **Import backup** and select that JSON file from the native picker.
+   The app validates it and previews **45 listening answers, 45 speaking scores,
+   and 0 Stories/Rhythm results** before any merge. Choose **Cancel**.
+4. Choose **Reset all progress**. The destructive-action confirmation explains
+   the affected histories, schedules, and pending saves. Choose **Cancel**.
+5. Confirm through read-only SQLite queries that both original histories still
+   contain 45 records and the pending-write queue is empty.
+
+Screenshots: `build/reports/progress/ios-backup-import-preview.png` and
+`build/reports/progress/ios-reset-confirmation.png`. The exported synthetic backup
+remains in the isolated simulator's local Files storage for follow-up checks.
+
+This runtime check validates file export, file selection, backup decoding and
+preview, migration, and cancellation safety. Actual import merging and reset
+execution are covered by automated transactional tests; neither destructive
+reset nor actual import was performed through the simulator UI. Android/JVM
+native file dialogs, cloud synchronization, and cross-device transfer were not
+runtime-tested in this session.
+
+Final integrated validation after storage and module review fixes passed 138 JVM
+tests and 88 Android host tests, with zero failures or skips. Android and iOS
+simulator compilation passed. These tests cover v1/v2 migration to v3, durable
+queue replay and idempotence, staging failure, reset concurrency, incremental
+snapshots, filter/cache equivalence, backup conflicts, and module recording and
+playback cancellation. Actual microphone capture and scoring on a device remain
+unverified.

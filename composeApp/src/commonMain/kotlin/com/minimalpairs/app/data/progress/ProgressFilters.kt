@@ -1,6 +1,7 @@
 package com.minimalpairs.app.data.progress
 
 import com.minimalpairs.app.data.local.ProgressSnapshot
+import com.minimalpairs.app.data.local.ModulePracticeRecordEntity
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -36,10 +37,19 @@ fun summarizeFilteredProgress(
     val trials = snapshot.trials.filter { filters.includes(it.contrastId, it.timestampEpochMs, calendar) }
     val speaking = snapshot.speaking.filter { filters.includes(it.contrastId, it.timestampEpochMs, calendar) }
         .sortedWith(compareByDescending<com.minimalpairs.app.data.local.SpeakingRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
+    val modules = filterModuleRecords(snapshot.modules, calendar, filters)
     return summarizeProgress(trials, snapshot.cards, calendar, nowEpochMs).copy(
         filters = filters,
         activity = summarizeActivity(snapshot.trials, calendar),
         speaking = speaking,
-        speakingSummaries = summarizeSpeaking(speaking)
+        speakingSummaries = summarizeSpeaking(speaking),
+        modules = modules,
+        moduleSummaries = summarizeModules(modules)
     )
 }
+
+internal fun filterModuleRecords(records: List<ModulePracticeRecordEntity>, calendar: PracticeCalendar, filters: ProgressFilters): List<ModulePracticeRecordEntity> = records
+    .filter { record ->
+        val applicable = if (record.module == "RHYTHM") filters.copy(contrastId = null) else filters
+        applicable.includes(record.contrastId.orEmpty(), record.timestampEpochMs, calendar)
+    }.sortedWith(compareByDescending<ModulePracticeRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })

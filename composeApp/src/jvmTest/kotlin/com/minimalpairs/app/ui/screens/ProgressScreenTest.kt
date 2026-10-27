@@ -11,6 +11,7 @@ import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.local.TrialRecordEntity
 import com.minimalpairs.app.data.local.Sm2CardEntity
 import com.minimalpairs.app.data.local.SpeakingRecordEntity
+import com.minimalpairs.app.data.local.ModulePracticeRecordEntity
 import com.minimalpairs.app.data.progress.*
 import com.minimalpairs.app.ui.navigation.ConfusionMatrixComponent
 import com.minimalpairs.app.ui.theme.MinimalPairsTheme
@@ -31,11 +32,15 @@ class ProgressScreenTest {
                 var retries = 0
                 var reloads = 0
                 var speakingStarts = 0
+                var selectedStory: String? = null
+                var selectedRhythm: String? = null
                 val component = object : ConfusionMatrixComponent {
                     override val state = MutableStateFlow(ProgressState())
                     override fun practiceContrast(id: String) { selected = id }
                     override fun practiceSpeaking(id: String, phoneme: String) { selected = id; selectedPhoneme = phoneme }
                     override fun startSpeaking() { speakingStarts++ }
+                    override fun practiceStory(id: String) { selectedStory = id }
+                    override fun practiceRhythm(id: String) { selectedRhythm = id }
                     override fun onBack() {}
                     override fun retrySaves() { retries++ }
                     override fun retryLoading() { reloads++ }
@@ -209,6 +214,20 @@ class ProgressScreenTest {
                     assertEquals("ɪ", selectedPhoneme)
                     click("Show fewer sounds")
                     assertFalse(nodes().any { it.text() == "Up 40 points from the previous five recordings." })
+                    val modules = listOf(
+                        ModulePracticeRecordEntity(1, "STORIES", "sheep_vs_ship", "Story practice", "i_vs_I", 80f, true, 200, 1000),
+                        ModulePracticeRecordEntity(2, "RHYTHM", "ship_or_sheep_question", "Rhythm practice", null, 70f, true, 200, 2000))
+                    component.state.value = ProgressState(loading = false, hasLoadedProgress = true,
+                        modules = modules, moduleSummaries = summarizeModules(modules))
+                    settle()
+                    assertTrue(nodes().any { it.text() == "No listening answers yet." })
+                    assertFalse(nodes().any { it.text() == "Your progress starts here" })
+                    click("Show stories progress")
+                    click("Practice Story practice")
+                    assertEquals("sheep_vs_ship", selectedStory)
+                    click("Show rhythm progress")
+                    click("Practice Rhythm practice")
+                    assertEquals("ship_or_sheep_question", selectedRhythm)
                 } finally { scene.close() }
             } catch (error: Throwable) { failure = error }
         }

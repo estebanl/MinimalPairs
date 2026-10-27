@@ -81,7 +81,7 @@ fun ConfusionMatrixScreen(
                 Text("Loading your progress…", style = MaterialTheme.typography.bodyLarge)
             } else if (state.attempts == 0 && state.filters.isActive && state.error == null) {
                 Text("No listening answers match these filters.", style = MaterialTheme.typography.bodyLarge)
-            } else if (state.attempts == 0 && state.speaking.isNotEmpty() && state.error == null) {
+            } else if (state.attempts == 0 && (state.speaking.isNotEmpty() || state.modules.isNotEmpty()) && state.error == null) {
                 Text("No listening answers yet.", style = MaterialTheme.typography.bodyLarge)
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Start listening") }
             } else if (state.attempts == 0 && state.error == null && state.pendingAnswers == 0) {
@@ -169,6 +169,32 @@ fun ConfusionMatrixScreen(
                             component::startSpeaking, component::practiceSpeaking, historyKey = state.filters.historyKey)
                     }
                 }
+            }
+            if (state.hasLoadedProgress) {
+                listOf("STORIES" to "Stories", "RHYTHM" to "Rhythm").forEach { (module, title) ->
+                    val records = state.modules.filter { it.module == module }
+                    ProgressDetailSection("$title progress", "${records.size} scored attempts · separate from listening.") {
+                        if (module == "RHYTHM") {
+                            Text("Uses the selected date range. Contrast filters do not apply to Rhythm.", style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (records.isEmpty() && (state.filters.dateRange != com.minimalpairs.app.data.progress.ProgressDateRange.ALL_TIME ||
+                                module == "STORIES" && state.filters.contrastId != null)) {
+                            Text("No $title attempts match these filters.")
+                        } else {
+                            ModuleProgressCard(title, records,
+                                state.moduleSummaries.filter { it.latest.module == module }, state.nowEpochMs,
+                                historyKey = if (module == "RHYTHM") state.filters.dateRange.name else state.filters.historyKey,
+                                onPractice = if (module == "STORIES") component::practiceStory else component::practiceRhythm)
+                            if (records.isEmpty()) {
+                                Button(onClick = { if (module == "STORIES") component.practiceStory("") else component.practiceRhythm("") },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Start $title") }
+                            }
+                        }
+                    }
+                }
+            }
+            ProgressDetailSection("Manage progress", "Export, import, or reset saved practice.") {
+                ProgressDataControls(state.pendingAnswers, component::exportProgress, component::importProgress, component::resetProgress)
             }
         }
     }

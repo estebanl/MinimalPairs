@@ -155,18 +155,27 @@ class DefaultRootComponent(
                 )
             )
             is RootConfig.ConfusionMatrix -> RootChild.ConfusionMatrix(
-                DefaultConfusionMatrixComponent(componentContext, progressRepository, ::onNavigateToEarTrainer, ::onBack, ::onNavigateToArticulatorLab)
+                DefaultConfusionMatrixComponent(componentContext, progressRepository, ::onNavigateToEarTrainer, ::onBack, ::onNavigateToArticulatorLab,
+                    onStory = { id ->
+                        onNavigateToMeaningTrap()
+                        (childStack.value.active.instance as? RootChild.MeaningTrap)?.component?.selectStory(id)
+                    },
+                    onRhythm = { id ->
+                        onNavigateToProsody()
+                        (childStack.value.active.instance as? RootChild.Prosody)?.component?.selectPattern(id)
+                    })
             )
             is RootConfig.MeaningTrap -> RootChild.MeaningTrap(
                 DefaultMeaningTrapComponent(
                     componentContext = componentContext,
                     confusionTracker = confusionTracker,
                     scorerApi = scorerApi,
-                    onBackClicked = ::onBack
+                    onBackClicked = ::onBack,
+                    progressRepository = progressRepository
                 )
             )
             is RootConfig.Prosody -> RootChild.Prosody(
-                DefaultProsodyComponent(componentContext, ::onBack)
+                DefaultProsodyComponent(componentContext, ::onBack, progressRepository = progressRepository)
             )
         }
 
@@ -720,6 +729,11 @@ interface ConfusionMatrixComponent {
     fun practiceContrast(id: String)
     fun practiceSpeaking(id: String, phoneme: String)
     fun startSpeaking()
+    fun practiceStory(id: String) {}
+    fun practiceRhythm(id: String) {}
+    suspend fun exportProgress(): ProgressSnapshot = error("Progress export is unavailable")
+    suspend fun importProgress(snapshot: ProgressSnapshot) { error("Progress import is unavailable") }
+    suspend fun resetProgress() { error("Progress reset is unavailable") }
     fun setDateRange(range: ProgressDateRange) {}
     fun setContrastFilter(contrastId: String?) {}
     fun clearFilters() {}
@@ -733,12 +747,19 @@ class DefaultConfusionMatrixComponent(
     private val repository: ProgressRepository,
     private val onPractice: (String) -> Unit,
     private val onBackClicked: () -> Unit,
-    private val onSpeak: (String?, String?) -> Unit
+    private val onSpeak: (String?, String?) -> Unit,
+    private val onStory: (String) -> Unit = {},
+    private val onRhythm: (String) -> Unit = {}
 ) : ConfusionMatrixComponent, ComponentContext by componentContext {
     override val state = repository.state
     override fun practiceContrast(id: String) = onPractice(id)
     override fun practiceSpeaking(id: String, phoneme: String) = onSpeak(id, phoneme)
     override fun startSpeaking() = onSpeak(null, null)
+    override fun practiceStory(id: String) = onStory(id)
+    override fun practiceRhythm(id: String) = onRhythm(id)
+    override suspend fun exportProgress() = repository.exportSnapshot()
+    override suspend fun importProgress(snapshot: ProgressSnapshot) = repository.importSnapshot(snapshot)
+    override suspend fun resetProgress() = repository.resetProgress()
     override fun setDateRange(range: ProgressDateRange) = repository.setDateRange(range)
     override fun setContrastFilter(contrastId: String?) = repository.setContrastFilter(contrastId)
     override fun clearFilters() = repository.clearFilters()
@@ -776,100 +797,97 @@ class DefaultMeaningTrapComponent(
     private val scorerApi: PhonemeScorerApi,
     private val onBackClicked: () -> Unit,
     private val recorder: AudioRecorder = createAudioRecorder(),
-    private val audioPlayer: AudioPlayer = createAudioPlayer()
+    private val audioPlayer: AudioPlayer = createAudioPlayer(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val progressRepository: ProgressRepository? = null,
+    private val onScored: (ModulePracticeRecordEntity) -> Unit = { progressRepository?.recordModule(it) }
 ) : MeaningTrapComponent, ComponentContext by componentContext {
 
     override val availableStories: List<com.minimalpairs.app.core.model.ComicStory> =
         com.minimalpairs.app.data.catalog.MeaningTrapCatalog.stories
 
-    private val scope = CoroutineScope(Dispatchers.Default)
-    private val accumulatedSamples = mutableListOf<Short>()
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val _state = MutableStateFlow(
         MeaningTrapUiState(activeStory = availableStories.first())
     )
     override val state: StateFlow<MeaningTrapUiState> = _state.asStateFlow()
 
+    private val playback = ModulePlaybackSession(scope, audioPlayer) { playing ->
+        _state.value = _state.value.copy(isPlayingAudio = playing)
+    }
+    private val recording = ModuleRecordingSession(scope, recorder,
+        onRecording = { active -> _state.value = _state.value.copy(isRecording = active) },
+        onError = { message -> _state.value = _state.value.copy(feedbackText = message) },
+        stopPlayback = playback::stop)
+
     init {
-        scope.launch {
-            recorder.prepare()
-        }
+        lifecycle.doOnStop { recording.cancel() }
+        lifecycle.doOnDestroy { recording.cancel(); scope.cancel() }
     }
 
     override fun selectStory(storyId: String) {
         val story = availableStories.firstOrNull { it.id == storyId } ?: return
+        recording.cancel()
         _state.value = MeaningTrapUiState(activeStory = story)
         playPromptAudio()
     }
 
+    private fun playStoryAudio(load: suspend () -> ShortArray?) {
+        playback.play({ !_state.value.isRecording && !recording.busy }, load)
+    }
+
     override fun playPromptAudio() {
-        scope.launch {
-            val storyId = _state.value.activeStory.id
-            val pcm = ElevenLabsAudioRepository.loadMeaningTrapPromptPcm(storyId) ?: return@launch
-            _state.value = _state.value.copy(isPlayingAudio = true)
-            audioPlayer.play(pcm) {
-                _state.value = _state.value.copy(isPlayingAudio = false)
-            }
-        }
+        val storyId = _state.value.activeStory.id
+        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapPromptPcm(storyId) }
     }
 
     override fun playTargetPhraseAudio() {
-        scope.launch {
-            val storyId = _state.value.activeStory.id
-            val pcm = ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId) ?: return@launch
-            _state.value = _state.value.copy(isPlayingAudio = true)
-            audioPlayer.play(pcm) {
-                _state.value = _state.value.copy(isPlayingAudio = false)
-            }
-        }
+        val storyId = _state.value.activeStory.id
+        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId) }
     }
 
     override fun playOutcomeAudio() {
         val branch = _state.value.branch
         if (branch == com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING) return
+        val storyId = _state.value.activeStory.id
         val isSuccess = branch == com.minimalpairs.app.core.model.MeaningTrapBranch.INTENDED_SUCCESS
-        scope.launch {
-            val storyId = _state.value.activeStory.id
-            val pcm = ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, isSuccess) ?: return@launch
-            _state.value = _state.value.copy(isPlayingAudio = true)
-            audioPlayer.play(pcm) {
-                _state.value = _state.value.copy(isPlayingAudio = false)
-            }
-        }
+        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, isSuccess) }
     }
 
     override fun toggleRecording() {
-        scope.launch {
-            if (_state.value.isRecording) {
-                recorder.stop()
-                _state.value = _state.value.copy(isRecording = false)
-                val samples = accumulatedSamples.toShortArray()
-                if (samples.isNotEmpty()) {
-                    val currentStory = _state.value.activeStory
-                    val result = scorerApi.scoreAudio(
-                        samples,
-                        currentStory.intendedWord,
-                        currentStory.intendedIpa,
-                        currentStory.contrastId
-                    )
-                    val isSuccess = result.overallScore >= 70f
-                    applyEvaluationResult(isSuccess, result.overallScore)
-                }
-            } else {
-                accumulatedSamples.clear()
-                _state.value = _state.value.copy(
-                    isRecording = true,
-                    branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
-                    feedbackText = "Listening... Speak the phrase clearly!"
-                )
-                recorder.start { buffer ->
-                    accumulatedSamples.addAll(buffer.toList())
-                }
+        if (recording.busy) return
+        val story = _state.value.activeStory
+        if (!_state.value.isRecording) _state.value = _state.value.copy(
+            branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
+            gopScore = null, feedbackText = "Listening… Speak the phrase clearly.")
+        recording.toggle { samples ->
+            val durationMs = samples.size * 1000 / recorder.sampleRate
+            val voiced = withContext(analysisDispatcher) {
+                com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples).any { it.isVoiced }
             }
+            if (!voiced || durationMs < 80) {
+                _state.value = _state.value.copy(feedbackText = "No clear voice detected. Try the phrase again.")
+                return@toggle
+            }
+            val result = withContext(analysisDispatcher) {
+                scorerApi.scoreAudio(samples, story.intendedWord, story.intendedIpa, story.contrastId)
+            }
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            if (!result.overallScore.isFinite() || result.overallScore !in 0f..100f) {
+                _state.value = _state.value.copy(feedbackText = "Couldn't score this recording. Please try again.")
+                return@toggle
+            }
+            val success = result.overallScore >= 70f
+            onScored(ModulePracticeRecordEntity(0, "STORIES", story.id, story.title, story.contrastId,
+                result.overallScore, success, durationMs, Clock.System.now().toEpochMilliseconds()))
+            applyEvaluationResult(success, result.overallScore)
         }
     }
 
     override fun triggerSimulatedOutcome(isCorrect: Boolean) {
+        recording.cancel()
         applyEvaluationResult(isCorrect, if (isCorrect) 92.5f else 48.0f)
     }
 
@@ -897,6 +915,7 @@ class DefaultMeaningTrapComponent(
     }
 
     override fun resetCurrentStory() {
+        recording.cancel()
         _state.value = _state.value.copy(
             branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
             gopScore = null,
@@ -904,7 +923,7 @@ class DefaultMeaningTrapComponent(
         )
     }
 
-    override fun onBack() = onBackClicked()
+    override fun onBack() { recording.cancel(); onBackClicked() }
 }
 
 // --- Module 4: Prosody Component ---
@@ -912,7 +931,8 @@ data class ProsodyUiState(
     val activePattern: com.minimalpairs.app.core.model.ProsodyPattern,
     val isRecording: Boolean = false,
     val isPlayingReference: Boolean = false,
-    val evaluation: com.minimalpairs.app.core.dsp.ProsodyEvaluation? = null
+    val evaluation: com.minimalpairs.app.core.dsp.ProsodyEvaluation? = null,
+    val error: String? = null
 )
 
 interface ProsodyComponent {
@@ -930,35 +950,45 @@ class DefaultProsodyComponent(
     componentContext: ComponentContext,
     private val onBackClicked: () -> Unit,
     private val recorder: AudioRecorder = createAudioRecorder(),
-    private val audioPlayer: AudioPlayer = createAudioPlayer()
+    private val audioPlayer: AudioPlayer = createAudioPlayer(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val progressRepository: ProgressRepository? = null,
+    private val onScored: (ModulePracticeRecordEntity) -> Unit = { progressRepository?.recordModule(it) }
 ) : ProsodyComponent, ComponentContext by componentContext {
 
     override val availablePatterns: List<com.minimalpairs.app.core.model.ProsodyPattern> =
         com.minimalpairs.app.data.catalog.ProsodyCatalog.patterns
 
-    private val scope = CoroutineScope(Dispatchers.Default)
-    private val accumulatedSamples = mutableListOf<Short>()
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val _state = MutableStateFlow(
         ProsodyUiState(activePattern = availablePatterns.first())
     )
     override val state: StateFlow<ProsodyUiState> = _state.asStateFlow()
 
+    private val playback = ModulePlaybackSession(scope, audioPlayer) { playing ->
+        _state.value = _state.value.copy(isPlayingReference = playing)
+    }
+    private val recording = ModuleRecordingSession(scope, recorder,
+        onRecording = { active -> _state.value = _state.value.copy(isRecording = active) },
+        onError = { message -> _state.value = _state.value.copy(error = message) },
+        stopPlayback = playback::stop)
+
     init {
-        scope.launch {
-            recorder.prepare()
-        }
+        lifecycle.doOnStop { recording.cancel() }
+        lifecycle.doOnDestroy { recording.cancel(); scope.cancel() }
     }
 
     override fun selectPattern(patternId: String) {
         val pattern = availablePatterns.firstOrNull { it.id == patternId } ?: return
+        recording.cancel()
         _state.value = ProsodyUiState(activePattern = pattern)
     }
 
     override fun playReferenceAudio() {
-        scope.launch {
-            _state.value = _state.value.copy(isPlayingReference = true)
-            val pattern = _state.value.activePattern
+        val pattern = _state.value.activePattern
+        playback.play({ !_state.value.isRecording && !recording.busy }) {
             val elevenLabsSpeech = ElevenLabsAudioRepository.loadProsodyPcm(pattern.id)
             val speechSamples = if (elevenLabsSpeech != null && elevenLabsSpeech.isNotEmpty()) {
                 elevenLabsSpeech
@@ -975,9 +1005,7 @@ class DefaultProsodyComponent(
                 syntheticSpeech
             }
 
-            audioPlayer.play(speechSamples) {
-                _state.value = _state.value.copy(isPlayingReference = false)
-            }
+            speechSamples
         }
     }
 
@@ -998,30 +1026,32 @@ class DefaultProsodyComponent(
     }
 
     override fun toggleRecording() {
-        scope.launch {
-            if (_state.value.isRecording) {
-                recorder.stop()
-                _state.value = _state.value.copy(isRecording = false)
-                val samples = accumulatedSamples.toShortArray()
-                if (samples.isNotEmpty()) {
-                    val frames = com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples)
-                    val eval = com.minimalpairs.app.core.dsp.PitchTracker.evaluateProsody(
-                        frames,
-                        _state.value.activePattern.referenceContour
-                    )
-                    _state.value = _state.value.copy(evaluation = eval)
-                }
-            } else {
-                accumulatedSamples.clear()
-                _state.value = _state.value.copy(isRecording = true, evaluation = null)
-                recorder.start { buffer ->
-                    accumulatedSamples.addAll(buffer.toList())
-                }
+        if (recording.busy) return
+        val pattern = _state.value.activePattern
+        if (!_state.value.isRecording) _state.value = _state.value.copy(evaluation = null, error = null)
+        recording.toggle { samples ->
+            val durationMs = samples.size * 1000 / recorder.sampleRate
+            val frames = withContext(analysisDispatcher) { com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples) }
+            if (durationMs < 80 || frames.none { it.isVoiced }) {
+                _state.value = _state.value.copy(error = "No clear voice detected. Try the sentence again.")
+                return@toggle
             }
+            val eval = withContext(analysisDispatcher) {
+                com.minimalpairs.app.core.dsp.PitchTracker.evaluateProsody(frames, pattern.referenceContour)
+            }
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            if (!eval.overallScore.isFinite() || eval.overallScore !in 0f..100f) {
+                _state.value = _state.value.copy(error = "Couldn't evaluate this recording. Please try again.")
+                return@toggle
+            }
+            onScored(ModulePracticeRecordEntity(0, "RHYTHM", pattern.id, pattern.sentenceText, null,
+                eval.overallScore, eval.overallScore >= 70f, durationMs, Clock.System.now().toEpochMilliseconds()))
+            _state.value = _state.value.copy(evaluation = eval, error = null)
         }
     }
 
     override fun triggerSimulatedProsody(isGoodMatch: Boolean) {
+        recording.cancel()
         val pattern = _state.value.activePattern
         val sampleFrames = mutableListOf<com.minimalpairs.app.core.dsp.PitchFrame>()
         val totalSteps = 100
@@ -1041,8 +1071,9 @@ class DefaultProsodyComponent(
     }
 
     override fun resetEvaluation() {
+        recording.cancel()
         _state.value = _state.value.copy(evaluation = null)
     }
 
-    override fun onBack() = onBackClicked()
+    override fun onBack() { recording.cancel(); onBackClicked() }
 }

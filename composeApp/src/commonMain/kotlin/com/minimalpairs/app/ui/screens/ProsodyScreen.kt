@@ -159,6 +159,8 @@ fun ProsodyScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            state.error?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium) }
+
             PracticeDetails("Explore example rhythms") {
                     Text("These examples are simulated; record your voice for personal feedback.", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                 // Fast Simulation Buttons (Test native vs monotone)
