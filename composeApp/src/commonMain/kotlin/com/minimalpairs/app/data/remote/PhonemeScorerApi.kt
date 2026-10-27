@@ -17,6 +17,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.post
+import io.ktor.client.request.header
 import io.ktor.client.request.setBody
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -25,6 +26,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sqrt
@@ -44,14 +47,20 @@ class PhonemeScorerClient(
     private val baseUrl: String? = defaultPhonemeScorerBaseUrl(),
     private val client: HttpClient = HttpClient {
         expectSuccess = true
-        install(HttpTimeout) { requestTimeoutMillis = 30_000 }
+        followRedirects = false
+        install(HttpTimeout) {
+            requestTimeoutMillis = 120_000
+            socketTimeoutMillis = 120_000
+            connectTimeoutMillis = 30_000
+        }
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
                 isLenient = true
             })
         }
-    }
+    },
+    private val functionKey: String? = defaultPhonemeScorerFunctionKey()
 ) : PhonemeScorerApi {
 
     override suspend fun scoreAudio(
@@ -79,9 +88,14 @@ class PhonemeScorerClient(
         var fallbackMessage: String? = null
         if (!baseUrl.isNullOrBlank()) {
             try {
+                val key = functionKey?.trim()?.takeIf { it.isNotEmpty() }
+                if (key != null && !baseUrl.startsWith("https://", ignoreCase = true)) {
+                    throw PracticeScoringException("A secured phoneme service requires an HTTPS address. No recording was uploaded.")
+                }
                 val wavBytes = WavCodec.encodePcmToWav(audioSamples)
-                val httpResponse = client.post("${baseUrl.trimEnd('/')}/v1/score/phoneme") {
+                suspend fun upload() = client.post("${baseUrl.trimEnd('/')}/v1/score/phoneme") {
                     expectSuccess = false
+                    key?.let { header("x-functions-key", it) }
                     setBody(
                         MultiPartFormDataContent(
                             formData {
@@ -95,6 +109,22 @@ class PhonemeScorerClient(
                             }
                         )
                     )
+                }
+                // Azure can return a gateway error while a zero-replica host starts.
+                // Scoring is stateless; replay the same WAV, with one total deadline.
+                val httpResponse = withTimeoutOrNull(120_000) {
+                    var result = upload()
+                    repeat(7) { attempt ->
+                        if (result.status.value !in setOf(502, 503, 504)) return@withTimeoutOrNull result
+                        result.bodyAsText()
+                        delay(minOf(2_000L shl attempt, 8_000L))
+                        result = upload()
+                    }
+                    result
+                } ?: throw PracticeScoringException(
+                    "The phoneme service is taking too long to start. Try again shortly. No score was saved; your recording can still be replayed.")
+                if (httpResponse.status.value == 401 || httpResponse.status.value == 403) {
+                    throw PracticeScoringException("The phoneme service rejected its access key. Check the scorer configuration and try again. No score was saved; your recording can still be replayed.")
                 }
                 if (consonant && httpResponse.status.value == 400) {
                     val code = runCatching {
@@ -110,6 +140,9 @@ class PhonemeScorerClient(
                         else -> null
                     }
                     if (guidance != null) throw PracticeScoringException("$guidance No score was saved. You can replay your recording.")
+                }
+                if (httpResponse.status.value != 200 && consonant) {
+                    throw PracticeScoringException("The phoneme service returned HTTP ${httpResponse.status.value}. Try again shortly. No score was saved; your recording can still be replayed.")
                 }
                 require(httpResponse.status.value == 200)
                 val response: PhonemeScoringResponse = httpResponse.body()
@@ -237,6 +270,9 @@ class PhonemeScorerClient(
 /** Hosts may set this before creating the root; no endpoint is configured by default. */
 object PhonemeScorerConfiguration {
     var baseUrl: String? = null
+    /** Runtime credential supplied by the host; never bundle it in app resources. */
+    var functionKey: String? = null
 }
 
 expect fun defaultPhonemeScorerBaseUrl(): String?
+expect fun defaultPhonemeScorerFunctionKey(): String?

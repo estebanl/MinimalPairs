@@ -1,0 +1,5 @@
+Public model: facebook/wav2vec2-xlsr-53-espeak-cv-ft
+Revision: 2c733782da5604684829819a5eb744c193fe9398
+Source: https://huggingface.co/facebook/wav2vec2-xlsr-53-espeak-cv-ft/tree/2c733782da5604684829819a5eb744c193fe9398
+License: Apache-2.0, as declared by the pinned upstream model card.
+Weights are redistributed unchanged. Scoring code is separate from the upstream model.

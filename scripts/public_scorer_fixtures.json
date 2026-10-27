@@ -1,0 +1,30 @@
+{
+  "opt/python/3.12.15/lib/python3.12/test/audiodata/pluck-pcm16.wav": {
+    "sha256": "0c7b9ee51db4a46087da7530ade979f38e5de7a2e068b5a58cc9cc543aa8e394",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/audiodata/pluck-pcm16.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/audiodata/pluck-pcm24-ext.wav": {
+    "sha256": "0c7a222a2d24b2ecc8523b399aeaa3dd52b113f0ef7ffe0720f669ca21e133b9",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/audiodata/pluck-pcm24-ext.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/audiodata/pluck-pcm24.wav": {
+    "sha256": "802304af89c305a0d5feb8bf6ba9c7b3abfb6d5e620ba6d4f4d69277ef315e22",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/audiodata/pluck-pcm24.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/audiodata/pluck-pcm32.wav": {
+    "sha256": "ac87068283e5d1d92cfe4dfb2cc50d5ea5341d5ac0efadfa47db48595daafcfc",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/audiodata/pluck-pcm32.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/audiodata/pluck-pcm8.wav": {
+    "sha256": "5b7af05fa928568dc9dbf39845da83a48720e019214a0f250aa5e8de0ebec4bb",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/audiodata/pluck-pcm8.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/sndhdrdata/sndhdr.wav": {
+    "sha256": "54e018785efc750bbbafe910f4b4e4240995b5a2143a4341dc5c1bb73151c1d8",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/sndhdrdata/sndhdr.wav"
+  },
+  "opt/python/3.12.15/lib/python3.12/test/test_email/data/sndhdr.wav": {
+    "sha256": "54e018785efc750bbbafe910f4b4e4240995b5a2143a4341dc5c1bb73151c1d8",
+    "source": "https://raw.githubusercontent.com/python/cpython/v3.12.15/Lib/test/test_email/data/sndhdr.wav"
+  }
+}

@@ -44,9 +44,11 @@ class LiveSpeakScoringTest {
     fun speaksScoresAndRestoresInitialMedialAndFinalConsonants() = runBlocking {
         assumeTrue("Start the local service and set MINIMAL_PAIRS_LIVE_SCORING=1",
             System.getenv("MINIMAL_PAIRS_LIVE_SCORING") == "1")
-        assertEquals("http://127.0.0.1:8000", defaultPhonemeScorerBaseUrl())
+        val expectedUrl = System.getenv("MINIMAL_PAIRS_LIVE_SCORER_EXPECTED_URL") ?: "http://127.0.0.1:8000"
+        assertEquals(expectedUrl, defaultPhonemeScorerBaseUrl())
         withContext(Dispatchers.Main) {
-            val output = File("build/reports/articulator-live").apply { mkdirs() }
+            val output = File(System.getenv("MINIMAL_PAIRS_LIVE_REPORT_DIR") ?: "build/reports/articulator-live").apply { mkdirs() }
+            File(output, "endpoint.txt").writeText(expectedUrl)
             val databaseFile = File(output, "progress-${System.currentTimeMillis()}.db")
             fun open() = createDatabase(Room.databaseBuilder<AppDatabase>(name = databaseFile.absolutePath))
             var database = open()
@@ -67,6 +69,7 @@ class LiveSpeakScoringTest {
                         Case("shoe / measure", "measure", "ʒ"),
                         Case("pear / bear", "rope", "p", pairIndex = 3)
                     )
+                    val scoringTimesMs = linkedMapOf<String, Long>()
                     for ((index, case) in cases.withIndex()) {
                         scene.click("Change sound pair")
                         scene.render(System.nanoTime()).close()
@@ -90,6 +93,7 @@ class LiveSpeakScoringTest {
                         recorder.emit(expected)
                         eventually { component.state.value.liveDurationMs > 0 }
                         scene.render(System.nanoTime()).close()
+                        val scoringStarted = System.nanoTime()
                         scene.click("Stop recording")
                         eventually {
                             val state = component.state.value
@@ -98,6 +102,7 @@ class LiveSpeakScoringTest {
                         val state = component.state.value
                         assertNull(state.error, "${case.word}: ${state.error}")
                         val score = assertNotNull(state.overallGopScore)
+                        scoringTimesMs[case.word] = (System.nanoTime() - scoringStarted) / 1_000_000
                         assertTrue(score in 0f..100f)
                         assertTrue(state.scoringDescription!!.contains("Selected-phoneme model confidence"))
                         assertTrue(state.feedback!!.contains("/${case.phoneme}/"))
@@ -118,6 +123,7 @@ class LiveSpeakScoringTest {
                         repeat(12) { scene.render(System.nanoTime()).close(); delay(25) }
                         scene.render(System.nanoTime()).use { File(output, "${case.word}-score.png").writeBytes(it.encodeToData()!!.bytes) }
                     }
+                    File(output, "scoring-times-ms.json").writeText(Json.encodeToString(scoringTimesMs))
                     // Real HTTP quality rejection must clear the old grade, keep
                     // replay available, and leave Progress untouched.
                     val random = kotlin.random.Random(42)
@@ -167,7 +173,7 @@ class LiveSpeakScoringTest {
     }
 
     private suspend fun eventually(predicate: () -> Boolean) {
-        withTimeout(60_000) { while (!predicate()) delay(25) }
+        withTimeout(150_000) { while (!predicate()) delay(25) }
     }
 
     private data class Case(val menu: String, val word: String, val phoneme: String, val pairIndex: Int = 0)

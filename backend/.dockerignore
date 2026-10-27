@@ -1,0 +1,9 @@
+*
+!app/
+!app/*.py
+!function_app.py
+!host.json
+!requirements*.txt
+!Dockerfile*
+!model-notices/
+!model-notices/*

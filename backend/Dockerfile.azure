@@ -1,0 +1,33 @@
+FROM mcr.microsoft.com/azure-functions/python:4-python3.12@sha256:69582e974d2938abd319e875020869a5ae4751bb2aaa684d37c90407c424b97a AS dependencies
+
+COPY requirements-azure.txt /tmp/requirements-azure.txt
+RUN pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir -r /tmp/requirements-azure.txt
+
+# Download caches/logs stay in this intermediate stage, never in published layers.
+FROM dependencies AS model-download
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='facebook/wav2vec2-xlsr-53-espeak-cv-ft', revision='2c733782da5604684829819a5eb744c193fe9398', local_dir='/download', allow_patterns=['config.json','preprocessor_config.json','vocab.json','pytorch_model.bin','tokenizer_config.json','special_tokens_map.json'])" \
+    && mkdir /model-clean \
+    && cp /download/*.json /download/pytorch_model.bin /model-clean/
+
+FROM dependencies AS runtime
+
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true \
+    FUNCTIONS_WORKER_PROCESS_COUNT=1 \
+    PHONEME_MODEL_DIR=/opt/phoneme-model \
+    PHONEME_MODEL_ID=facebook/wav2vec2-xlsr-53-espeak-cv-ft@2c733782 \
+    OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Public pinned checkpoint only. User recordings are never part of the image.
+COPY --from=model-download /model-clean/ /opt/phoneme-model/
+COPY model-notices/ /opt/phoneme-model/notices/
+ENV HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+
+COPY app/ /home/site/wwwroot/app/
+COPY function_app.py host.json /home/site/wwwroot/
+
+# Fail the image build if the pinned weights cannot be loaded on Linux.
+RUN cd /home/site/wwwroot && python -c "from app.ctc_scorer import get_model; get_model()"

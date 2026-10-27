@@ -1,0 +1,6 @@
+azure-functions>=1.21,<2
+fastapi>=0.110,<1
+python-multipart>=0.0.9
+pydantic>=2.6,<3
+numpy>=1.26,<3
+transformers==4.57.3
