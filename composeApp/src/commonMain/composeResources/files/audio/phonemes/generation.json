@@ -1,0 +1,106 @@
+{
+  "provider": "ElevenLabs",
+  "model_id": "eleven_v4",
+  "voice_id": "onwK4e9ZLuTAKqWW03F9",
+  "generated_at": "2026-10-27T15:59:57.875285+00:00",
+  "format": "16000 Hz, mono, signed 16-bit PCM WAV",
+  "voice_settings": {
+    "stability": 0.65,
+    "similarity_boost": 0.8,
+    "style": 0.0,
+    "use_speaker_boost": true
+  },
+  "phonetic_listening_review": "pending",
+  "recordings": [
+    {
+      "file": "i_long.wav",
+      "ipa": "iː",
+      "text": "/iː/",
+      "sha256": "580f0f5527569dba1cb6209f880abb6a398f034b6f5c4a1eaf2261f292090b35",
+      "duration_seconds": 0.8,
+      "peak": 10115,
+      "rms": 1812.2
+    },
+    {
+      "file": "ih.wav",
+      "ipa": "ɪ",
+      "text": "/ɪ/",
+      "sha256": "f8946bd7318cac63300bc12b952e1356a5e2dd99377ab74f793a59ea6fdc6c9b",
+      "duration_seconds": 0.8,
+      "peak": 16342,
+      "rms": 2156.33
+    },
+    {
+      "file": "ae.wav",
+      "ipa": "æ",
+      "text": "/æ/",
+      "sha256": "038087dd734121dceee537360e8302ad3325ad267fecababc4322dab2a10d2e1",
+      "duration_seconds": 0.8,
+      "peak": 20319,
+      "rms": 2206.77
+    },
+    {
+      "file": "eh.wav",
+      "ipa": "ɛ",
+      "text": "/ɛ/",
+      "sha256": "10ba0c72ac84a6a6c797cb590e7ad061b446f57aef2430a19394703054ff00bb",
+      "duration_seconds": 0.8,
+      "peak": 13723,
+      "rms": 2180.66
+    },
+    {
+      "file": "ah_long.wav",
+      "ipa": "ɑː",
+      "text": "/ɑː/",
+      "sha256": "f1ae2d8f1e16d7bbb9a325909174eb65879cba54ba18c4442253bc2e2d441f8c",
+      "duration_seconds": 0.88,
+      "peak": 26150,
+      "rms": 2940.08
+    },
+    {
+      "file": "uh.wav",
+      "ipa": "ʌ",
+      "text": "/ʌ/",
+      "sha256": "779c04573da8cbd2eb62f2007a57713c0a63bb5d00737c45e4e9bde480d90519",
+      "duration_seconds": 0.8,
+      "peak": 13144,
+      "rms": 2378.56
+    },
+    {
+      "file": "oo_short.wav",
+      "ipa": "ʊ",
+      "text": "/ʊ/",
+      "sha256": "71e90fbe3da7271f73e6371ee4c9f8d9e747b746feb86302a0632d3d81b51fb8",
+      "duration_seconds": 0.8,
+      "peak": 18627,
+      "rms": 2624.12
+    },
+    {
+      "file": "oo_long.wav",
+      "ipa": "uː",
+      "text": "/uː/",
+      "sha256": "6a7918304a70f322137ae8b2887e9f2841d0eccd9ad786a4365abc8bdb9e0e49",
+      "duration_seconds": 0.88,
+      "peak": 13390,
+      "rms": 2413.74
+    },
+    {
+      "file": "o_short.wav",
+      "ipa": "ɒ",
+      "text": "/ɒ/",
+      "sha256": "1fef17f44e5a79054ef65c908d6e88468c0a4b40274809392d13a6f437a58690",
+      "duration_seconds": 0.88,
+      "peak": 29403,
+      "rms": 2886.44
+    },
+    {
+      "file": "aw_long.wav",
+      "ipa": "ɔː",
+      "text": "/ɔː/",
+      "sha256": "93cf06dc20c4287c5fd71d3eec6a52a39d6b0bbb256f932a9e913fe397354e77",
+      "duration_seconds": 0.96,
+      "peak": 20269,
+      "rms": 2233.1
+    }
+  ]
+}

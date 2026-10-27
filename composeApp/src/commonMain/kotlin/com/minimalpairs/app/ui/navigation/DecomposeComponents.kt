@@ -11,7 +11,7 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.lifecycle.doOnDestroy
 import com.arkivanov.essenty.lifecycle.doOnStop
-import com.minimalpairs.app.core.dsp.FormantSynthesizer
+import com.minimalpairs.app.data.audio.PhonemeAudioRepository
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.hal.AudioPlayer
@@ -497,7 +497,7 @@ interface ArticulatorLabComponent {
     val state: StateFlow<ArticulatorLabUiState>
     fun retryProgressSaves() {}
     fun toggleRecording()
-    fun testSynthesizedVowel(isPhoneme1: Boolean)
+    fun playPhonemeExample(isPhoneme1: Boolean)
     fun playRecording() {}
     fun switchTargetPhoneme(isPhoneme1: Boolean)
     fun selectContrast(contrastId: String) {}
@@ -522,7 +522,8 @@ class DefaultArticulatorLabComponent(
     private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val progressRepository: ProgressRepository? = null,
     private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) },
-    private val initialTargetPhoneme: String? = null
+    private val initialTargetPhoneme: String? = null,
+    private val loadPhonemePcm: suspend (String) -> ShortArray? = PhonemeAudioRepository::loadPcm
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private var contrast = contrastId?.let { VowelContrastsCatalog.getContrastById(it) }
@@ -683,15 +684,14 @@ class DefaultArticulatorLabComponent(
         return cues.joinToString(" ").ifEmpty { "Your sound is within the target range. Try it again to build consistency." }
     }
 
-    override fun testSynthesizedVowel(isPhoneme1: Boolean) {
+    override fun playPhonemeExample(isPhoneme1: Boolean) {
         if (acceptingSamples) return
         runOperation {
-            val bounds = if (isPhoneme1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
-            val samples = withContext(analysisDispatcher) {
-                FormantSynthesizer.synthesizeVowel(
-                    f1 = (bounds.f1MinHz + bounds.f1MaxHz) / 2f,
-                    f2 = (bounds.f2MinHz + bounds.f2MaxHz) / 2f,
-                    durationMs = bounds.minDurationMs ?: 140)
+            val phoneme = if (isPhoneme1) contrast.phoneme1 else contrast.phoneme2
+            val samples = withContext(analysisDispatcher) { loadPhonemePcm(phoneme) }
+            if (samples == null || samples.isEmpty()) {
+                _state.value = _state.value.copy(error = "The example sound is unavailable. Please try again.")
+                return@runOperation
             }
             _state.value = _state.value.copy(isPlaying = true)
             audioPlayer.play(samples)

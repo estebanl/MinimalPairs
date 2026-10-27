@@ -246,7 +246,7 @@ class MouthPositionUiTest {
             state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1)
         }
         override fun toggleRecording() = Unit
-        override fun testSynthesizedVowel(isPhoneme1: Boolean) = Unit
+        override fun playPhonemeExample(isPhoneme1: Boolean) = Unit
         override fun onBack() = Unit
     }
 }

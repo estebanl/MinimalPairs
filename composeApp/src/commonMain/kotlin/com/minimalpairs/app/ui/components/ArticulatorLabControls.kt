@@ -2,6 +2,8 @@ package com.minimalpairs.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -10,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalUriHandler
+import minimalpairs.composeapp.generated.resources.Res
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -107,19 +111,46 @@ fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit) {
 
 @Composable
 fun LabPlayback(phoneme: String, enabled: Boolean, onClick: () -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    Surface(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp), color = scheme.background,
-        border = BorderStroke(1.dp, scheme.outlineVariant)) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Surface(Modifier.size(46.dp), shape = CircleShape, color = scheme.onBackground, contentColor = scheme.background) {
-                Box(contentAlignment = Alignment.Center) { LabIcon(LabIcon.Play, Modifier.size(24.dp)) }
+    var showCredits by remember { mutableStateOf(false) }
+    var credits by remember { mutableStateOf("") }
+    val uriHandler = LocalUriHandler.current
+    LaunchedEffect(showCredits) {
+        if (showCredits) credits = Res.readBytes("files/audio/phonemes/CREDITS.txt").decodeToString()
+    }
+    if (showCredits) {
+        AlertDialog(
+            onDismissRequest = { showCredits = false },
+            title = { Text("Recording credits") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(credits, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { uriHandler.openUri("https://elevenlabs.io/") }) {
+                        Text("About ElevenLabs")
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showCredits = false }) { Text("Close") } }
+        )
+    }
+    Column {
+        val scheme = MaterialTheme.colorScheme
+        Surface(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp), color = scheme.background,
+            border = BorderStroke(1.dp, scheme.outlineVariant)) {
+            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Surface(Modifier.size(46.dp), shape = CircleShape, color = scheme.onBackground, contentColor = scheme.background) {
+                    Box(contentAlignment = Alignment.Center) { LabIcon(LabIcon.Play, Modifier.size(24.dp)) }
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Listen to example", fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Hear the /$phoneme/ sound.", fontSize = 13.sp, lineHeight = 18.sp, color = scheme.onSurfaceVariant)
+                }
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("Listen to example", fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
-                Text("Hear the generated /$phoneme/ sound.", fontSize = 13.sp, lineHeight = 18.sp, color = scheme.onSurfaceVariant)
-            }
+        }
+        TextButton(onClick = { showCredits = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = scheme.onSurfaceVariant)) {
+            Text("Recording credits", fontSize = 12.sp)
         }
     }
 }

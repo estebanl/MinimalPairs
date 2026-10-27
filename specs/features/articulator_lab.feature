@@ -59,7 +59,7 @@ Feature: Articulator Lab guided speaking practice
     And the camera remains off until I choose Start camera
     And the preview area explains how to start the practice mirror
     And the selected vowel has a nearby lip reference and placement cue
-    And generated example playback is available outside sound measurement details
+    And recorded phoneme example playback is available outside sound measurement details
     And the recording action remains pinned while the content scrolls
 
   Scenario: Match the practice mirror visual hierarchy
@@ -78,3 +78,12 @@ Feature: Articulator Lab guided speaking practice
     When I open the Speak screen
     Then the title and back control remain inside the safe area
     And insets already consumed by the host are not applied twice
+
+  Scenario: Listen to isolated recorded vowels offline
+    Given any vowel contrast is selected in the articulator lab
+    When the learner plays either target's example
+    Then the matching bundled ElevenLabs vowel example plays without a network request
+    And no synthetic formant tone is substituted if the recording is unavailable
+    And an unavailable recording shows a recoverable error
+    And example playback does not replace the learner's score or saved recording
+    And ElevenLabs generation credits are accessible

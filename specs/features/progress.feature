@@ -85,7 +85,7 @@ Feature: Persistent listening and speaking progress
     Given a completed recording receives a valid pronunciation score
     Then its target and score are saved in speaking history
     And listening accuracy, streaks, and reviews are unchanged
-    And silence, cancelled scoring, and generated examples are not saved
+    And silence, cancelled scoring, and recorded phoneme examples are not saved
     And upgrading the database preserves earlier listening data
 
   Scenario: Start speaking from an empty history

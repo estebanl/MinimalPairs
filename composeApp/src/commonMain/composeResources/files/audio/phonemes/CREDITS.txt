@@ -1,0 +1,10 @@
+Vowel examples generated with ElevenLabs
+
+Voice: Daniel
+Model: Eleven v4
+
+Each sound was generated from an isolated IPA vowel. The app's /e/ label uses [ɛ], as in “bed”.
+
+These examples demonstrate vowel quality. Their duration is not a target for your recording.
+
+https://elevenlabs.io/

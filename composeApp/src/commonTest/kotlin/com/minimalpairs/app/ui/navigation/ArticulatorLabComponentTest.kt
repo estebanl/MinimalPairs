@@ -118,14 +118,15 @@ class ArticulatorLabComponentTest {
     }
 
     @Test
-    fun generatedExamplePlaysWithoutReplacingUserScore() = runTest {
+    fun recordedExamplePlaysWithoutReplacingUserScore() = runTest {
         val f = Fixture(this)
         try {
             f.record(f.samples)
             val score = f.state.overallGopScore
-            f.component.testSynthesizedVowel(true)
+            f.component.playPhonemeExample(true)
             runCurrent()
-            assertTrue(f.player.samples.single().isNotEmpty())
+            assertContentEquals(f.exampleSamples, f.player.samples.single())
+            assertEquals(listOf("iː"), f.requestedPhonemes)
             assertEquals(1, f.scorer.words.size)
             assertEquals(1, f.saved.size)
             assertEquals(score, f.state.overallGopScore)
@@ -141,7 +142,7 @@ class ArticulatorLabComponentTest {
             f.record(f.samples)
             assertTrue(f.state.isScoring)
             f.component.toggleRecording()
-            f.component.testSynthesizedVowel(false)
+            f.component.playPhonemeExample(false)
             runCurrent()
             assertEquals(1, f.recorder.starts)
             assertTrue(f.player.samples.isEmpty())
@@ -394,6 +395,43 @@ class ArticulatorLabComponentTest {
         } finally { f.lifecycle.destroy(); runCurrent() }
     }
 
+    @Test
+    fun examplesFollowBothTargetsAcrossEveryContrast() = runTest {
+        val f = Fixture(this)
+        try {
+            for (contrast in com.minimalpairs.app.data.catalog.VowelContrastsCatalog.defaultContrasts) {
+                f.component.selectContrast(contrast.id)
+                for (first in listOf(true, false)) {
+                    f.component.playPhonemeExample(first)
+                    runCurrent()
+                    assertEquals(if (first) contrast.phoneme1 else contrast.phoneme2, f.requestedPhonemes.last())
+                    assertContentEquals(f.exampleSamples, f.player.samples.last())
+                    assertFalse(f.state.isBusy)
+                }
+            }
+            assertTrue(f.saved.isEmpty())
+            assertTrue(f.scorer.words.isEmpty())
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
+    fun missingExampleShowsRecoverableErrorWithoutSyntheticFallback() = runTest {
+        val f = Fixture(this)
+        try {
+            f.exampleAvailable = false
+            f.component.playPhonemeExample(true)
+            runCurrent()
+            assertNotNull(f.state.error)
+            assertTrue(f.player.samples.isEmpty())
+            assertFalse(f.state.isBusy)
+            f.exampleAvailable = true
+            f.component.playPhonemeExample(true)
+            runCurrent()
+            assertNull(f.state.error)
+            assertContentEquals(f.exampleSamples, f.player.samples.single())
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
     private class Fixture(val scope: TestScope, targetPhoneme: String? = null) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val recorder = FakeRecorder()
@@ -401,8 +439,15 @@ class ArticulatorLabComponentTest {
         val scorer = FakeScorer()
         val samples = FormantSynthesizer.synthesizeVowel(310f, 2350f, durationMs = 200)
         val saved = mutableListOf<SpeakingRecordEntity>()
+        val exampleSamples = shortArrayOf(100, -200, 300)
+        val requestedPhonemes = mutableListOf<String>()
+        var exampleAvailable = true
         val component = DefaultArticulatorLabComponent(DefaultComponentContext(lifecycle), null, scorer, {},
-            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme)
+            recorder, player, StandardTestDispatcher(scope.testScheduler), StandardTestDispatcher(scope.testScheduler), onScored = saved::add, initialTargetPhoneme = targetPhoneme,
+            loadPhonemePcm = { phoneme ->
+                requestedPhonemes += phoneme
+                if (exampleAvailable) exampleSamples else null
+            })
         val state get() = component.state.value
         fun record(samples: ShortArray) {
             component.toggleRecording()

@@ -242,7 +242,7 @@ fun ArticulatorLabScreen(
                         },
                         footer = {
                             LabPlayback(targetPhoneme, !state.isBusy && !isRecording) {
-                                component.testSynthesizedVowel(state.isTargetPhoneme1)
+                                component.playPhonemeExample(state.isTargetPhoneme1)
                             }
                         },
                         measurements = { ArticulatorMeasurements(state, isRecording) }
@@ -271,7 +271,7 @@ fun ArticulatorLabScreen(
 
                 if (visualMode != 3) {
                     LabPlayback(targetPhoneme, !state.isBusy && !isRecording) {
-                        component.testSynthesizedVowel(state.isTargetPhoneme1)
+                        component.playPhonemeExample(state.isTargetPhoneme1)
                     }
                     Spacer(Modifier.height(12.dp))
                     LabMeasurements { ArticulatorMeasurements(state, isRecording) }

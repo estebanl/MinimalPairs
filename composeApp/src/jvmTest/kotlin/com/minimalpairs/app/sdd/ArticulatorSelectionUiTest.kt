@@ -192,7 +192,7 @@ class ArticulatorSelectionUiTest {
         override fun selectExamplePair(index: Int) { state.value = state.value.copy(selectedPairIndex = index) }
         override fun switchTargetPhoneme(isPhoneme1: Boolean) { state.value = state.value.copy(isTargetPhoneme1 = isPhoneme1) }
         override fun toggleRecording() { recordingToggles++ }
-        override fun testSynthesizedVowel(isPhoneme1: Boolean) { examplePlays++ }
+        override fun playPhonemeExample(isPhoneme1: Boolean) { examplePlays++ }
         override fun onBack() = Unit
     }
 }
