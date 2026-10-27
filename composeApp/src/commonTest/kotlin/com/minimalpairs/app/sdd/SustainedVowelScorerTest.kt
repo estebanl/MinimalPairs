@@ -20,7 +20,9 @@ class SustainedVowelScorerTest {
                     (bounds.f1MinHz + bounds.f1MaxHz) / 2,
                     (bounds.f2MinHz + bounds.f2MaxHz) / 2, durationMs = 160
                 )
-                val named = scorer.evaluateLocalAcousticGop(samples, word, ipa, contrast.id)
+                // A full transcript forces the independent known-word lookup path.
+                val named = scorer.evaluateLocalAcousticGop(samples, word, "reference $ipa vowel", contrast.id)
+                assertEquals(ipa, named.phonemes.single().phoneme, "Known-word target oracle")
                 val sustained = scorer.evaluateLocalAcousticGop(samples, "vowel", ipa, contrast.id)
                 assertEquals(ipa, sustained.phonemes.single().phoneme, contrast.id)
                 assertEquals(named.overallScore, sustained.overallScore, "${contrast.id}: $ipa bounds")

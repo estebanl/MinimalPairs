@@ -8,6 +8,7 @@ import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.post
@@ -16,6 +17,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CancellationException
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sqrt
@@ -30,8 +32,10 @@ interface PhonemeScorerApi {
 }
 
 class PhonemeScorerClient(
-    private val baseUrl: String? = null,
+    private val baseUrl: String? = defaultPhonemeScorerBaseUrl(),
     private val client: HttpClient = HttpClient {
+        expectSuccess = true
+        install(HttpTimeout) { requestTimeoutMillis = 30_000 }
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -47,11 +51,12 @@ class PhonemeScorerClient(
         expectedIpa: String,
         contrastId: String?
     ): PhonemeScoringResponse {
-        // If remote URL is provided, attempt remote call; fallback to local acoustic GOP
+        // Remote failure remains visible when falling back to the local estimate.
+        var fallbackMessage: String? = null
         if (!baseUrl.isNullOrBlank()) {
             try {
                 val wavBytes = WavCodec.encodePcmToWav(audioSamples)
-                val response: PhonemeScoringResponse = client.post("$baseUrl/v1/score/phoneme") {
+                val response: PhonemeScoringResponse = client.post("${baseUrl.trimEnd('/')}/v1/score/phoneme") {
                     setBody(
                         MultiPartFormDataContent(
                             formData {
@@ -65,13 +70,28 @@ class PhonemeScorerClient(
                         )
                     )
                 }.body()
+                require(response.overallScore.isFinite() && response.overallScore in 0f..100f)
+                require(response.scoringMethod == "neural_ctc" && !response.modelId.isNullOrBlank())
+                val expectedTokens = expectedIpa.trim().trim('/').split(Regex("\\s+")).filter { it.isNotBlank() }
+                require(response.phonemes.map { it.phoneme } == expectedTokens)
+                require(response.phonemes.zipWithNext().all { (before, after) -> before.endTime <= after.startTime })
+                require(response.phonemes.isNotEmpty() && response.phonemes.all {
+                    it.gopScore.isFinite() && it.gopScore in 0f..100f &&
+                        it.startTime.isFinite() && it.endTime.isFinite() &&
+                        it.startTime >= 0f && it.endTime > it.startTime &&
+                        it.endTime <= audioSamples.size / 16000f + .001f
+                })
                 return response
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                // Graceful fallback to offline local acoustic evaluation
+                fallbackMessage = "The model service was unavailable or returned an invalid result; used formants and duration instead."
             }
         }
 
-        return evaluateLocalAcousticGop(audioSamples, targetWord, expectedIpa, contrastId)
+        return evaluateLocalAcousticGop(audioSamples, targetWord, expectedIpa, contrastId).let {
+            if (fallbackMessage == null) it else it.copy(feedback = fallbackMessage)
+        }
     }
 
     /**
@@ -94,7 +114,7 @@ class PhonemeScorerClient(
             }
         }
 
-        // Speak scores a sustained vowel with targetWord="vowel" and an exact IPA.
+        // Sustained-vowel callers may use targetWord="vowel" and an exact IPA.
         // Prefer that explicit target; whole-word callers still resolve by a known word.
         // An unknown word must never silently select the second sound.
         val isPhoneme1 = contrast?.let { c ->
@@ -148,19 +168,29 @@ class PhonemeScorerClient(
             75.0f
         }
 
-        val durationSec = (formantResult.durationMs / 1000f).coerceAtLeast(0.12f)
+        val durationSec = audioSamplesDuration(samples)
         val phonemeScores = listOf(
             PhonemeScore(
                 phoneme = targetPhoneme,
                 gopScore = gopScore,
-                startTime = 0.05f,
-                endTime = 0.05f + durationSec
+                startTime = 0f,
+                endTime = durationSec
             )
         )
 
         return PhonemeScoringResponse(
             overallScore = gopScore,
-            phonemes = phonemeScores
+            phonemes = phonemeScores,
+            scoringMethod = "acoustic_estimate"
         )
     }
+
+    private fun audioSamplesDuration(samples: ShortArray): Float = samples.size / 16000f
 }
+
+/** Hosts may set this before creating the root; no endpoint is configured by default. */
+object PhonemeScorerConfiguration {
+    var baseUrl: String? = null
+}
+
+expect fun defaultPhonemeScorerBaseUrl(): String?

@@ -43,3 +43,5 @@ DerivedData/
 
 # Offline mouth viewer build dependencies
 scripts/mouth-position/node_modules/
+scripts/mouth-position/native-texture-tests/.build/
+__pycache__/

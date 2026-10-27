@@ -7,7 +7,8 @@ let renderer, scene, camera, root, jawPivot, observer, frame = 0, disposed = fal
 let state = {version: 1, type: 'state', pose: 'sheep', view: 'front', opacity: .5, active: false, reducedMotion: true};
 let current = {...poses.sheep}, transition, hasPresentedState = false;
 const meshes = [];
-const stats = {renders: 0, loaded: false, disposed: false, error: null};
+const disposedRoots = new WeakSet();
+const stats = {renders: 0, loaded: false, disposed: false, error: null, texturesDecoded: 0};
 const native = type => window.webkit?.messageHandlers?.mouthPosition?.postMessage({version: 1, type});
 function fail() { if (disposed) return; stats.error = 'viewer'; native('error'); dispose(); }
 function schedule() { if (!frame && loaded && state.active && !disposed && !document.hidden) frame = requestAnimationFrame(draw); }
@@ -89,7 +90,9 @@ function visibility() {
 }
 function contextLost(event) { event.preventDefault(); fail(); }
 function disposeRoot(object) {
-  const geometries = new Set(), materials = new Set(), textures = new Set();
+  if (!object || disposedRoots.has(object)) return;
+  disposedRoots.add(object);
+  const geometries = new Set(), materials = new Set(), textures = new Set(), images = new Set();
   object?.traverse(mesh => {
     if (mesh.geometry) geometries.add(mesh.geometry);
     for (const material of [mesh.material].flat().filter(Boolean)) {
@@ -97,7 +100,12 @@ function disposeRoot(object) {
       for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
     }
   });
-  textures.forEach(x=>x.dispose()); materials.forEach(x=>x.dispose()); geometries.forEach(x=>x.dispose());
+  textures.forEach(texture=>{
+    for (const image of [texture.source?.data ?? texture.image].flat()) if (image) images.add(image);
+    texture.dispose();
+  });
+  images.forEach(image=>{ if (typeof image.close === 'function') image.close(); });
+  materials.forEach(x=>x.dispose()); geometries.forEach(x=>x.dispose());
 }
 function dispose() {
   if (disposed) return;
@@ -129,20 +137,28 @@ try {
   canvas.addEventListener('webglcontextlost',contextLost);
   document.addEventListener('visibilitychange',visibility); window.addEventListener('pagehide',dispose);
   const bytes = Uint8Array.from(atob(document.querySelector('#model').textContent.trim()),c=>c.charCodeAt(0));
-  new GLTFLoader().parse(bytes.buffer,'',gltf=>{
-    if (disposed) { disposeRoot(gltf.scene); return; }
-    root = gltf.scene; scene.add(root);
-    root.traverse(mesh=>{
-      if (!mesh.isMesh) return;
-      meshes.push(mesh);
-      mesh.visible = !/Mandible|MouthFloor|Pharyn|Nasal|Laryn|Trache|Epiglott|VocalFold/.test(mesh.name);
-      for (const material of [mesh.material].flat()) { material.side = THREE.DoubleSide; if (material.transparent) material.depthWrite = false; }
-    });
-    const jaw = root.getObjectByName('Jaw_LowerTeeth');
-    if (!root.getObjectByName('Tongue')?.morphTargetDictionary?.hasOwnProperty('Tongue_raise') || !jaw) { fail(); return; }
-    jawPivot = new THREE.Group(); jawPivot.position.set(-.052,.075,0); root.add(jawPivot); root.updateMatrixWorld(true); jawPivot.attach(jaw);
-    current = {...poses[state.pose]}; applyPose(); opacity(); loaded = true; stats.loaded = true; fit();
-    // Compile and draw once before announcing ready, even while native state is queued.
-    renderer.render(scene,camera); stats.renders++; if (!disposed) native('ready'); schedule();
+  new GLTFLoader().parse(bytes.buffer,'',async gltf=>{
+    try {
+      // GLTFLoader can catch image failures and still resolve the model with null maps.
+      const textures = await gltf.parser.getDependencies('texture');
+      if (disposed) { disposeRoot(gltf.scene); return; }
+      root = gltf.scene;
+      const requiredCount = gltf.parser.json.textures?.length ?? 0;
+      if (!requiredCount || textures.length !== requiredCount || textures.some(t=>!t?.image?.width || !t?.image?.height)) { fail(); return; }
+      stats.texturesDecoded = textures.length;
+      scene.add(root);
+      root.traverse(mesh=>{
+        if (!mesh.isMesh) return;
+        meshes.push(mesh);
+        mesh.visible = !/Mandible|MouthFloor|Pharyn|Nasal|Laryn|Trache|Epiglott|VocalFold/.test(mesh.name);
+        for (const material of [mesh.material].flat()) { material.side = THREE.DoubleSide; if (material.transparent) material.depthWrite = false; }
+      });
+      const jaw = root.getObjectByName('Jaw_LowerTeeth');
+      if (!root.getObjectByName('Tongue')?.morphTargetDictionary?.hasOwnProperty('Tongue_raise') || !jaw) { fail(); return; }
+      jawPivot = new THREE.Group(); jawPivot.position.set(-.052,.075,0); root.add(jawPivot); root.updateMatrixWorld(true); jawPivot.attach(jaw);
+      current = {...poses[state.pose]}; applyPose(); opacity(); loaded = true; stats.loaded = true; fit();
+      // Compile and draw once before announcing ready, even while native state is queued.
+      renderer.render(scene,camera); stats.renders++; if (!disposed) native('ready'); schedule();
+    } catch { if (root !== gltf.scene) disposeRoot(gltf.scene); fail(); }
   },fail);
 } catch { fail(); }

@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
   title: Phoneme Scorer Service
-  version: 1.0.0
-  description: Montreal Forced Aligner (MFA) & Wav2Vec 2.0 Goodness of Pronunciation (GOP) scoring API
+  version: 2.0.0
+  description: Local phoneme CTC alignment and uncalibrated posterior confidence; no model downloads during requests
 
 paths:
   /v1/score/phoneme:
     post:
-      summary: Evaluate phoneme quality using Goodness of Pronunciation (GOP)
+      summary: Align expected IPA and estimate model confidence
       operationId: scorePhoneme
       requestBody:
         required: true
@@ -23,13 +23,14 @@ paths:
                 audio_file:
                   type: string
                   format: binary
-                  description: 16kHz 16-bit mono PCM WAV file
+                  description: 16kHz 16-bit mono PCM WAV, 80ms to 30 seconds, at most 1 MB
                 target_transcript:
                   type: string
                   example: "sheep"
                 expected_ipa:
                   type: string
                   example: "ʃ iː p"
+                  description: Space-separated model IPA tokens matching the utterance. The current model rejects single-phoneme tasks as unsupported; multi-phoneme scoring remains experimental.
       responses:
         '200':
           description: Successful evaluation
@@ -38,9 +39,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/PhonemeScoringResponse'
         '400':
-          description: Bad request or unsupported audio format
-        '500':
-          description: Alignment or scoring model failure
+          description: Bad request, unsupported audio format, or unsupported isolated-phoneme task
+        '413':
+          description: Audio exceeds 1 MB
+        '503':
+          description: Model not configured, not loadable, or inference failed
 
 components:
   schemas:
@@ -58,17 +61,17 @@ components:
         gop_score:
           type: number
           format: float
-          description: Goodness of Pronunciation score 0-100
+          description: Uncalibrated aligned posterior confidence with sequence-agreement penalty, 0-100; legacy field name
           example: 92.4
         start_time:
           type: number
           format: float
-          description: Start time offset in seconds
+          description: CTC token-emission start in seconds; not a validated phonetic boundary
           example: 0.18
         end_time:
           type: number
           format: float
-          description: End time offset in seconds
+          description: CTC token-emission end in seconds; not a vowel-duration measurement
           example: 0.36
 
     PhonemeScoringResponse:
@@ -76,13 +79,24 @@ components:
       required:
         - overall_score
         - phonemes
+        - scoring_method
+        - model_id
       properties:
         overall_score:
           type: number
           format: float
-          description: Aggregate GOP score 0-100
+          description: Mean phoneme confidence 0-100; not a calibrated pronunciation grade
           example: 88.5
         phonemes:
           type: array
           items:
             $ref: '#/components/schemas/PhonemeScore'
+        scoring_method:
+          type: string
+          enum: [neural_ctc]
+        model_id:
+          type: string
+          description: Operator-supplied checkpoint and revision identifier
+        feedback:
+          type: string
+          description: Explanation of score limitations

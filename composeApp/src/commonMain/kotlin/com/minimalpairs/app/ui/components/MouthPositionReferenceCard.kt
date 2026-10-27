@@ -30,9 +30,6 @@ import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import com.minimalpairs.app.ui.reference.Mouth3dState
 import com.minimalpairs.app.ui.reference.MouthView
 import com.minimalpairs.app.ui.reference.mouthPose
-import com.minimalpairs.app.core.hal.createAudioPlayer
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
-import kotlinx.coroutines.*
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -42,7 +39,10 @@ fun MouthPositionReferenceCard(
     phoneme: String,
     exampleWord: String,
     modifier: Modifier = Modifier,
-    isRecording: Boolean = false
+    isRecording: Boolean = false,
+    isPlayingReference: Boolean = false,
+    canPlayReference: Boolean = true,
+    onPlayReference: (() -> Unit)? = null
 ) {
     val reference = MouthPositionReferences.forPhoneme(phoneme)
     val scheme = MaterialTheme.colorScheme
@@ -107,7 +107,11 @@ fun MouthPositionReferenceCard(
                     }
                     Text("Tissue opacity · ${(opacity * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
                     Slider(value = opacity, onValueChange = { opacity = it }, modifier = Modifier.semantics { contentDescription = "Tissue opacity" })
-                    key(exampleWord) { ReferenceWordAudio(exampleWord, isRecording) }
+                    if (onPlayReference != null) {
+                        OutlinedButton(enabled = canPlayReference && !isRecording, onClick = onPlayReference) {
+                            Text(if (isPlayingReference) "Playing $exampleWord…" else "Listen to $exampleWord")
+                        }
+                    }
                 } else {
                     if (failed && use3d && supports3d) Text("3D unavailable. Showing the illustration.", style = MaterialTheme.typography.bodySmall)
                     ReferenceView("Front view", reference.front, reference.frontDescription)
@@ -116,38 +120,6 @@ fun MouthPositionReferenceCard(
             }
         }
     }
-}
-
-/** Reuses bundled whole-word audio; it never enters the web view. */
-@Composable
-private fun ReferenceWordAudio(word: String, isRecording: Boolean) {
-    val player = remember { createAudioPlayer() }
-    var requested by remember { mutableStateOf(false) }
-    var unavailable by remember { mutableStateOf(false) }
-    LaunchedEffect(requested, isRecording) {
-        if (!requested || isRecording) { requested = false; return@LaunchedEffect }
-        try {
-            val samples = ElevenLabsAudioRepository.loadWordPcm(word)
-            if (samples == null) unavailable = true
-            else {
-                val completion = CompletableDeferred<Unit>()
-                player.play(samples) { completion.complete(Unit) }
-                completion.await()
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            unavailable = true
-        } finally {
-            withContext(NonCancellable) { player.stop() }
-            requested = false
-        }
-    }
-    OutlinedButton(enabled = !requested && !isRecording, onClick = {
-        unavailable = false
-        requested = true
-    }) { Text(if (requested) "Playing $word…" else "Listen to $word") }
-    if (unavailable) Text("Word audio unavailable.", style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable

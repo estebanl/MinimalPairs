@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDisplayName</key>
 	<string>Minimal Pairs</string>
+	<key>NSCameraUsageDescription</key>
+	<string>See your lip shape during pronunciation practice. Camera frames are analyzed on this device and are not saved.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Minimal Pairs needs microphone access for pronunciation practice and articulatory biofeedback.</string>
 </dict>

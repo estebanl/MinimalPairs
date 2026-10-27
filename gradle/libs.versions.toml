@@ -1,4 +1,6 @@
 [versions]
+camerax = "1.6.2"
+mlkit-face = "16.1.7"
 agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
@@ -11,6 +13,7 @@ composeMaterial3 = "1.9.0"
 junit = "4.13.2"
 kotlin = "2.4.21"
 kotlinx-coroutines = "1.11.0"
+kotlinx-datetime = "0.8.0-0.6.x-compat"
 koin = "4.2.2"
 kotlinx-serialization = "1.11.0"
 ksp = "2.3.12"
@@ -21,11 +24,16 @@ decompose = "3.5.0"
 turbine = "1.2.1"
 
 [libraries]
+camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+mlkit-face = { module = "com.google.mlkit:face-detection", version.ref = "mlkit-face" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 

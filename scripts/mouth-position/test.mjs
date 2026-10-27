@@ -41,7 +41,8 @@ for (let step=0;step<=20;step++) {
 }
 assert.notDeepEqual(tongueBounds[0].max,tongueBounds.at(-1).max,'Distinct reference geometry');
 const html=fs.readFileSync(new URL('../../iosApp/iosApp/MouthPosition/mouth-position.html',import.meta.url),'utf8');
-assert.ok(html.includes("connect-src 'none'"));
+assert.ok(html.includes("connect-src blob:"));
 assert.ok(!/<script[^>]+src=/.test(html));
+for (const name of ['MODEL-LICENSE.txt','THREE-LICENSE.txt']) assert.ok(html.includes(fs.readFileSync(new URL(name,import.meta.url),'utf8')),'App bundle must include complete notices');
 assert.ok(html.includes(data.toString('base64')));
 console.log(JSON.stringify({validatorErrors:report.issues.numErrors,validatorWarnings:report.issues.numWarnings,meshes:meshes.length,transitionSteps:tongueBounds.length,tongueBounds:[tongueBounds[0],tongueBounds.at(-1)],htmlBytes:Buffer.byteLength(html)},null,2));

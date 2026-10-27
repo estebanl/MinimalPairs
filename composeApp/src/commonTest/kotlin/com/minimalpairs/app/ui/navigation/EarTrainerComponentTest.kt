@@ -8,6 +8,7 @@ import com.arkivanov.essenty.lifecycle.stop
 import com.minimalpairs.app.core.hal.AudioPlayer
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.model.PlaybackSpeed
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
@@ -28,6 +29,40 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EarTrainerComponentTest {
+    @Test
+    fun dashboardExposesEveryContrastAndNewDrillsSupportThePracticeFlow() = runTest {
+        val lifecycle = LifecycleRegistry()
+        var selectedId: String? = null
+        val dashboard = DefaultDashboardComponent(DefaultComponentContext(lifecycle)) { selectedId = it }
+        assertEquals(ListeningContrastsCatalog.defaultContrasts, dashboard.contrasts)
+        for (contrast in dashboard.contrasts) {
+            dashboard.onSelectContrast(contrast.id)
+            assertEquals(contrast.id, selectedId)
+            withTrainer(contrast.id) {
+                assertEquals(contrast.id, state.contrast.id)
+                val target = state.targetWord
+                val expectedPhoneme = if (target == state.currentPair.word1) contrast.phoneme1 else contrast.phoneme2
+                assertEquals(expectedPhoneme, state.targetPhoneme)
+                component.playPrompt()
+                runCurrent()
+                assertEquals(target, loadedWords.single())
+                finishPlayback()
+                component.onSelectAnswer(target)
+                assertEquals(true, state.lastResultCorrect)
+                component.playOption(otherWord)
+                runCurrent()
+                assertEquals(otherWord, loadedWords.last())
+                finishPlayback()
+                component.nextTrial()
+                assertEquals(contrast.id, state.contrast.id)
+                assertTrue(state.currentPair in contrast.pairs)
+                assertFalse(state.hasPlayedPrompt)
+                assertNull(state.lastResultCorrect)
+            }
+        }
+        lifecycle.destroy()
+    }
+
     @Test
     fun optionPlaybackRequiresAnAnswerAndNeverChangesTheResult() = runTest {
         withTrainer {
@@ -415,8 +450,8 @@ class EarTrainerComponentTest {
         }
     }
 
-    private suspend fun TestScope.withTrainer(block: suspend Fixture.() -> Unit) {
-        val fixture = Fixture(this)
+    private suspend fun TestScope.withTrainer(contrastId: String = "i_vs_I", block: suspend Fixture.() -> Unit) {
+        val fixture = Fixture(this, contrastId)
         try {
             fixture.block()
         } finally {
@@ -425,7 +460,7 @@ class EarTrainerComponentTest {
         }
     }
 
-    private class Fixture(private val testScope: TestScope) {
+    private class Fixture(private val testScope: TestScope, contrastId: String) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val audio = FakeAudioPlayer()
         val tracker = PhonemeConfusionTracker()
@@ -435,7 +470,7 @@ class EarTrainerComponentTest {
         val loadedWords = mutableListOf<String>()
         val component = DefaultEarTrainerComponent(
             componentContext = DefaultComponentContext(lifecycle),
-            contrastId = "i_vs_I",
+            contrastId = contrastId,
             confusionTracker = tracker,
             onBackClicked = { backCount++ },
             audioPlayer = audio,

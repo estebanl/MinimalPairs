@@ -13,7 +13,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.Density
 import com.minimalpairs.app.core.model.PlaybackSpeed
-import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.ui.navigation.EarTrainerComponent
 import com.minimalpairs.app.ui.navigation.EarTrainerUiState
 import com.minimalpairs.app.ui.theme.MinimalPairsTheme
@@ -28,6 +28,25 @@ import kotlin.test.assertTrue
 /** Real Compose renders plus semantics checks; PNGs are review artifacts, not golden baselines. */
 @OptIn(ExperimentalComposeUiApi::class, InternalComposeUiApi::class)
 class EarTrainerScreenTest {
+    @Test
+    fun newSoundTipsRenderWithoutVowelDiagrams() = onUiThread {
+        for (contrast in ListeningContrastsCatalog.defaultContrasts.filter { it.vowelReference == null }) {
+            val pair = contrast.pairs.first()
+            val state = EarTrainerUiState(contrast, pair, pair.word1, contrast.phoneme1)
+            Harness(Configuration("tips-${contrast.id}", 430, 820), false, state).use { harness ->
+                harness.settle()
+                harness.click("Sound tips")
+                harness.settle()
+                assertTrue(harness.nodes().any { it.text() == contrast.soundTip })
+                harness.click("More details")
+                harness.settle()
+                assertTrue(harness.nodes().any { it.text() == "/${contrast.phoneme1}/ and /${contrast.phoneme2}/" })
+                assertFalse(harness.nodes().any { it.text() in setOf("Mouth position reference", "Lip opening", "Jaw opening") })
+                harness.capture("details")
+            }
+        }
+    }
+
     @Test
     fun renderStatesAcrossSizesThemesAndLargeText() = onUiThread {
         val configurations = listOf(
@@ -95,6 +114,7 @@ class EarTrainerScreenTest {
                     harness.click("More details")
                     harness.settle()
                     assertTrue(harness.nodes().any { it.text().contains("Sound mastery") })
+                    assertTrue(harness.nodes().any { it.text() == "Mouth position reference" })
                     harness.capture("details")
                 }
             }
@@ -158,6 +178,23 @@ class EarTrainerScreenTest {
         }
     }
 
+    @Test
+    fun failedProgressSaveCanBeRetriedDuringPractice() = onUiThread {
+        Harness(Configuration("save-retry", 430, 1100), false, initialState().copy(
+            progressSaveError = "1 answer hasn't been saved. Unsaved answers are kept only while this app stays open."
+        )).use { harness ->
+            harness.settle()
+            harness.click("Retry saving")
+            assertEquals(1, harness.component.retrySaveCount)
+            harness.component.state.value = harness.component.state.value.copy(isSavingProgress = true)
+            harness.settle()
+            assertTrue(harness.button("Saving progress…").config.contains(SemanticsProperties.Disabled))
+            harness.component.state.value = harness.component.state.value.copy(progressSaveError = null, isSavingProgress = false)
+            harness.settle()
+            assertFalse(harness.nodes().any { it.text() == "Retry saving" })
+        }
+    }
+
     private data class Configuration(val name: String, val width: Int, val height: Int, val fontScale: Float = 1f)
 
     private class Harness(
@@ -214,6 +251,8 @@ class EarTrainerScreenTest {
         override val state = MutableStateFlow(initial)
         var playCount = 0
         val playedOptions = mutableListOf<String>()
+        var retrySaveCount = 0
+        override fun retryProgressSaves() { retrySaveCount++ }
         override fun playPrompt() { playCount++; state.value = state.value.copy(isPlayingAudio = true) }
         override fun playOption(word: String) {
             playedOptions += word
@@ -230,7 +269,7 @@ class EarTrainerScreenTest {
 
     companion object {
         private fun initialState(): EarTrainerUiState {
-            val contrast = VowelContrastsCatalog.getContrastById("i_vs_I")!!
+            val contrast = ListeningContrastsCatalog.getContrastById("i_vs_I")!!
             val pair = contrast.pairs.first()
             return EarTrainerUiState(contrast, pair, pair.word1, contrast.phoneme1)
         }
