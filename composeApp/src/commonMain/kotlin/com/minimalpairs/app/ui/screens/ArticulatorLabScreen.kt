@@ -77,13 +77,13 @@ fun ArticulatorLabScreen(
                 FilterChip(
                     selected = state.isTargetPhoneme1,
                     onClick = { component.switchTargetPhoneme(true) },
-                    label = { Text("${state.contrast.pairs.first().word1} /${state.contrast.phoneme1}/") },
+                    label = { Text("A · ${state.contrast.pairs.first().word1} /${state.contrast.phoneme1}/") },
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 FilterChip(
                     selected = !state.isTargetPhoneme1,
                     onClick = { component.switchTargetPhoneme(false) },
-                    label = { Text("${state.contrast.pairs.first().word2} /${state.contrast.phoneme2}/") }
+                    label = { Text("B · ${state.contrast.pairs.first().word2} /${state.contrast.phoneme2}/") }
                 )
             }
 
@@ -121,7 +121,8 @@ fun ArticulatorLabScreen(
                     phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
                     exampleWord = state.contrast.pairs.first().let {
                         if (state.isTargetPhoneme1) it.word1 else it.word2
-                    }
+                    },
+                    isRecording = state.recorderState == AudioRecorderState.RECORDING
                 )
             }
 

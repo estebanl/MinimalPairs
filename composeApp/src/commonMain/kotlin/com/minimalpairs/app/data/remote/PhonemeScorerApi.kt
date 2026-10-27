@@ -94,18 +94,27 @@ class PhonemeScorerClient(
             }
         }
 
-        val targetBounds = if (contrast != null) {
-            val isWord1 = contrast.pairs.any { it.word1.equals(targetWord, true) }
-            if (isWord1) contrast.boundsPhoneme1 else contrast.boundsPhoneme2
-        } else {
-            null
+        // Speak scores a sustained vowel with targetWord="vowel" and an exact IPA.
+        // Prefer that explicit target; whole-word callers still resolve by a known word.
+        // An unknown word must never silently select the second sound.
+        val isPhoneme1 = contrast?.let { c ->
+            when {
+                expectedIpa.trim() == c.phoneme1 -> true
+                expectedIpa.trim() == c.phoneme2 -> false
+                c.pairs.any { it.word1.equals(targetWord, true) } -> true
+                c.pairs.any { it.word2.equals(targetWord, true) } -> false
+                else -> null
+            }
         }
-
-        val targetPhoneme = if (contrast != null) {
-            val isWord1 = contrast.pairs.any { it.word1.equals(targetWord, true) }
-            if (isWord1) contrast.phoneme1 else contrast.phoneme2
-        } else {
-            expectedIpa.split(" ").firstOrNull { it.isNotBlank() } ?: expectedIpa
+        val targetBounds = when (isPhoneme1) {
+            true -> contrast.boundsPhoneme1
+            false -> contrast.boundsPhoneme2
+            null -> null
+        }
+        val targetPhoneme = when (isPhoneme1) {
+            true -> contrast.phoneme1
+            false -> contrast.phoneme2
+            null -> expectedIpa.split(" ").firstOrNull { it.isNotBlank() } ?: expectedIpa
         }
 
         val f1 = formantResult.f1Hz

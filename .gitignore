@@ -40,3 +40,6 @@ xcuserdata/
 DerivedData/
 .DS_Store
 
+
+# Offline mouth viewer build dependencies
+scripts/mouth-position/node_modules/

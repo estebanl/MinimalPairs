@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
+const dir = fileURLToPath(new URL('.',import.meta.url));
+const bundle = await build({entryPoints:[dir+'viewer.js'],bundle:true,minify:true,format:'iife',target:'es2020',write:false,legalComments:'inline'});
+const script = bundle.outputFiles[0].text.replaceAll('</script','<\\/script');
+const model = fs.readFileSync(dir+'vocal-tract.glb').toString('base64');
+const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Mouth reference prototype</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#faf8f5}canvas{width:100%;height:100%;display:block;visibility:hidden}</style><canvas aria-hidden="true"></canvas><script id="model" type="application/octet-stream">${model}</script><script>${script}</script></html>`;
+fs.writeFileSync(new URL('../../iosApp/iosApp/MouthPosition/mouth-position.html',import.meta.url),html);
+console.log(JSON.stringify({htmlBytes:Buffer.byteLength(html),scriptBytes:Buffer.byteLength(script)}));

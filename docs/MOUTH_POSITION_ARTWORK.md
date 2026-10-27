@@ -74,3 +74,10 @@ Do not describe them as clinically or anatomically certified.
   stability, and returning to the Sound map. They render narrow and wide cards
   in both themes with normal and enlarged text, checking labels for overflow.
   Review images are written to `composeApp/build/reports/mouth-position/`.
+
+## Optional iOS 3D prototype
+
+The sheep/ship card now offers an optional unreviewed 3D prototype on iOS.
+The image references remain the default and fallback. See
+[MOUTH_POSITION_3D_PROTOTYPE.md](MOUTH_POSITION_3D_PROTOTYPE.md) for provenance,
+pose intent, offline architecture, verification limits, and the phonetic review gate.

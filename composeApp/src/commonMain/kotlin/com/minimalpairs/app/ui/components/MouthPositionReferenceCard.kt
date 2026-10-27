@@ -8,20 +8,31 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.ui.reference.MouthPositionReferences
+import com.minimalpairs.app.ui.reference.Mouth3dState
+import com.minimalpairs.app.ui.reference.MouthView
+import com.minimalpairs.app.ui.reference.mouthPose
+import com.minimalpairs.app.core.hal.createAudioPlayer
+import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import kotlinx.coroutines.*
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -30,10 +41,17 @@ import org.jetbrains.compose.resources.painterResource
 fun MouthPositionReferenceCard(
     phoneme: String,
     exampleWord: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isRecording: Boolean = false
 ) {
     val reference = MouthPositionReferences.forPhoneme(phoneme)
     val scheme = MaterialTheme.colorScheme
+    val pose = mouthPose(phoneme, exampleWord)
+    val supports3d = mouth3dAvailable() && pose != null
+    var use3d by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    var view by remember { mutableStateOf(MouthView.front) }
+    var opacity by remember { mutableStateOf(.5f) }
 
     Surface(
         modifier = modifier.widthIn(max = 480.dp).fillMaxWidth(),
@@ -67,11 +85,69 @@ fun MouthPositionReferenceCard(
                 Text("A mouth-position reference is not available for this sound.", style = MaterialTheme.typography.bodyMedium)
             } else {
                 Text(reference.placementCue, style = MaterialTheme.typography.bodyMedium)
-                ReferenceView("Front view", reference.front, reference.frontDescription)
-                ReferenceView("Side view", reference.side, reference.sideDescription)
+                if (supports3d) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = !use3d, onClick = { use3d = false }, label = { Text("Illustration") })
+                        FilterChip(selected = use3d, onClick = { failed = false; use3d = true }, label = { Text("3D prototype") })
+                    }
+                }
+                if (supports3d && use3d && !failed) {
+                    Text("Educational prototype · awaiting phonetic review.", style = MaterialTheme.typography.labelMedium)
+                    Text("A reference vowel pose. It does not show your tongue or move in time with the word.", style = MaterialTheme.typography.bodySmall)
+                    Text("${reference.frontDescription} ${reference.sideDescription}", style = MaterialTheme.typography.bodySmall)
+                    Mouth3dViewport(
+                        state = Mouth3dState(pose, view, opacity),
+                        modifier = Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(12.dp)),
+                        onError = { failed = true }
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = view == MouthView.front, onClick = { view = MouthView.front }, label = { Text("Front") })
+                        FilterChip(selected = view == MouthView.side, onClick = { view = MouthView.side }, label = { Text("Side") })
+                        OutlinedButton(onClick = { view = MouthView.front; opacity = .5f }) { Text("Reset view") }
+                    }
+                    Text("Tissue opacity · ${(opacity * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = opacity, onValueChange = { opacity = it }, modifier = Modifier.semantics { contentDescription = "Tissue opacity" })
+                    key(exampleWord) { ReferenceWordAudio(exampleWord, isRecording) }
+                } else {
+                    if (failed && use3d && supports3d) Text("3D unavailable. Showing the illustration.", style = MaterialTheme.typography.bodySmall)
+                    ReferenceView("Front view", reference.front, reference.frontDescription)
+                    ReferenceView("Side view", reference.side, reference.sideDescription)
+                }
             }
         }
     }
+}
+
+/** Reuses bundled whole-word audio; it never enters the web view. */
+@Composable
+private fun ReferenceWordAudio(word: String, isRecording: Boolean) {
+    val player = remember { createAudioPlayer() }
+    var requested by remember { mutableStateOf(false) }
+    var unavailable by remember { mutableStateOf(false) }
+    LaunchedEffect(requested, isRecording) {
+        if (!requested || isRecording) { requested = false; return@LaunchedEffect }
+        try {
+            val samples = ElevenLabsAudioRepository.loadWordPcm(word)
+            if (samples == null) unavailable = true
+            else {
+                val completion = CompletableDeferred<Unit>()
+                player.play(samples) { completion.complete(Unit) }
+                completion.await()
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            unavailable = true
+        } finally {
+            withContext(NonCancellable) { player.stop() }
+            requested = false
+        }
+    }
+    OutlinedButton(enabled = !requested && !isRecording, onClick = {
+        unavailable = false
+        requested = true
+    }) { Text(if (requested) "Playing $word…" else "Listen to $word") }
+    if (unavailable) Text("Word audio unavailable.", style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
