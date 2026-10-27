@@ -720,6 +720,9 @@ interface ConfusionMatrixComponent {
     fun practiceContrast(id: String)
     fun practiceSpeaking(id: String, phoneme: String)
     fun startSpeaking()
+    fun setDateRange(range: ProgressDateRange) {}
+    fun setContrastFilter(contrastId: String?) {}
+    fun clearFilters() {}
     fun retrySaves()
     fun retryLoading()
     fun onBack()
@@ -736,6 +739,9 @@ class DefaultConfusionMatrixComponent(
     override fun practiceContrast(id: String) = onPractice(id)
     override fun practiceSpeaking(id: String, phoneme: String) = onSpeak(id, phoneme)
     override fun startSpeaking() = onSpeak(null, null)
+    override fun setDateRange(range: ProgressDateRange) = repository.setDateRange(range)
+    override fun setContrastFilter(contrastId: String?) = repository.setContrastFilter(contrastId)
+    override fun clearFilters() = repository.clearFilters()
     override fun retrySaves() = repository.retrySaves()
     override fun retryLoading() = repository.retryLoading()
     override fun onBack() = onBackClicked()

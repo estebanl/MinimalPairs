@@ -102,3 +102,22 @@ Feature: Persistent listening and speaking progress
     And daily activity, trends, sound patterns, and history expand independently
     When a detail section is collapsed and reopened
     Then its selected sound and expanded history choices are retained
+
+  Scenario: Browse older practice results
+    Given more than forty listening answers and scored speaking recordings
+    When the learner browses either history
+    Then older and newer pages make every saved result accessible
+    And each expanded page shows at most twenty results in newest-first order
+    And the visible range and total count are shown
+
+  Scenario: Filter progress by date and contrast
+    Given saved practice on multiple dates and contrasts
+    When the learner selects a date range and contrast
+    Then listening accuracy, trends, sound patterns, and history use matching answers
+    And speaking summaries and history use matching recordings
+    And date ranges use local calendar days including today
+    And streaks and due reviews remain global and are labeled accordingly
+    When no records match the filters
+    Then a filtered empty state offers a way to clear the filters
+    When the filters change
+    Then history browsing starts from the newest matching results

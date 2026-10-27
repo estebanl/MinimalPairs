@@ -13,6 +13,10 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 
 Progress stores listening attempts, mastery, review schedules, and scored speaking results locally. It includes listening accuracy, daily streaks, recent trends, per-contrast confusion matrices, and separate speaking summaries. Practice buttons open the relevant contrast or speaking sound. Failed writes can be retried while the app remains open; failed reads retain the last loaded totals.
 
+Filter results by All time, Last 7 days, or Last 30 days and by contrast. Date ranges include today in the current device time zone. Listening accuracy, trends, sound patterns, and both histories use the selected filters; streaks, daily activity, mastery, and review schedules continue to use all listening practice. Clear filters to return to the full history.
+
+Listening and speaking histories initially show five results. Expand either history to browse all matching results in pages of twenty using Older/Newer controls. Changing filters resets history browsing to the newest matching results; collapsing and reopening a section retains its current page. Paging limits rendered rows, but the repository still loads the complete stored history for summaries.
+
 The behavior contract is in [`specs/features/progress.feature`](specs/features/progress.feature). Database migration, retry, snapshot consistency, and rendered-screen checks run with `./gradlew :composeApp:jvmTest`. Shared Android tests run with `./gradlew :composeApp:testAndroidHostTest`; Android and iOS compilation use `:composeApp:compileAndroidMain` and `:composeApp:compileKotlinIosSimulatorArm64`.
 
 For a runtime check of navigation and persistence after an app restart, follow the [Progress simulator smoke test](docs/PROGRESS_SMOKE_TEST.md).

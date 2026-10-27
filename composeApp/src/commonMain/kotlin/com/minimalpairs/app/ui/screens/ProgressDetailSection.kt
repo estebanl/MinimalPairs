@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -25,6 +26,7 @@ internal fun ProgressDetailSection(title: String, summary: String, content: @Com
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         TextButton(
             onClick = { expanded = !expanded },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics {
                 stateDescription = if (expanded) "Expanded" else "Collapsed"
             }

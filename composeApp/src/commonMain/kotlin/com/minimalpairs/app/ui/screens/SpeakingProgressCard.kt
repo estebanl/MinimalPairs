@@ -22,9 +22,9 @@ internal fun SpeakingProgressCard(
     summaries: List<SpeakingSoundSummary>,
     nowEpochMs: Long,
     onStartSpeaking: () -> Unit,
-    onPractice: (String, String) -> Unit
+    onPractice: (String, String) -> Unit,
+    historyKey: String = ""
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
     var allSounds by rememberSaveable { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -63,22 +63,19 @@ internal fun SpeakingProgressCard(
                     }
                 }
                 if (summaries.size > 3) {
-                    TextButton(onClick = { allSounds = !allSounds }) {
+                    TextButton(onClick = { allSounds = !allSounds },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)) {
                         Text(if (allSounds) "Show fewer sounds" else "Show all ${summaries.size} sounds")
                     }
                 }
-                Text("Recent recordings", style = MaterialTheme.typography.titleLarge)
+                Text("Recording history", style = MaterialTheme.typography.titleLarge)
             }
-            records.take(if (expanded) 20 else 5).forEach { record ->
+            HistoryPages(records, historyKey, "recordings",
+                if (records.size <= 20) "Show latest ${records.size} recordings" else "Browse all ${records.size} recordings") { record ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("${record.targetWord} · /${record.targetPhoneme}/", style = MaterialTheme.typography.titleMedium)
                     Text("Score: ${record.score.roundToInt()}/100", style = MaterialTheme.typography.bodyLarge)
                     Text(answerAge(record.timestampEpochMs, nowEpochMs), style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            if (records.size > 5) {
-                TextButton(onClick = { expanded = !expanded }) {
-                    Text(if (expanded) "Show fewer recordings" else "Show latest ${minOf(records.size, 20)} recordings")
                 }
             }
             val latestContrast = records.firstOrNull()?.contrastId

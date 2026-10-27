@@ -35,6 +35,7 @@ data class AccuracyTrend(
 
 data class ProgressState(
     val loading: Boolean = true,
+    val hasLoadedProgress: Boolean = false,
     val error: String? = null,
     val pendingAnswers: Int = 0,
     val isSaving: Boolean = false,
@@ -45,6 +46,8 @@ data class ProgressState(
     val confusion: Map<String, Map<String, Int>> = emptyMap(),
     val trend: AccuracyTrend = AccuracyTrend(AccuracySample(0, 0), AccuracySample(0, 0)),
     val recentTrials: List<TrialRecordEntity> = emptyList(),
+    val listeningHistory: List<TrialRecordEntity> = emptyList(),
+    val filters: ProgressFilters = ProgressFilters(),
     val activity: PracticeActivity = PracticeActivity(),
     val reviews: ReviewSchedule = ReviewSchedule(),
     val speaking: List<SpeakingRecordEntity> = emptyList(),
@@ -68,9 +71,10 @@ fun summarizeProgress(trials: List<TrialRecordEntity>, cards: List<Sm2CardEntity
     val newestFirst = trials.sortedWith(compareByDescending<TrialRecordEntity> { it.timestampEpochMs }.thenByDescending { it.id })
     fun sample(records: List<TrialRecordEntity>) = AccuracySample(records.size, records.count { it.isCorrect })
     return ProgressState(
-        loading = false, contrasts = contrasts, confusion = confusion,
+        loading = false, hasLoadedProgress = true, contrasts = contrasts, confusion = confusion,
         trend = AccuracyTrend(sample(newestFirst.take(20)), sample(newestFirst.drop(20).take(20))),
         recentTrials = newestFirst.take(20),
+        listeningHistory = newestFirst,
         activity = summarizeActivity(trials, calendar),
         reviews = reviewSchedule(cards, nowEpochMs),
         nowEpochMs = nowEpochMs
@@ -124,30 +128,53 @@ class ProgressRepository(
     private val saveStatus = combine(pending, saving, saveFailed) { answers, active, failed ->
         SaveStatus(answers.size, active, failed)
     }
+    private data class LoadedSnapshot(
+        val snapshot: ProgressSnapshot? = null,
+        val isRefreshing: Boolean = false,
+        val canRetryLoad: Boolean = false,
+        val error: String? = null
+    )
     private data class LoadedProgress(val progress: ProgressState, val cards: List<Sm2CardEntity>)
+    private val filters = MutableStateFlow(ProgressFilters())
     private val reload = MutableStateFlow(0)
-    private var lastLoaded = LoadedProgress(ProgressState(), emptyList())
-    private val progress = reload.flatMapLatest { attempt ->
+    private var lastSnapshot: ProgressSnapshot? = null
+    private val snapshots = reload.flatMapLatest { attempt ->
         flow {
-            emit(lastLoaded.copy(progress = lastLoaded.progress.copy(isRefreshing = true, canRetryLoad = attempt > 0)))
-            // Construct the database flows here so synchronous open errors can also be retried.
-            emitAll(combine(store.observe(), calendar) { snapshot, day ->
-                LoadedProgress(
-                    summarizeProgress(snapshot.trials, snapshot.cards, day, nowEpochMs()).copy(
-                        speaking = snapshot.speaking,
-                        speakingSummaries = summarizeSpeaking(snapshot.speaking)
-                    ),
-                    snapshot.cards
-                )
-            }.flowOn(aggregationDispatcher).onEach { lastLoaded = it })
+            emit(LoadedSnapshot(lastSnapshot, isRefreshing = true, canRetryLoad = attempt > 0))
+            // Keep the raw snapshot so filter changes also work while reads are unavailable.
+            emitAll(store.observe().map { snapshot ->
+                lastSnapshot = snapshot
+                LoadedSnapshot(snapshot)
+            })
         }.catch {
-            val message = if (lastLoaded.progress.loading) "Couldn't load progress. Try again."
+            val message = if (lastSnapshot == null) "Couldn't load progress. Try again."
             else "Couldn't refresh progress. Showing the last loaded totals. Retry to get the latest progress."
-            emit(lastLoaded.copy(progress = lastLoaded.progress.copy(
-                loading = false, isRefreshing = false, canRetryLoad = true, error = message
-            )))
+            emit(LoadedSnapshot(lastSnapshot, canRetryLoad = true, error = message))
         }
     }
+    private var lastAggregated: LoadedProgress? = null
+    private val progress = combine(snapshots, calendar, filters) { loaded, day, selected ->
+        try {
+            val summary = loaded.snapshot?.let { summarizeFilteredProgress(it, day, selected, nowEpochMs()) }
+                ?: ProgressState(loading = !loaded.canRetryLoad, filters = selected)
+            LoadedProgress(summary.copy(
+                isRefreshing = loaded.isRefreshing,
+                canRetryLoad = loaded.canRetryLoad,
+                error = loaded.error
+            ), loaded.snapshot?.cards.orEmpty()).also {
+                if (loaded.snapshot != null) lastAggregated = it
+            }
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            val previous = lastAggregated ?: LoadedProgress(ProgressState(filters = selected), emptyList())
+            val message = if (!previous.progress.hasLoadedProgress) "Couldn't load progress. Try again."
+                else "Couldn't refresh progress. Showing the last loaded totals. Retry to get the latest progress."
+            // Preserve the previous filters too: old totals must not be labeled with a new selection.
+            previous.copy(progress = previous.progress.copy(
+                loading = false, isRefreshing = false, canRetryLoad = true, error = message
+            ))
+        }
+    }.flowOn(aggregationDispatcher)
     val state: StateFlow<ProgressState> = combine(progress, refresh, saveStatus) { loaded, _, saves ->
         // Read the wall clock on every data/status update, not just on the periodic tick.
         val now = nowEpochMs()
@@ -182,6 +209,15 @@ class ProgressRepository(
     fun retrySaves() = drainPending()
 
     fun retryLoading() { reload.update { it + 1 } }
+
+    fun setDateRange(range: ProgressDateRange) { filters.update { it.copy(dateRange = range) } }
+
+    fun setContrastFilter(contrastId: String?) {
+        require(contrastId == null || ListeningContrastsCatalog.getContrastById(contrastId) != null)
+        filters.update { it.copy(contrastId = contrastId) }
+    }
+
+    fun clearFilters() { filters.value = ProgressFilters() }
 
     private fun drainPending() {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {

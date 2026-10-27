@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +45,8 @@ internal fun ReviewsDueCard(schedule: ReviewSchedule, nowEpochMs: Long, onReview
                     }
                 }
                 if (schedule.due.size > 3) {
-                    TextButton(onClick = { expanded = !expanded }) {
+                    TextButton(onClick = { expanded = !expanded },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)) {
                         Text(if (expanded) "Show fewer reviews" else "Show all ${schedule.due.size} reviews")
                     }
                 }

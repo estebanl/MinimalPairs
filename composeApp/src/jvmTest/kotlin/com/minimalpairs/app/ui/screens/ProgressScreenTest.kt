@@ -128,7 +128,7 @@ class ProgressScreenTest {
                     assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
                     assertTrue(nodes().any { it.text() == "No reviews due" })
                     assertEquals(5, nodes().count { it.text() == "Correct · sheep" })
-                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Show all 20 answers" }
+                    nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Browse all 40 answers" }
                         .config[SemanticsActions.OnClick].action!!.invoke()
                     settle()
                     assertEquals(20, nodes().count { it.text() == "Correct · sheep" })

@@ -8,9 +8,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.data.progress.AccuracySample
@@ -21,7 +19,7 @@ import kotlin.time.Clock
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun AccuracyTrendCard(trend: AccuracyTrend) {
+internal fun AccuracyTrendCard(trend: AccuracyTrend, filtered: Boolean = false) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Recent accuracy", style = MaterialTheme.typography.titleLarge)
@@ -39,7 +37,11 @@ internal fun AccuracyTrendCard(trend: AccuracyTrend) {
                 },
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text("Includes all listening contrasts. Practicing different sounds can affect the comparison.", style = MaterialTheme.typography.bodySmall)
+            Text(
+                if (filtered) "Uses answers matching the selected filters. Practicing different sounds can affect the comparison."
+                else "Includes all listening contrasts. Practicing different sounds can affect the comparison.",
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -55,8 +57,7 @@ private fun AccuracySampleRow(label: String, sample: AccuracySample) {
 }
 
 @Composable
-internal fun PracticeHistory(trials: List<TrialRecordEntity>) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+internal fun PracticeHistory(trials: List<TrialRecordEntity>, historyKey: String = "") {
     var now by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -67,19 +68,15 @@ internal fun PracticeHistory(trials: List<TrialRecordEntity>) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Practice history", style = MaterialTheme.typography.titleLarge)
-            Text("Your latest ${trials.size} listening ${if (trials.size == 1) "answer" else "answers"}.", style = MaterialTheme.typography.bodySmall)
-            trials.take(if (expanded) 20 else 5).forEach { trial ->
+            Text("${trials.size} listening ${if (trials.size == 1) "answer" else "answers"} · newest first.", style = MaterialTheme.typography.bodySmall)
+            HistoryPages(trials, historyKey, "answers",
+                if (trials.size <= 20) "Show all ${trials.size} answers" else "Browse all ${trials.size} answers") { trial ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         if (trial.isCorrect) "Correct · ${trial.targetWord}" else "Heard ${trial.targetWord} · chose ${trial.selectedWord}",
                         style = MaterialTheme.typography.titleSmall
                     )
                     Text(answerAge(trial.timestampEpochMs, now), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            if (trials.size > 5) {
-                TextButton(onClick = { expanded = !expanded }) {
-                    Text(if (expanded) "Show fewer answers" else "Show all ${trials.size} answers")
                 }
             }
         }

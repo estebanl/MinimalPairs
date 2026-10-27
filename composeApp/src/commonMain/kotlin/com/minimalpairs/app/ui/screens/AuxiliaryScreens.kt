@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,7 @@ fun ConfusionMatrixScreen(
         ) {
             Text("Every practice counts.", style = MaterialTheme.typography.headlineLarge)
             Text("Review your listening patterns and speaking scores.", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
+            ProgressFilterControls(state.filters, component::setDateRange, component::setContrastFilter, component::clearFilters)
             Text("Listening practice", style = MaterialTheme.typography.labelLarge)
             state.error?.let {
                 Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium,
@@ -77,6 +79,8 @@ fun ConfusionMatrixScreen(
             }
             if (state.loading) {
                 Text("Loading your progress…", style = MaterialTheme.typography.bodyLarge)
+            } else if (state.attempts == 0 && state.filters.isActive && state.error == null) {
+                Text("No listening answers match these filters.", style = MaterialTheme.typography.bodyLarge)
             } else if (state.attempts == 0 && state.speaking.isNotEmpty() && state.error == null) {
                 Text("No listening answers yet.", style = MaterialTheme.typography.bodyLarge)
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Start listening") }
@@ -97,11 +101,11 @@ fun ConfusionMatrixScreen(
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("${state.accuracy}% accuracy", style = MaterialTheme.typography.headlineMedium)
                         Text("Answers: ${state.attempts} · Contrasts practiced: ${state.contrasts.size}")
-                        Text("Current streak: ${state.activity.currentStreak} ${if (state.activity.currentStreak == 1) "day" else "days"}", style = MaterialTheme.typography.bodyMedium)
+                        if (!state.filters.isActive) Text("Current streak: ${state.activity.currentStreak} ${if (state.activity.currentStreak == 1) "day" else "days"}", style = MaterialTheme.typography.bodyMedium)
                         Text("Accuracy is the share of listening answers you got right.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                ReviewsDueCard(state.reviews, state.nowEpochMs, component::practiceContrast)
+                if (!state.filters.isActive) ReviewsDueCard(state.reviews, state.nowEpochMs, component::practiceContrast)
                 Text("Practice next", style = MaterialTheme.typography.titleLarge)
                 Text("Your lowest-accuracy contrasts come first. Small samples can change quickly.", style = MaterialTheme.typography.bodyMedium)
                 practicedContrasts.take(if (showAllContrasts) practicedContrasts.size else 3).forEach { progress ->
@@ -124,31 +128,46 @@ fun ConfusionMatrixScreen(
                     }
                 }
                 if (practicedContrasts.size > 3) {
-                    TextButton(onClick = { showAllContrasts = !showAllContrasts }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    TextButton(onClick = { showAllContrasts = !showAllContrasts }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)) {
                         Text(if (showAllContrasts) "Show fewer contrasts" else "Show all ${practicedContrasts.size} contrasts")
                     }
                 }
                 Text("Mastery estimates use answer speed and repeated success to plan reviews. They are separate from accuracy.", style = MaterialTheme.typography.bodySmall)
-                ProgressDetailSection("Daily activity", "Your last seven days and longest streak.") {
-                    PracticeActivityCard(state.activity)
+                if (!state.filters.isActive) {
+                    ProgressDetailSection("Daily activity", "Your last seven days and longest streak.") {
+                        PracticeActivityCard(state.activity)
+                    }
                 }
                 ProgressDetailSection("Accuracy trends", "Compare your latest answers with earlier practice.") {
-                    AccuracyTrendCard(state.trend)
+                    AccuracyTrendCard(state.trend, state.filters.isActive)
                 }
                 ProgressDetailSection("Sound patterns", "See which sounds you recognize and mix up.") {
                     SoundConfusionMatrix(state.contrasts, component::practiceContrast)
                 }
                 ProgressDetailSection("Practice history", "Review your latest listening answers.") {
-                    PracticeHistory(state.recentTrials)
+                    PracticeHistory(state.listeningHistory, historyKey = state.filters.historyKey)
                 }
                 Button(onClick = onPractice, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Keep listening") }
+            }
+            if (state.hasLoadedProgress && state.filters.isActive) {
+                Text("All listening practice", style = MaterialTheme.typography.titleMedium)
+                Text("Current streak: ${state.activity.currentStreak} ${if (state.activity.currentStreak == 1) "day" else "days"}")
+                ReviewsDueCard(state.reviews, state.nowEpochMs, component::practiceContrast)
+                ProgressDetailSection("Daily activity", "All listening practice: your last seven days and longest streak.") {
+                    PracticeActivityCard(state.activity)
+                }
             }
             // A failed read is not evidence of an empty speaking history.
             // Retain any cached results while the shared error offers a retry.
             if (!state.loading && (!state.canRetryLoad || state.speaking.isNotEmpty())) {
                 ProgressDetailSection("Speaking progress", "${state.speaking.size} scored ${if (state.speaking.size == 1) "recording" else "recordings"} · separate from listening accuracy.") {
-                    SpeakingProgressCard(state.speaking, state.speakingSummaries, state.nowEpochMs,
-                        component::startSpeaking, component::practiceSpeaking)
+                    if (state.filters.isActive && state.speaking.isEmpty()) {
+                        Text("No speaking recordings match these filters.", style = MaterialTheme.typography.bodyLarge)
+                    } else {
+                        SpeakingProgressCard(state.speaking, state.speakingSummaries, state.nowEpochMs,
+                            component::startSpeaking, component::practiceSpeaking, historyKey = state.filters.historyKey)
+                    }
                 }
             }
         }
