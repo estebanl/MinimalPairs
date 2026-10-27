@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,7 +43,8 @@ fun VowelTrapezoidPlot(
     liveF1: Float? = null,
     liveF2: Float? = null,
     modifier: Modifier = Modifier
-        .fillMaxWidth()
+        .fillMaxWidth(),
+    targetPhoneme: String? = null
 ) {
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
@@ -62,18 +64,34 @@ fun VowelTrapezoidPlot(
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(10.dp).background(colors.accentInk, RoundedCornerShape(5.dp)))
-                    Spacer(Modifier.width(4.dp))
-                    Text("/${contrast.phoneme1}/", style = MaterialTheme.typography.labelSmall)
-                    Spacer(Modifier.width(10.dp))
-                    Box(modifier = Modifier.size(10.dp).background(colors.warning, RoundedCornerShape(5.dp)))
-                    Spacer(Modifier.width(4.dp))
-                    Text("/${contrast.phoneme2}/", style = MaterialTheme.typography.labelSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(contrast.phoneme1 to colors.accentInk, contrast.phoneme2 to colors.warning)
+                        .forEach { (phoneme, color) ->
+                            val selected = phoneme == targetPhoneme
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(10.dp).background(color, RoundedCornerShape(5.dp)))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    if (selected) "/$phoneme/ · Target" else "/$phoneme/",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).background(colors.success, RoundedCornerShape(5.dp)))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Your sound", style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             }
 
             Spacer(Modifier.height(8.dp))
+
+            Text("F1 · Low at top, high at bottom",
+                style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
 
             Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                 val w = size.width
@@ -99,10 +117,12 @@ fun VowelTrapezoidPlot(
                 }
 
                 // Region 1 (Phoneme 1)
-                drawAcousticRegion(contrast.boundsPhoneme1, ::mapX, ::mapY, colors.accentInk)
+                drawAcousticRegion(contrast.boundsPhoneme1, ::mapX, ::mapY, colors.accentInk,
+                    selected = targetPhoneme == contrast.phoneme1)
 
                 // Region 2 (Phoneme 2)
-                drawAcousticRegion(contrast.boundsPhoneme2, ::mapX, ::mapY, colors.warning)
+                drawAcousticRegion(contrast.boundsPhoneme2, ::mapX, ::mapY, colors.warning,
+                    selected = targetPhoneme == contrast.phoneme2)
 
                 // Live User Coordinate (Green / White glowing dot)
                 if (liveF1 != null && liveF2 != null && liveF1 in 150f..1100f && liveF2 in 700f..3000f) {
@@ -130,7 +150,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAcousticRegion(
     bounds: PhoneticBounds,
     mapX: (Float) -> Float,
     mapY: (Float) -> Float,
-    color: Color
+    color: Color,
+    selected: Boolean
 ) {
     val x1 = mapX(bounds.f2MaxHz) // Note: F2 inverted
     val x2 = mapX(bounds.f2MinHz)
@@ -144,7 +165,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAcousticRegion(
 
     // Filled translucent region
     drawRoundRect(
-        color = color.copy(alpha = 0.25f),
+        color = color.copy(alpha = if (selected) 0.4f else 0.15f),
         topLeft = Offset(left, top),
         size = Size(width, height),
         cornerRadius = CornerRadius(12f, 12f)
@@ -155,7 +176,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAcousticRegion(
         topLeft = Offset(left, top),
         size = Size(width, height),
         cornerRadius = CornerRadius(12f, 12f),
-        style = Stroke(width = 2f)
+        style = Stroke(width = if (selected) 3.dp.toPx() else 1.dp.toPx())
     )
 }
 

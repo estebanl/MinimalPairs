@@ -25,7 +25,7 @@ object LpcFormantExtractor {
 
     fun extract(samples: ShortArray): FormantResult {
         if (samples.size < FRAME_LEN) {
-            return FormantResult(f1Hz = 350f, f2Hz = 2200f, f3Hz = 2800f, durationMs = 0, voicedRatio = 0.0f)
+            return FormantResult(0f, 0f, 0f, 0, 0f)
         }
 
         // 1. Calculate energy across frames to identify voiced vowel core
@@ -54,6 +54,7 @@ object LpcFormantExtractor {
         var f2Sum = 0.0f
         var f3Sum = 0.0f
         var validFormantCount = 0
+        var validF3Count = 0
 
         // 2. Analyze voiced frames
         val window = FloatArray(FRAME_LEN) { i ->
@@ -113,17 +114,23 @@ object LpcFormantExtractor {
             if (peaks.size >= 2) {
                 f1Sum += peaks[0]
                 f2Sum += peaks[1]
-                f3Sum += if (peaks.size >= 3) peaks[2] else 2800f
+                if (peaks.size >= 3) {
+                    f3Sum += peaks[2]
+                    validF3Count++
+                }
                 validFormantCount++
             }
         }
 
+        // Energy alone is not evidence of a measurable vowel. Never publish placeholder formants.
+        if (validFormantCount == 0) return FormantResult(0f, 0f, 0f, 0, 0f)
+
         val durationMs = (voicedFrames * HOP_LEN * 1000) / SAMPLE_RATE
         val voicedRatio = if (numFrames > 0) voicedFrames.toFloat() / numFrames else 0.0f
 
-        val avgF1 = if (validFormantCount > 0) f1Sum / validFormantCount else 350f
-        val avgF2 = if (validFormantCount > 0) f2Sum / validFormantCount else 2200f
-        val avgF3 = if (validFormantCount > 0) f3Sum / validFormantCount else 2800f
+        val avgF1 = f1Sum / validFormantCount
+        val avgF2 = f2Sum / validFormantCount
+        val avgF3 = if (validF3Count > 0) f3Sum / validF3Count else 0f
 
         return FormantResult(
             f1Hz = avgF1,

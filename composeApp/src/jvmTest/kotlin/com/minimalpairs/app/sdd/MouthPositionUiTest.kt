@@ -36,6 +36,36 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalComposeUiApi::class)
 class MouthPositionUiTest {
     @Test
+    fun soundMapIdentifiesSelectedTargetAndExplainsBothAxesAndUserDot() {
+        val component = ReferenceScreenComponent()
+        ImageComposeScene(390, 1800) {
+            MinimalPairsTheme { ArticulatorLabScreen(component) }
+        }.use { scene ->
+            scene.render().close()
+            scene.click("Sound map")
+            for (first in listOf(true, false)) {
+                component.switchTargetPhoneme(first)
+                scene.render().close()
+                val contrast = component.state.value.contrast
+                val target = if (first) contrast.phoneme1 else contrast.phoneme2
+                val other = if (first) contrast.phoneme2 else contrast.phoneme1
+                val labels = scene.nodes().mapNotNull { it.text() }
+                assertTrue("/$target/ · Target" in labels)
+                assertFalse("/$other/ · Target" in labels)
+                assertTrue("Your sound" in labels)
+                assertTrue("F1 · Low at top, high at bottom" in labels)
+                assertTrue("Front (F2 High)" in labels)
+                assertTrue("Back (F2 Low)" in labels)
+                val image = scene.render()
+                val file = File("build/reports/sound-map/target-$first.png")
+                file.parentFile.mkdirs()
+                file.writeBytes(image.encodeToData()!!.bytes)
+                image.close()
+            }
+        }
+    }
+
+    @Test
     fun cardRendersWithoutTextOverflowAtNarrowAndWideSizesInBothThemes() {
         for ((width, fontScale) in listOf(272 to 1f, 272 to 1.8f, 720 to 1f)) {
             for (dark in listOf(false, true)) {

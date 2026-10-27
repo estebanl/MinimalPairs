@@ -5,13 +5,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
@@ -29,8 +28,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -48,7 +45,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,20 +69,20 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Box
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticulatorLabScreen(
     component: ArticulatorLabComponent,
     modifier: Modifier = Modifier,
-    topBarWindowInsets: WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+    contentWindowInsets: WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
 ) {
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
     val isRecording = state.recorderState == AudioRecorderState.RECORDING
+    val showPlayback = state.hasRecording && !isRecording
     val canSelectTarget = !isRecording && !state.isBusy
     val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
-    var visualMode by rememberSaveable { mutableStateOf(3) }
+    var visualMode by rememberSaveable { mutableStateOf(0) }
     var permissionDenied by remember { mutableStateOf(false) }
     val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
         permissionDenied = !granted
@@ -94,21 +90,7 @@ fun ArticulatorLabScreen(
     }
 
     Scaffold(
-        topBar = {
-            // A custom top bar must handle the safe area that Material top bars apply internally.
-            Box(Modifier.fillMaxWidth().windowInsetsPadding(topBarWindowInsets), contentAlignment = Alignment.Center) {
-                Row(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(start = 12.dp, end = 20.dp, top = 14.dp, bottom = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = component::onBack) { PracticeIcon(PracticeIcon.Back, "Back") }
-                    Column(Modifier.padding(start = 4.dp)) {
-                        Text("Speak", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold,
-                            fontSize = 34.sp, lineHeight = 38.sp)
-                        Text(if (visualMode == 3) "Camera practice" else "Shape your sound",
-                            fontSize = 15.sp, lineHeight = 20.sp, color = scheme.onSurfaceVariant)
-                    }
-                }
-            }
-        },
+        contentWindowInsets = contentWindowInsets,
         bottomBar = {
             Surface(color = scheme.background) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
@@ -119,9 +101,20 @@ fun ArticulatorLabScreen(
                         Spacer(Modifier.height(8.dp))
                     }
 
+                    if (state.isBusy) {
+                        Text(
+                            when {
+                                state.isScoring -> "Reviewing your sound…"
+                                state.isPlaying -> "Playing…"
+                                else -> "Preparing microphone…"
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     Row(
                         modifier = Modifier.widthIn(max = 524.dp).fillMaxWidth().height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
                             onClick = { component.playPhonemeExample(state.isTargetPhoneme1) },
@@ -129,39 +122,59 @@ fun ArticulatorLabScreen(
                             shape = RoundedCornerShape(16.dp),
                             border = BorderStroke(1.dp, scheme.outlineVariant),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.onBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
                             modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                                .semantics { contentDescription = "Hear /$targetPhoneme/ example" }
                         ) {
-                            PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(22.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Hear /$targetPhoneme/", fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text("Example", fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                        if (showPlayback) {
+                            Button(
+                                onClick = component::playRecording,
+                                enabled = !state.isBusy,
+                                shape = RoundedCornerShape(16.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                                    .semantics { contentDescription = "Play my recording" }
+                            ) {
+                                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    LabIcon(LabIcon.Play, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("Play mine", fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                                }
+                            }
                         }
                         Button(
                             onClick = { if (isRecording) component.toggleRecording() else requestMicrophone() },
                             enabled = !state.isBusy,
                             shape = RoundedCornerShape(16.dp),
+                            border = if (showPlayback) BorderStroke(1.dp, scheme.outlineVariant) else null,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isRecording) scheme.error else scheme.primary,
-                                contentColor = if (isRecording) scheme.onError else scheme.onPrimary
-                            ),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
-                            modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
-                        ) {
-                            PracticeIcon(if (isRecording) PracticeIcon.Stop else PracticeIcon.Speak, modifier = Modifier.size(22.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = when {
-                                    state.isScoring -> "Reviewing your sound…"
-                                    state.isPlaying -> "Playing…"
-                                    state.isBusy -> "Preparing microphone…"
-                                    isRecording -> "Stop and review"
-                                    else -> "Record your sound"
+                                containerColor = when {
+                                    isRecording -> scheme.error
+                                    showPlayback -> scheme.background
+                                    else -> scheme.primary
                                 },
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                textAlign = TextAlign.Center
-                            )
+                                contentColor = when {
+                                    isRecording -> scheme.onError
+                                    showPlayback -> scheme.onBackground
+                                    else -> scheme.onPrimary
+                                }
+                            ),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                            modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                                .semantics { contentDescription = if (isRecording) "Stop recording" else "Record your sound" }
+                        ) {
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                PracticeIcon(if (isRecording) PracticeIcon.Stop else PracticeIcon.Speak, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text(if (isRecording) "Stop" else "Record", fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
 
@@ -251,6 +264,7 @@ fun ArticulatorLabScreen(
                 if (visualMode == 0) {
                     VowelTrapezoidPlot(
                         contrast = state.contrast,
+                        targetPhoneme = targetPhoneme,
                         liveF1 = if (state.liveF1 > 0f) state.liveF1 else null,
                         liveF2 = if (state.liveF2 > 0f) state.liveF2 else null
                     )
@@ -299,11 +313,6 @@ fun ArticulatorLabScreen(
                 }
                 state.feedback?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium)
-                }
-                if (state.hasRecording) {
-                    OutlinedButton(onClick = component::playRecording, enabled = !state.isBusy && !isRecording) {
-                        Text("Listen to your recording")
-                    }
                 }
                 state.overallGopScore?.let { score ->
                     Text("Your sound score · ${score.toInt()}/100", style = MaterialTheme.typography.titleMedium, color = if (score >= 80f) colors.success else colors.warning)

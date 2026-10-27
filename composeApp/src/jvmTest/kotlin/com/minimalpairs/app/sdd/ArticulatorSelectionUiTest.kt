@@ -30,10 +30,9 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalComposeUiApi::class)
 class ArticulatorSelectionUiTest {
     @Test
-    fun customHeaderRespectsSafeAreaWithoutApplyingConsumedInsetsTwice() {
-        var baselineTitleTop = 0f
-        var baselineTitleLeft = 0f
-        var baselineBackTop = 0f
+    fun contentRespectsSafeAreaWithoutHeaderOrApplyingConsumedInsetsTwice() {
+        var baselineContentTop = 0f
+        var baselineContentLeft = 0f
         for ((top, side, parentConsumes) in listOf(
             Triple(0, 0, false), Triple(44, 0, false), Triple(59, 24, false), Triple(59, 24, true)
         )) {
@@ -41,26 +40,23 @@ class ArticulatorSelectionUiTest {
             ImageComposeScene(390, 844) {
                 MinimalPairsTheme(darkTheme = true) {
                     Box(if (parentConsumes) Modifier.windowInsetsPadding(insets) else Modifier) {
-                        ArticulatorLabScreen(SelectionComponent(), topBarWindowInsets = insets)
+                        ArticulatorLabScreen(SelectionComponent(), contentWindowInsets = insets)
                     }
                 }
             }.use { scene ->
                 scene.render().close()
-                val title = scene.nodes().first { it.text() == "Speak" }.boundsInRoot
-                val back = scene.nodes().first { it.matches("Back") }.boundsInRoot
-                val subtitle = scene.nodes().first { it.text() == "Camera practice" }.boundsInRoot
+                val content = scene.nodes().first { it.text() == "Sound pair" }.boundsInRoot
+                assertTrue(scene.nodes().none { it.text() == "Speak" || it.matches("Back") || it.text() == "Camera practice" })
                 if (top == 0) {
-                    baselineTitleTop = title.top
-                    baselineTitleLeft = title.left
-                    baselineBackTop = back.top
+                    baselineContentTop = content.top
+                    baselineContentLeft = content.left
+                    assertEquals(0f, content.top, "Content should use the space freed by the header")
                 }
-                assertEquals(baselineTitleTop + top, title.top, "Safe area must be applied exactly once")
-                assertEquals(baselineTitleLeft + side, title.left)
-                assertEquals(baselineBackTop + top, back.top)
-                assertTrue(title.top >= top && back.top >= top)
-                assertTrue(subtitle.top >= title.bottom)
+                assertEquals(baselineContentTop + top, content.top, "Safe area must be applied exactly once")
+                assertEquals(baselineContentLeft + side, content.left)
+                assertTrue(content.top >= top)
                 if (top == 59 && !parentConsumes) {
-                    val output = File("build/reports/articulator/header-safe-area.png")
+                    val output = File("build/reports/articulator/content-safe-area.png")
                     output.parentFile.mkdirs()
                     scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
                 }
@@ -73,10 +69,12 @@ class ArticulatorSelectionUiTest {
         val component = SelectionComponent()
         ImageComposeScene(430, 932) { MinimalPairsTheme(darkTheme = false) { ArticulatorLabScreen(component) } }.use { scene ->
             scene.render().close()
+            scene.click("Camera")
+            scene.render().close()
             assertTrue(scene.nodes().any { it.text() == "Camera off" })
             assertTrue(scene.nodes().any { it.text() == "Start camera" })
             assertTrue(scene.nodes().any { it.text() == "Match the lip shape" })
-            scene.click("Hear /iː/")
+            scene.click("Example")
             assertEquals(1, component.examplePlays)
             val image = scene.render()
             val output = File("build/reports/articulator/camera-practice.png")
@@ -91,7 +89,7 @@ class ArticulatorSelectionUiTest {
         for ((width, scale) in listOf(320 to 1f, 390 to 1f, 320 to 1.8f)) {
             for (dark in listOf(false, true)) {
                 ImageComposeScene(width, 932, density = Density(1f, scale)) {
-                    MinimalPairsTheme(darkTheme = dark) { ArticulatorLabScreen(SelectionComponent()) }
+                    MinimalPairsTheme(darkTheme = dark) { ArticulatorLabScreen(SelectionComponent().apply { state.value = state.value.copy(hasRecording = true) }) }
                 }.use { scene ->
                     scene.render().close()
                     val output = File("build/reports/articulator/mirror-$width-$scale-$dark.png")
@@ -125,7 +123,7 @@ class ArticulatorSelectionUiTest {
             component.state.value = component.state.value.copy(recorderState = AudioRecorderState.RECORDING)
             scene.render().close()
             fun recordingButton() = scene.nodes().single {
-                it.text() == "Stop and review" && it.config.getOrNull(SemanticsActions.OnClick) != null
+                it.text() == "Stop" && it.config.getOrNull(SemanticsActions.OnClick) != null
             }
             val before = recordingButton().boundsInRoot
             assertTrue(before.height >= 48f && before.top >= 0f && before.bottom <= 640f)
@@ -137,7 +135,7 @@ class ArticulatorSelectionUiTest {
                 (it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)?.value?.invoke() ?: 0f) > 0f
             }, "Reference content must actually scroll before checking the pinned control")
             assertEquals(before, recordingButton().boundsInRoot)
-            scene.click("Stop and review")
+            scene.click("Stop recording")
             assertEquals(1, component.recordingToggles)
             val image = scene.render()
             val output = File("build/reports/articulator/recording-control.png")
@@ -159,16 +157,16 @@ class ArticulatorSelectionUiTest {
             scene.render().close()
             assertEquals(0, component.state.value.selectedPairIndex)
             assertEquals("ae_vs_e", component.state.value.contrast.id)
-            scene.click("Hear /æ/")
+            scene.click("Example")
             assertEquals(true, component.lastPlayedFirst)
             scene.click("bed /e/")
             scene.render().close()
             assertTrue(!component.state.value.isTargetPhoneme1)
-            scene.click("Hear /e/")
+            scene.click("Example")
             assertEquals(false, component.lastPlayedFirst)
             component.state.value = component.state.value.copy(recorderState = AudioRecorderState.RECORDING)
             scene.render().close()
-            for (label in listOf("Change sound pair", "bed /e/", "Hear /e/")) {
+            for (label in listOf("Change sound pair", "bed /e/", "Example")) {
                 assertNotNull(scene.nodes().first { it.matches(label) }.config.getOrNull(SemanticsProperties.Disabled))
             }
             val image = scene.render()
@@ -176,6 +174,53 @@ class ArticulatorSelectionUiTest {
             output.parentFile.mkdirs()
             output.writeBytes(image.encodeToData()!!.bytes)
             image.close()
+        }
+    }
+
+    @Test
+    fun recordedPlaybackAppearsInBottomControlsOnlyAfterRecording() {
+        val component = SelectionComponent()
+        ImageComposeScene(320, 640) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.render().close()
+            assertTrue(scene.nodes().none { it.matches("Play my recording") })
+            component.state.value = component.state.value.copy(hasRecording = true)
+            scene.render().close()
+            val playback = scene.nodes().single {
+                it.matches("Play my recording") && it.config.getOrNull(SemanticsActions.OnClick) != null
+            }
+            assertTrue(playback.boundsInRoot.top >= 0 && playback.boundsInRoot.bottom <= 640)
+            val controls = listOf("Example", "Play mine", "Record").map { label ->
+                scene.nodes().first { it.matches(label) && it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+            }
+            assertEquals(1, controls.map { it.top }.distinct().size)
+            assertTrue(controls.all { it.left >= 0 && it.right <= 320 })
+            val before = playback.boundsInRoot
+            val scroll = scene.nodes().first { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
+            assertTrue(scroll.config[SemanticsActions.ScrollBy].action!!.invoke(0f, 1000f))
+            val start = System.nanoTime()
+            repeat(15) { scene.render(start + it * 50_000_000L).close() }
+            assertEquals(before, scene.nodes().first {
+                it.matches("Play my recording") && it.config.getOrNull(SemanticsActions.OnClick) != null
+            }.boundsInRoot)
+            scene.click("Play my recording")
+            assertEquals(1, component.recordingPlays)
+            scene.click("Example")
+            assertEquals(1, component.examplePlays)
+            assertTrue(scene.nodes().any { it.matches("Record") })
+            val output = File("build/reports/articulator/recording-playback.png")
+            output.parentFile.mkdirs()
+            scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+            component.state.value = component.state.value.copy(isBusy = true, isScoring = true)
+            scene.render().close()
+            assertNotNull(scene.nodes().first { it.matches("Play my recording") }.config.getOrNull(SemanticsProperties.Disabled))
+            component.state.value = component.state.value.copy(isBusy = false, isScoring = false, recorderState = AudioRecorderState.RECORDING)
+            scene.render().close()
+            assertTrue(scene.nodes().none { it.matches("Play my recording") })
+            scene.click("Stop recording")
+            assertEquals(1, component.recordingToggles)
+            component.state.value = ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first())
+            scene.render().close()
+            assertTrue(scene.nodes().none { it.matches("Play my recording") })
         }
     }
 
@@ -193,6 +238,8 @@ class ArticulatorSelectionUiTest {
     }
     private class SelectionComponent : ArticulatorLabComponent {
         var recordingToggles = 0
+        var recordingPlays = 0
+        override fun playRecording() { recordingPlays++ }
         var examplePlays = 0
         var lastPlayedFirst: Boolean? = null
         override val state = MutableStateFlow(ArticulatorLabUiState(VowelContrastsCatalog.defaultContrasts.first()))

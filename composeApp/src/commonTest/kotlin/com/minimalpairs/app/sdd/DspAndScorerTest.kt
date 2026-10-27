@@ -12,6 +12,19 @@ import kotlin.test.assertTrue
 class DspAndScorerTest {
 
     @Test
+    fun inputWithoutFormantPeaksDoesNotInventAMeasurement() {
+        // An isolated impulse has energy but no pair of vowel resonances.
+        for (samples in listOf(ShortArray(100), ShortArray(3200),
+            ShortArray(400) { if (it == 399) 10000 else 0 })) {
+            val result = LpcFormantExtractor.extract(samples)
+            assertEquals(0f, result.f1Hz)
+            assertEquals(0f, result.f2Hz)
+            assertEquals(0f, result.f3Hz)
+            assertEquals(0f, result.voicedRatio)
+        }
+    }
+
+    @Test
     fun testWavCodecRoundTrip() {
         val originalSamples = FormantSynthesizer.synthesizeVowel(
             f1 = 300f,

@@ -63,7 +63,7 @@ Feature: Articulator Lab guided speaking practice
     And the preview area explains how to start the practice mirror
     And the selected vowel has a nearby lip reference and placement cue
     And recorded phoneme example playback is available outside sound measurement details
-    And example playback and recording remain side by side in the pinned bottom bar while the content scrolls
+    And example playback and recording remain in the pinned bottom bar while the content scrolls
 
   Scenario: Match the practice mirror visual hierarchy
     Given the Camera mode is selected
@@ -72,8 +72,8 @@ Feature: Articulator Lab guided speaking practice
     And larger accessibility text uses two rows without clipping labels
     And camera status and start or stop controls overlay the preview
     And the lip reference is beside the serif practice heading
-    And example playback is an outlined button to the left of the equally wide filled recording button
-    And both bottom actions share a height and allow their labels to wrap on narrow screens
+    And the pinned bottom bar presents equally wide actions in one row
+    And bottom actions allow their labels to wrap on narrow screens
     And recording credits and expandable sound measurements remain in the scrollable content
     And detailed camera measurements and explanations stay inside sound measurements
     And the dotted lip alignment guide is identified as a guide rather than a measurement
@@ -92,3 +92,30 @@ Feature: Articulator Lab guided speaking practice
     And an unavailable recording shows a recoverable error
     And example playback does not replace the learner's score or saved recording
     And ElevenLabs generation credits are accessible
+
+  Scenario: Sound map explains measurements and highlights the practice target
+    Given a sound pair and a selected practice vowel
+    When I open Sound map
+    Then the selected vowel region has a stronger fill and border and a Target label
+    And the legend identifies the green dot as Your sound
+    And the F1 axis explains low at top and high at bottom
+    And the F2 axis identifies front and back
+
+  Scenario: Unmeasurable audio never displays placeholder formants
+    Given microphone input with energy but no usable pair of formant peaks
+    When the input is analyzed
+    Then the live sound position is cleared
+    And a recording containing only that input is rejected without scoring
+
+  Scenario: Replay pronunciation from the pinned bottom controls
+    Given no pronunciation has been recorded
+    Then the primary action is Record and playback is hidden
+    When I record my pronunciation
+    Then the primary action is Stop while recording
+    When I stop recording and processing finishes
+    Then Play mine is the primary action if audio is available
+    And Example, Play mine, and Record appear in one row with icons above their short labels
+    And playback stays visible while the reference content scrolls
+    And the actions are disabled during processing or playback
+    When I record again or select a different practice target
+    Then Play mine is hidden until a recording is available outside recording mode

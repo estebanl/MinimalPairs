@@ -380,6 +380,32 @@ class ArticulatorLabComponentTest {
     }
 
     @Test
+    fun unmeasurableInputClearsLivePositionAndCannotBeScored() = runTest {
+        val f = Fixture(this)
+        val invalid = ShortArray(400) { if (it == 399) 10000 else 0 }
+        try {
+            f.component.toggleRecording()
+            runCurrent()
+            f.recorder.emit(f.samples)
+            runCurrent()
+            assertTrue(f.state.liveF1 > 0f)
+            f.recorder.emit(invalid)
+            runCurrent()
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+            f.component.toggleRecording()
+            runCurrent()
+            f.scorer.words.clear()
+            f.record(invalid)
+            assertEquals(0f, f.state.liveF1)
+            assertEquals(0f, f.state.liveF2)
+            assertNull(f.state.overallGopScore)
+            assertTrue(f.scorer.words.isEmpty())
+            assertTrue(f.state.error!!.contains("No clear vowel"))
+        } finally { f.lifecycle.destroy(); runCurrent() }
+    }
+
+    @Test
     fun stalledCaptureClearsLiveFormantsAfterFreshnessWindow() = runTest {
         val f = Fixture(this)
         try {
