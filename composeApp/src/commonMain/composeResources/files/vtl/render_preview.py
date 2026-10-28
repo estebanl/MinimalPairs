@@ -2,6 +2,7 @@
 from pathlib import Path
 import math
 import struct
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 FOLDER = ROOT / 'design/vocaltractlab-preview'
@@ -37,12 +38,21 @@ def read(path):
     assert offset == len(data)
     return faces
 
+consonants = '--consonants' in sys.argv
 svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1800" viewBox="0 0 1200 1800">',
        '<rect width="1200" height="1800" fill="#f5f3ed"/>',
        '<text x="30" y="38" font-size="25" font-family="sans-serif" fill="#252b2a">VocalTractLab • exported JD3 anatomy</text>',
-       '<text x="30" y="66" font-size="15" font-family="sans-serif" fill="#59615d">Six original JD3 presets + four derived teaching poses • side cutaway • GPL-3.0-or-later</text>']
-for index, (shape, label) in enumerate([('fleece','/iː/ — source i'), ('kit','/ɪ/ — source I'), ('dress','/e/ (DRESS) — source E'),
-                                        ('foot','/ʊ/ — source U'), ('goose','/uː/ — source u'), ('thought','/ɔː/ — source O'), ('trap','/æ/ — derived a + E'), ('palm','/ɑː/ — derived retracted a'), ('strut','/ʌ/ — derived a + @'), ('lot','/ɒ/ — derived a + O')]):
+       f'<text x="30" y="66" font-size="15" font-family="sans-serif" fill="#59615d">{'Nine consonant gestures + one reused rounded pose • fixed context • unreviewed for English • GPL-3.0-or-later' if consonants else 'Six original JD3 presets + four derived teaching poses • side cutaway • GPL-3.0-or-later'}</text>']
+vowels = [('fleece','/iː/ — source i'), ('kit','/ɪ/ — source I'), ('dress','/e/ (DRESS) — source E'),
+          ('foot','/ʊ/ — source U'), ('goose','/uː/ — source u'), ('thought','/ɔː/ — source O'),
+          ('trap','/æ/ — derived a + E'), ('palm','/ɑː/ — derived retracted a'),
+          ('strut','/ʌ/ — derived a + @'), ('lot','/ɒ/ — derived a + O')]
+gestures = [('bilabial-closure','/p b/ — lip closure'), ('alveolar-closure','/t d/ — tongue closure'),
+            ('velar-closure','/k ɡ/ — velar closure'), ('labiodental-fricative','/f v/ — lip / teeth'),
+            ('dental-fricative','/θ ð/ — tongue / teeth'), ('alveolar-fricative','/s z/ — narrow channel'),
+            ('postalveolar-fricative','/ʃ ʒ/ + affricate friction'), ('postalveolar-closure','/tʃ dʒ/ — closure phase'),
+            ('alveolar-lateral','/l/ — lateral contact'), ('goose','/w/ — reused u approximation')]
+for index, (shape, label) in enumerate(gestures if consonants else vowels):
     x0, y0 = (index % 3) * 400, 95 + (index // 3) * 415
     svg.append(f'<rect x="{x0+12}" y="{y0}" width="376" height="398" rx="16" fill="#e8e6df"/>')
     svg.append(f'<text x="{x0+28}" y="{y0+30}" font-family="sans-serif" font-size="19" fill="#252b2a">{label}</text>')
@@ -58,5 +68,5 @@ for index, (shape, label) in enumerate([('fleece','/iː/ — source i'), ('kit',
         fill = '#%02x%02x%02x' % tuple(rgb)
         coords = ' '.join(f'{x0+200+(p[2]-2)*26:.2f},{y0+200-(p[1]+3.7)*26:.2f}' for p in points)
         svg.append(f'<polygon points="{coords}" fill="{fill}" stroke="{fill}" stroke-width="0.3"/>')
-svg += ['<text x="30" y="1780" font-size="14" font-family="sans-serif" fill="#59615d">Derived poses are illustrative and unvalidated; they are not exact English presets or learner anatomy.</text>', '</svg>']
-(FOLDER / 'preview.svg').write_text('\n'.join(svg))
+svg += [f'<text x="30" y="1780" font-size="14" font-family="sans-serif" fill="#59615d">{'Teaching mappings need English phonetic review; snapshots are not motion, audible voicing, or learner anatomy.' if consonants else 'Derived poses are illustrative and unvalidated; they are not exact English presets or learner anatomy.'}</text>', '</svg>']
+(FOLDER / ('consonant-preview.svg' if consonants else 'preview.svg')).write_text('\n'.join(svg))

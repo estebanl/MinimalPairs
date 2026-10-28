@@ -41,6 +41,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.core.model.PhoneticBounds
+import com.minimalpairs.app.ui.reference.ConsonantModelReferences
+import com.minimalpairs.app.ui.reference.ConsonantPracticeReferences
 import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import com.minimalpairs.app.ui.reference.OralCavityModel
 import com.minimalpairs.app.ui.reference.OralPart
@@ -66,18 +68,24 @@ fun OralCavityReferenceCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val accentInk = PracticeTheme.colors.accentInk
-    val sourceShape = VocalTractLabMeshes.sourceShapes[phoneme]
+    val consonant = ConsonantModelReferences.forPhoneme(phoneme)
+    var phaseIndex by remember(phoneme) { mutableStateOf(0) }
+    val phase = consonant?.phases?.getOrNull(phaseIndex)
+    val sourceShape = phase?.assetKey ?: VocalTractLabMeshes.sourceShapes[phoneme]
+    val loadKey = "$phoneme:${phase?.assetKey.orEmpty()}"
     var failedPhoneme by remember { mutableStateOf<String?>(null) }
-    var retry by remember(phoneme) { mutableStateOf(0) }
-    val loadedMesh by produceState<Pair<String, List<OralTriangle>>?>(null, phoneme, retry) {
+    var retry by remember(loadKey) { mutableStateOf(0) }
+    val loadedMesh by produceState<Pair<String, List<OralTriangle>>?>(null, loadKey, retry) {
         value = null
         failedPhoneme = null
         try {
-            value = VocalTractLabMeshes.load(phoneme)?.let { phoneme to it }
+            val mesh = if (consonant != null) VocalTractLabMeshes.loadConsonant(phoneme, phaseIndex)
+                else VocalTractLabMeshes.load(phoneme)
+            value = mesh?.let { loadKey to it }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            failedPhoneme = phoneme
+            failedPhoneme = loadKey
         }
     }
     val reference = MouthPositionReferences.forPhoneme(phoneme)
@@ -103,19 +111,32 @@ fun OralCavityReferenceCard(
                 Text("${VocalTractLabMeshes.poseDescription(phoneme)} Approximate and unvalidated; not an exact English speaker pose.",
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
-            if (sourceShape == null || reference == null) {
-                Text("This vowel does not yet have a matching VocalTractLab pose. Use the illustrated reference below.",
-                    style = MaterialTheme.typography.bodyMedium)
-                MouthPositionReferenceCard(phoneme, exampleWord)
+            if (sourceShape == null) {
+                Text(ConsonantModelReferences.pendingReason(phoneme)
+                    ?: "This sound does not yet have a matching 3D reference.", style = MaterialTheme.typography.bodyMedium)
+                val cue = ConsonantPracticeReferences.forPhoneme(phoneme)
+                if (cue != null) Text(cue, style = MaterialTheme.typography.bodyMedium)
+                else MouthPositionReferenceCard(phoneme, exampleWord)
                 return@Column
             }
-            val baseMesh = loadedMesh?.takeIf { it.first == phoneme }?.second
+            if (consonant != null) {
+                Text("Consonant teaching snapshot · unreviewed", style = MaterialTheme.typography.labelMedium)
+                Text(consonant.explanation, style = MaterialTheme.typography.bodySmall)
+                Text(ConsonantPracticeReferences.forPhoneme(phoneme).orEmpty(), style = MaterialTheme.typography.bodyMedium)
+                if (consonant.phases.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    consonant.phases.forEachIndexed { index, item ->
+                        FilterChip(phaseIndex == index, onClick = { phaseIndex = index }, label = { Text(item.label) })
+                    }
+                }
+                Text(phase!!.description, style = MaterialTheme.typography.bodySmall)
+            }
+            val baseMesh = loadedMesh?.takeIf { it.first == loadKey }?.second
             if (baseMesh == null) {
-                Text(if (failedPhoneme == phoneme) "The 3D reference could not be loaded." else "Loading 3D reference…")
-                if (failedPhoneme == phoneme) TextButton(onClick = { retry++ }) { Text("Retry") }
+                Text(if (failedPhoneme == loadKey) "The 3D reference could not be loaded." else "Loading 3D reference…")
+                if (failedPhoneme == loadKey) TextButton(onClick = { retry++ }) { Text("Retry") }
                 return@Column
             }
-            Text(reference.placementCue, style = MaterialTheme.typography.bodyMedium)
+            reference?.let { Text(it.placementCue, style = MaterialTheme.typography.bodyMedium) }
             val mesh = remember(baseMesh, cutaway, yaw >= 0f) { OralCavityModel.cutaway(baseMesh, cutaway, yaw >= 0f) }
             val view = OralView(yaw, pitch, zoom)
             val faces = remember(mesh, view) {
@@ -133,7 +154,8 @@ fun OralCavityReferenceCard(
             val shadow = scheme.onSurface.copy(alpha = .08f)
             Canvas(Modifier.fillMaxWidth().aspectRatio(1.15f).clip(RoundedCornerShape(12.dp))
                 .semantics {
-                    contentDescription = "3D mouth reference for /$phoneme/. ${reference.sideDescription} ${reference.frontDescription}"
+                    contentDescription = "3D mouth reference for /$phoneme/. " +
+                        (phase?.let { "${it.label}. ${it.description}" } ?: "${reference?.sideDescription} ${reference?.frontDescription}")
                     stateDescription = "Rotation ${yaw.toInt()} degrees, tilt ${pitch.toInt()} degrees, zoom ${(zoom * 100).toInt()} percent. " +
                         if (cutaway) "Cutaway on." else "Cutaway off."
                     customActions = listOf(
@@ -193,7 +215,7 @@ fun OralCavityReferenceCard(
             }
             Text("Rose: tongue · Cream: teeth · Tan: tract walls · Burgundy: lips",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
-            Text("Representative speaker anatomy. English vowel realizations vary; this is not a measurement of your mouth.",
+            Text("Representative speaker anatomy. English articulations vary; this is not a measurement of your mouth.",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             VocalTractLabCredits()
         }

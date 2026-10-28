@@ -17,7 +17,7 @@ class OralCavityResourceTest {
     fun packagedProvenanceMatchesEveryMeshAndIncludesDerivedRecipes() = runTest {
         val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
         val files = manifest.getValue("files").jsonObject
-        assertEquals(10, files.size)
+        assertEquals(19, files.size)
         files.forEach { (name, entry) ->
             val bytes = Res.readBytes("files/vtl/$name")
             val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -61,6 +61,40 @@ class OralCavityResourceTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun consonantResourcesCoverSharedGesturesAndPhasesWithoutDuplicatingVoicing() = runTest {
+        val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
+        val gestures = manifest.getValue("consonant_teaching_poses").jsonObject
+        assertEquals(9, gestures.size)
+        gestures.values.forEach { entry ->
+            assertTrue(entry.jsonObject.getValue("source_preset").jsonPrimitive.content.endsWith("(a)"))
+            assertEquals(19, entry.jsonObject.getValue("parameters").jsonObject.size)
+        }
+        val distinct = mutableSetOf<List<OralTriangle>>()
+        for ((sound, reference) in ConsonantModelReferences.byPhoneme) {
+            for (index in reference.phases.indices) {
+                val mesh = VocalTractLabMeshes.loadConsonant(sound, index)!!
+                assertEquals(2804, mesh.size, "$sound phase $index")
+                assertEquals(OralPart.entries.toSet(), mesh.map { it.part }.toSet())
+                assertTrue(mesh.flatMap { listOf(it.a, it.b, it.c) }.all {
+                    it.x.isFinite() && it.y.isFinite() && it.z.isFinite()
+                })
+                for (left in listOf(true, false)) assertTrue(OralCavityModel.cutaway(mesh, true, left).isNotEmpty())
+                distinct += mesh
+            }
+        }
+        assertEquals(10, distinct.size, "Nine new gestures plus the reused rounded vowel")
+        for ((a, b) in listOf("p" to "b", "t" to "d", "k" to "ɡ", "f" to "v", "θ" to "ð", "s" to "z", "ʃ" to "ʒ")) {
+            assertSame(VocalTractLabMeshes.loadConsonant(a), VocalTractLabMeshes.loadConsonant(b))
+        }
+        assertSame(VocalTractLabMeshes.loadConsonant("w"), VocalTractLabMeshes.load("uː"))
+        assertSame(VocalTractLabMeshes.loadConsonant("tʃ", 1), VocalTractLabMeshes.loadConsonant("ʃ"))
+        assertNotEquals(VocalTractLabMeshes.loadConsonant("tʃ", 0), VocalTractLabMeshes.loadConsonant("tʃ", 1))
+        assertNull(VocalTractLabMeshes.loadConsonant("unknown"))
+        assertNull(VocalTractLabMeshes.loadConsonant("r"))
+        assertNull(VocalTractLabMeshes.loadConsonant("p", 1))
     }
 
     @Test

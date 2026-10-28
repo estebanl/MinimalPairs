@@ -161,3 +161,14 @@ devices: permission grant/denial/retry, front-camera mirroring, portrait/landsca
 rotation, low light and face loss, background/foreground, rapid tab changes, and
 simultaneous microphone recording. Actual camera capture has not been validated
 by those JVM tests.
+
+## Consonant teaching snapshots
+
+The 3D model tab now supports eighteen selected consonants using nine additional
+JD3 source-gesture meshes plus the existing rounded /u/ mesh as an explicitly
+approximate /w/ starting snapshot. Voiced pairs share oral geometry, while
+/tʃ, dʒ/ offer separate closure and friction views. No vocal-fold vibration or
+word-synchronized motion is shown. /r/ remains an explicit placement-guidance
+fallback because the supplied speaker has no matching English preset.
+See [the exact inventory, source mapping and review gate](CONSONANT_3D_ASSETS.md).
+The original ten vowel assets remain unchanged.

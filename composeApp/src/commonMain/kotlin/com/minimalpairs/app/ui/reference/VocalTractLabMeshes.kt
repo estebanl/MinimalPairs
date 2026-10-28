@@ -25,11 +25,19 @@ object VocalTractLabMeshes {
 
     suspend fun load(phoneme: String): List<OralTriangle>? {
         val shape = sourceShapes[phoneme] ?: return null
-        return mutex.withLock {
-            cache[shape] ?: withContext(Dispatchers.Default) {
-                decode(Res.readBytes("files/vtl/${assetFiles.getValue(shape)}.vtlm"))
-            }.also { cache[shape] = it }
-        }
+        return loadAsset(assetFiles.getValue(shape))
+    }
+
+    suspend fun loadConsonant(phoneme: String, phase: Int = 0): List<OralTriangle>? {
+        val reference = ConsonantModelReferences.forPhoneme(phoneme) ?: return null
+        val selected = reference.phases.getOrNull(phase) ?: return null
+        return loadAsset(selected.assetKey)
+    }
+
+    private suspend fun loadAsset(assetKey: String): List<OralTriangle> = mutex.withLock {
+        cache[assetKey] ?: withContext(Dispatchers.Default) {
+            decode(Res.readBytes("files/vtl/$assetKey.vtlm"))
+        }.also { cache[assetKey] = it }
     }
 
     /** Versioned, bounds-checked little-endian indexed meshes. Coordinates in source cm. */

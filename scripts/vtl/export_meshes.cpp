@@ -18,7 +18,10 @@ static void f32(std::ostream& out, double value) {
     float f = static_cast<float>(value); uint32_t bits; std::memcpy(&bits, &f, 4); u32(out, bits);
 }
 int main(int argc, char** argv) {
-    if (argc != 3) { std::cerr << "usage: export_meshes speaker_file output_directory\n"; return 1; }
+    if (argc < 3 || argc > 4 || (argc == 4 && std::string(argv[3]) != "--consonants-only")) {
+        std::cerr << "usage: export_meshes speaker_file output_directory [--consonants-only]\n"; return 1;
+    }
+    const bool consonantsOnly = argc == 4;
     auto tract = std::make_unique<VocalTract>();
     tract->readFromXml(argv[1]);
     // Original presets remain byte-for-byte unchanged. Additional English teaching
@@ -64,11 +67,35 @@ int main(int argc, char** argv) {
     if (!provenance) return 3;
     const std::vector<std::pair<std::string, std::string>> presets = {
         {"i", "fleece"}, {"I", "kit"}, {"E", "dress"}, {"U", "foot"}, {"u", "goose"}, {"O", "thought"},
-        {"derived-trap", "trap"}, {"derived-palm", "palm"}, {"derived-strut", "strut"}, {"derived-lot", "lot"}
+        {"derived-trap", "trap"}, {"derived-palm", "palm"}, {"derived-strut", "strut"}, {"derived-lot", "lot"},
+        {"ll-labial-closure(a)", "bilabial-closure"},
+        {"tt-alveolar-closure(a)", "alveolar-closure"},
+        {"tb-velar-closure(a)", "velar-closure"},
+        {"ll-dental-fricative(a)", "labiodental-fricative"},
+        {"tt-dental-fricative(a)", "dental-fricative"},
+        {"tt-alveolar-fricative(a)", "alveolar-fricative"},
+        {"tt-postalveolar-fricative(a)", "postalveolar-fricative"},
+        {"tt-postalveolar-closure(a)", "postalveolar-closure"},
+        {"tt-alveolar-lateral(a)", "alveolar-lateral"}
     };
+    std::ofstream gestures(std::string(argv[2]) + "/consonant-poses.json");
+    gestures << std::setprecision(10) << "{\n";
+    bool firstGesture = true;
     for (const auto& [name, asset] : presets) {
+        if (consonantsOnly && name.find("(a)") == std::string::npos) continue;
         int shape = tract->getShapeIndex(name);
         if (shape < 0) { std::cerr << "Missing shape: " << name; return 2; }
+        if (name.find("(a)") != std::string::npos) {
+            gestures << (firstGesture ? "" : ",\n") << "  \"" << asset << "\": {\"source_preset\": \"" << name
+                << "\", \"context\": \"a\", \"parameters\": {";
+            for (int p = 0; p < VocalTract::NUM_PARAMS; ++p) {
+                const double value = tract->shapes[shape].param[p];
+                if (value < tract->param[p].min || value > tract->param[p].max) return 4;
+                gestures << (p ? ", " : "") << "\"" << tract->param[p].name << "\": " << value;
+            }
+            gestures << "}}";
+            firstGesture = false;
+        }
         tract->setParams(tract->shapes[shape].param);
         tract->calculateAll();
         // Part identifiers are serialized independently of upstream enum values.
@@ -113,4 +140,6 @@ int main(int argc, char** argv) {
         if (!out) return 3;
         std::cout << name << ": " << vertices << " vertices, " << triangles << " triangles\n";
     }
+    gestures << "\n}\n";
+    if (!gestures) return 3;
 }

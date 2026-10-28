@@ -21,6 +21,7 @@ clang++ -std=c++17 -O2 -Wno-return-stack-address -Wno-deprecated-declarations \
   -I"$backend/include" "$task_root/scripts/vtl/export_meshes.cpp" \
   "$backend"/src/VocalTractLabBackend/*.cpp -o "$task_root/build/vtl-tools/export_meshes"
 "$task_root/build/vtl-tools/export_meshes" "$backend/resources/JD3.speaker" \
-  "$task_root/design/vocaltractlab-preview/meshes"
+  "$task_root/design/vocaltractlab-preview/meshes" "${@:2}"
 python3 "$task_root/scripts/vtl/render_preview.py"
+python3 "$task_root/scripts/vtl/render_preview.py" --consonants
 python3 "$task_root/scripts/vtl/package_assets.py"

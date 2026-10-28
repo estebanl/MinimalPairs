@@ -4,7 +4,7 @@
   "speaker": "resources/JD3.speaker",
   "speaker_sha256": "e1e592dae13991e981c17bcc326cccc7bce3705e3862eb77fdeaeb238418a503",
   "source_archive_sha256": "dc4c930ce261f31e60ba94af122808490881efb8301e55e18baaa611cf52104b",
-  "exporter_sha256": "ca709457dbeaaedbc47631c4eb73f600dc571a0c4a90eee2f14a1b03c4000613",
+  "exporter_sha256": "47db4ded3330b136a3fb1ff3782cf3f04ff85d852629fe37470728e12a0dfea2",
   "license": "GPL-3.0-or-later (upstream source; no separate asset exception found)",
   "format_version": 1,
   "files": {
@@ -47,6 +47,42 @@
     "lot.vtlm": {
       "bytes": 156468,
       "sha256": "5a9bc7ced936823678cd616205074ebe594f1ce6fd5bbbf0bf27496ec81e5729"
+    },
+    "bilabial-closure.vtlm": {
+      "bytes": 156468,
+      "sha256": "bf159d3fa354392357ae90ef96a5387f76fb7d2ac691b91a8b74de98fd71c823"
+    },
+    "alveolar-closure.vtlm": {
+      "bytes": 156468,
+      "sha256": "7d46fffc88f5125cfe0a59e657e7f8b332604819c6e1ca18e7cf42825b294e0d"
+    },
+    "velar-closure.vtlm": {
+      "bytes": 156468,
+      "sha256": "8561b05a132b952a7ea8cb708044635fe7f4e59b5afe7d00389051ffe1464f83"
+    },
+    "labiodental-fricative.vtlm": {
+      "bytes": 156468,
+      "sha256": "34301e9dc4096bed083003035d78de77e0cd10c797656f03e47197242081c000"
+    },
+    "dental-fricative.vtlm": {
+      "bytes": 156468,
+      "sha256": "b6e6646cede1097943efa0549621e3694f7c885532ff54410b43ba71f2b8e9b2"
+    },
+    "alveolar-fricative.vtlm": {
+      "bytes": 156468,
+      "sha256": "b6256cc2a50b57bd74813cd4747f01f4e275dcfa0d78c13a475c4c14a1587a6e"
+    },
+    "postalveolar-fricative.vtlm": {
+      "bytes": 156468,
+      "sha256": "4d2a444f3a4929e71c06fefb7ee46bee7aec16da518bdc25a41dc25ed6c87b57"
+    },
+    "postalveolar-closure.vtlm": {
+      "bytes": 156468,
+      "sha256": "ccf83b02d2583e461352d3a06127ec842200c98c6f5746809a93c7c35dde0f27"
+    },
+    "alveolar-lateral.vtlm": {
+      "bytes": 156468,
+      "sha256": "8a01735e4a601425ababe6def01b1de403371b250d665f4a2fd74d6d0f91196a"
     }
   },
   "derived_teaching_poses": {
@@ -163,5 +199,233 @@
       }
     }
   },
+  "consonant_teaching_poses": {
+    "bilabial-closure": {
+      "source_preset": "ll-labial-closure(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.2657,
+        "HY": -5.0554,
+        "JX": 0,
+        "JA": -3.04,
+        "LP": 0.0718,
+        "LD": -0.1129,
+        "VS": 0.8,
+        "VO": -0.1,
+        "TCX": -0.1616,
+        "TCY": -2.2942,
+        "TTX": 4.2381,
+        "TTY": -1.3232,
+        "TBX": 2.5237,
+        "TBY": -0.4736,
+        "TRX": -2.3879,
+        "TRY": -3.1643,
+        "TS1": 0.2064,
+        "TS2": 0.0384,
+        "TS3": 0.1488
+      }
+    },
+    "alveolar-closure": {
+      "source_preset": "tt-alveolar-closure(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.2273,
+        "HY": -4.6458,
+        "JX": 0,
+        "JA": -3.2692,
+        "LP": 0.0718,
+        "LD": 0.9937,
+        "VS": 0.8,
+        "VO": -0.1,
+        "TCX": 1.6893,
+        "TCY": -2.4763,
+        "TTX": 4.754,
+        "TTY": 0.0877,
+        "TBX": 2.5389,
+        "TBY": 0.0119,
+        "TRX": -1.8289,
+        "TRY": -2.4763,
+        "TS1": 0.2064,
+        "TS2": 0.0384,
+        "TS3": 0
+      }
+    },
+    "velar-closure": {
+      "source_preset": "tb-velar-closure(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.1076,
+        "HY": -3.5838,
+        "JX": 0,
+        "JA": -3.1552,
+        "LP": 0.0718,
+        "LD": 0.9937,
+        "VS": 0.8,
+        "VO": -0.1,
+        "TCX": 0.3087,
+        "TCY": -0.8529,
+        "TTX": 4.0864,
+        "TTY": -1.126,
+        "TBX": 2.6755,
+        "TBY": 0.4215,
+        "TRX": -2.2342,
+        "TRY": -2.7735,
+        "TS1": 0.2064,
+        "TS2": 0,
+        "TS3": 0
+      }
+    },
+    "labiodental-fricative": {
+      "source_preset": "ll-dental-fricative(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.1839,
+        "HY": -5.1383,
+        "JX": -0.5,
+        "JA": -1.3373,
+        "LP": -0.3562,
+        "LD": 0.3849,
+        "VS": 0.4686,
+        "VO": -0.1,
+        "TCX": 0.2771,
+        "TCY": -2.3153,
+        "TTX": 3.7752,
+        "TTY": -1.3097,
+        "TBX": 2.5573,
+        "TBY": -0.4175,
+        "TRX": -2.1263,
+        "TRY": -2.7997,
+        "TS1": 0.1,
+        "TS2": 0.0168,
+        "TS3": 0
+      }
+    },
+    "dental-fricative": {
+      "source_preset": "tt-dental-fricative(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.1253,
+        "HY": -4.5949,
+        "JX": 0,
+        "JA": -3.5812,
+        "LP": 0.1226,
+        "LD": 0.3436,
+        "VS": 1,
+        "VO": -0.1,
+        "TCX": -0.0633,
+        "TCY": -2.0029,
+        "TTX": 4.9242,
+        "TTY": -0.6032,
+        "TBX": 2.0519,
+        "TBY": 0.0436,
+        "TRX": -2.455,
+        "TRY": -3.0826,
+        "TS1": 0,
+        "TS2": 0.018,
+        "TS3": 1
+      }
+    },
+    "alveolar-fricative": {
+      "source_preset": "tt-alveolar-fricative(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.1253,
+        "HY": -4.5949,
+        "JX": 0,
+        "JA": -3.5812,
+        "LP": 0.1226,
+        "LD": 0.3436,
+        "VS": 1,
+        "VO": -0.1,
+        "TCX": -0.0633,
+        "TCY": -2.0029,
+        "TTX": 4.74,
+        "TTY": -0.3463,
+        "TBX": 2.0519,
+        "TBY": 0.0436,
+        "TRX": -2.455,
+        "TRY": -3.0826,
+        "TS1": 0,
+        "TS2": 0.018,
+        "TS3": 1
+      }
+    },
+    "postalveolar-fricative": {
+      "source_preset": "tt-postalveolar-fricative(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.5452,
+        "HY": -4.7024,
+        "JX": -0.0001,
+        "JA": -2,
+        "LP": 0.33,
+        "LD": 1.1115,
+        "VS": 0.7569,
+        "VO": -0.1,
+        "TCX": 0.4165,
+        "TCY": -1.7467,
+        "TTX": 4.0348,
+        "TTY": 0.3583,
+        "TBX": 2.8966,
+        "TBY": 1.26,
+        "TRX": -2.1825,
+        "TRY": -2.6839,
+        "TS1": 0.1001,
+        "TS2": 0.04,
+        "TS3": 0.9994
+      }
+    },
+    "postalveolar-closure": {
+      "source_preset": "tt-postalveolar-closure(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.2273,
+        "HY": -4.6458,
+        "JX": 0,
+        "JA": -3.2692,
+        "LP": 0.0718,
+        "LD": 0.9937,
+        "VS": 0.8,
+        "VO": -0.1,
+        "TCX": 1.6893,
+        "TCY": -2.4763,
+        "TTX": 4.2988,
+        "TTY": 0.6946,
+        "TBX": 2.5389,
+        "TBY": 0.0119,
+        "TRX": -1.8289,
+        "TRY": -2.4763,
+        "TS1": 0.2064,
+        "TS2": 0.05,
+        "TS3": 0
+      }
+    },
+    "alveolar-lateral": {
+      "source_preset": "tt-alveolar-lateral(a)",
+      "context": "a",
+      "parameters": {
+        "HX": 0.2028,
+        "HY": -4.8426,
+        "JX": 0,
+        "JA": -4.2915,
+        "LP": 0.0718,
+        "LD": 0.9937,
+        "VS": 0.8469,
+        "VO": -0.1,
+        "TCX": 1.1297,
+        "TCY": -2.328,
+        "TTX": 5.1698,
+        "TTY": 0.7566,
+        "TBX": 2.3535,
+        "TBY": 0.371,
+        "TRX": -1.9458,
+        "TRY": -2.328,
+        "TS1": 0.2064,
+        "TS2": 0.0384,
+        "TS3": -1
+      }
+    }
+  },
+  "consonant_pose_status": "Original JD3 articulatory snapshots in a-context; unreviewed English references, not word-synchronized motion or visible voicing",
   "derived_pose_status": "Unvalidated illustrative parameter recipes, not exact English presets or learner anatomy"
 }

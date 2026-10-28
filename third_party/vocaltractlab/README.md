@@ -19,8 +19,8 @@ This notice does not relicense the project's original MIT code or resolve the
 license obligations of distributing a combined app.
 
 The user approved integrating these GPL-covered assets. Six original presets and
-four explicitly labeled derived teaching poses are
-bundled in `composeApp/src/commonMain/composeResources/files/vtl`, together with
+four explicitly labeled derived teaching poses and nine source consonant
+gestures are bundled in `composeApp/src/commonMain/composeResources/files/vtl`, together with
 the full source archive, speaker input, exporter, regeneration scripts, manifest,
 and license. The app exposes attribution and the full license through **Model
 credits & license**. No app has been published by this change.
@@ -35,3 +35,16 @@ Run `bash scripts/vtl/regenerate.sh /path/to/extracted/upstream` to rebuild and
 package the assets. The exporter omits the lip-seam and cheek filling triangles
 hidden by upstream `VocalTractPicture.cpp`; coordinates and corner normals are
 otherwise unchanged. See the [upstream viewer](https://github.com/TUD-STKS/VocalTractLab-dev/blob/main/src/VocalTractPicture.cpp).
+
+Consonant source presets are exported unchanged in their fixed `(a)` context.
+The English teaching mappings have not been independently reviewed. Voicing
+pairs share oral geometry; affricates expose separate closure and friction
+snapshots. The /w/ opening illustration reuses the existing `u` mesh. There is
+no matching English /r/ source preset, so /r/ retains a placement-guidance fallback
+pending an explicit reviewed design. See `docs/CONSONANT_3D_ASSETS.md` for the
+coverage inventory, source names, and remaining review gate.
+
+To add/rebuild just the consonant exports while preserving original vowel bytes:
+`bash scripts/vtl/regenerate.sh /path/to/extracted/upstream --consonants-only`.
+The packaged manifest records all nine source presets, their fixed context and
+all 19 input parameters. Source geometry is not a word-synchronized trajectory.
