@@ -10,6 +10,9 @@ import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.lifecycle.doOnDestroy
+import com.arkivanov.essenty.lifecycle.Lifecycle
+import com.arkivanov.essenty.lifecycle.doOnPause
+import com.arkivanov.essenty.lifecycle.doOnResume
 import com.arkivanov.essenty.lifecycle.doOnStop
 import com.minimalpairs.app.data.audio.PhonemeAudioRepository
 import com.minimalpairs.app.core.dsp.LpcFormantExtractor
@@ -42,6 +45,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -229,7 +233,11 @@ data class EarTrainerUiState(
     val feedbackMessage: String = "",
     val progressSaveError: String? = null,
     val isSavingProgress: Boolean = false,
-    val sm2State: Sm2State = Sm2State()
+    val sm2State: Sm2State = Sm2State(),
+    val autoChangeEnabled: Boolean = false,
+    val trialId: Long = 0,
+    /** Elapsed share of the next-word delay; null when no countdown is running. */
+    val autoChangeProgress: Float? = null
 )
 
 interface EarTrainerComponent {
@@ -238,6 +246,8 @@ interface EarTrainerComponent {
     fun playOption(word: String)
     fun onSelectAnswer(chosenWord: String)
     fun setPlaybackSpeed(speed: PlaybackSpeed)
+    fun setAutoChangeEnabled(enabled: Boolean)
+    fun setAutoChangePaused(paused: Boolean)
     fun dismissFormantHint()
     fun retryProgressSaves()
     fun nextTrial()
@@ -269,6 +279,9 @@ class DefaultEarTrainerComponent(
     private var playbackGeneration = 0L
     private var answerStartedAt: TimeMark? = null
     private var closed = false
+    private var foreground = lifecycle.state == Lifecycle.State.RESUMED
+    private var autoChangePaused = false
+    private var autoChangeJob: Job? = null
 
     private val _state = MutableStateFlow(createInitialState())
     override val state: StateFlow<EarTrainerUiState> = _state.asStateFlow()
@@ -288,9 +301,23 @@ class DefaultEarTrainerComponent(
                 }
             }
         }
-        lifecycle.doOnStop { stopPlayback() }
+        lifecycle.doOnResume {
+            foreground = true
+            resumeAutoChange()
+        }
+        lifecycle.doOnPause {
+            foreground = false
+            cancelAutoChange()
+            stopPlayback()
+        }
+        lifecycle.doOnStop {
+            foreground = false
+            cancelAutoChange()
+            stopPlayback()
+        }
         lifecycle.doOnDestroy {
             closed = true
+            cancelAutoChange()
             stopPlayback()
             scope.cancel()
         }
@@ -323,6 +350,7 @@ class DefaultEarTrainerComponent(
 
     private fun playWord(word: String, isComparison: Boolean) {
         if (closed || _state.value.isPlayingAudio) return
+        cancelAutoChange()
         val currentState = _state.value
         val generation = ++playbackGeneration
         _state.value = currentState.copy(
@@ -353,6 +381,7 @@ class DefaultEarTrainerComponent(
                             playingOptionWord = null,
                             hasPlayedPrompt = _state.value.hasPlayedPrompt || !isComparison
                         )
+                        resumeAutoChange()
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -365,6 +394,9 @@ class DefaultEarTrainerComponent(
                         playbackError = if (isComparison) "Couldn't play “$word”. Try again."
                         else "Couldn't play the word. Try again."
                     )
+                    // An answered trial may continue after a failed comparison or replay.
+                    // A failed new prompt always waits for an explicit retry.
+                    if (_state.value.lastResultCorrect != null) resumeAutoChange()
                 }
             }
         }
@@ -406,9 +438,58 @@ class DefaultEarTrainerComponent(
             sm2State = nextSm2,
             drillType = nextDrill
         )
+        resumeAutoChange()
     }
 
     override fun retryProgressSaves() { progressRepository?.retrySaves() }
+
+    override fun setAutoChangeEnabled(enabled: Boolean) {
+        if (closed || _state.value.autoChangeEnabled == enabled) return
+        _state.value = _state.value.copy(autoChangeEnabled = enabled)
+        cancelAutoChange()
+        if (enabled && foreground && !autoChangePaused &&
+            _state.value.lastResultCorrect == null && !_state.value.isPlayingAudio) {
+            playPrompt()
+        } else {
+            resumeAutoChange()
+        }
+    }
+
+    override fun setAutoChangePaused(paused: Boolean) {
+        if (closed || autoChangePaused == paused) return
+        autoChangePaused = paused
+        resumeAutoChange()
+    }
+
+    private fun cancelAutoChange() {
+        autoChangeJob?.cancel()
+        autoChangeJob = null
+        _state.value = _state.value.copy(autoChangeProgress = null)
+    }
+
+    private fun resumeAutoChange() {
+        cancelAutoChange()
+        val current = _state.value
+        if (closed || !foreground || autoChangePaused || !current.autoChangeEnabled || current.isPlayingAudio) return
+        if (current.lastResultCorrect != null) {
+            val trialId = current.trialId
+            val startedAt = timeSource.markNow()
+            _state.value = current.copy(autoChangeProgress = 0f)
+            autoChangeJob = scope.launch {
+                // Drive the bar and advancement from the same clock so they stay in sync.
+                while (true) {
+                    val elapsedMs = startedAt.elapsedNow().inWholeMilliseconds
+                    _state.value = _state.value.copy(autoChangeProgress = (elapsedMs / 1_500f).coerceIn(0f, 1f))
+                    if (elapsedMs >= 1_500) break
+                    delay(minOf(25L, 1_500 - elapsedMs))
+                }
+                autoChangeJob = null
+                if (_state.value.trialId == trialId) nextTrial()
+            }
+        } else if (!current.hasPlayedPrompt && current.playbackError == null) {
+            playPrompt()
+        }
+    }
 
     override fun setPlaybackSpeed(speed: PlaybackSpeed) {
         if (closed || _state.value.isPlayingAudio) return
@@ -423,6 +504,7 @@ class DefaultEarTrainerComponent(
 
     override fun nextTrial() {
         if (closed || _state.value.lastResultCorrect == null || _state.value.isPlayingAudio) return
+        cancelAutoChange()
         ++playbackGeneration
         answerStartedAt = null
         val nextPair = contrast.pairs.random(random)
@@ -431,6 +513,7 @@ class DefaultEarTrainerComponent(
         val targetPhoneme = if (isWord1) contrast.phoneme1 else contrast.phoneme2
 
         _state.value = _state.value.copy(
+            trialId = _state.value.trialId + 1,
             currentPair = nextPair,
             targetWord = targetWord,
             targetPhoneme = targetPhoneme,
@@ -441,6 +524,7 @@ class DefaultEarTrainerComponent(
             lastResultCorrect = null,
             feedbackMessage = ""
         )
+        resumeAutoChange()
     }
 
     private fun stopPlayback() {
@@ -465,6 +549,7 @@ class DefaultEarTrainerComponent(
     override fun onBack() {
         if (closed) return
         closed = true
+        cancelAutoChange()
         stopPlayback()
         onBackClicked()
     }

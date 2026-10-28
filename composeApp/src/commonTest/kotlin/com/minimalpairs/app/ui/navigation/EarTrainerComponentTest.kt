@@ -4,11 +4,18 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.destroy
 import com.arkivanov.essenty.lifecycle.resume
+import com.arkivanov.essenty.lifecycle.pause
 import com.arkivanov.essenty.lifecycle.stop
 import com.minimalpairs.app.core.hal.AudioPlayer
 import com.minimalpairs.app.core.dsp.TimeStretchProcessor
 import com.minimalpairs.app.core.model.PlaybackSpeed
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
+import com.minimalpairs.app.data.local.ProgressSnapshot
+import com.minimalpairs.app.data.local.TrialRecordEntity
+import com.minimalpairs.app.data.local.SpeakingRecordEntity
+import com.minimalpairs.app.data.progress.ProgressRepository
+import com.minimalpairs.app.data.progress.ProgressStore
+import kotlinx.coroutines.flow.flowOf
 import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
@@ -29,6 +36,258 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EarTrainerComponentTest {
+    @Test
+    fun enablingDuringPlaybackDoesNotDuplicateAudioAndStillWaitsForAnAnswer() = runTest {
+        withTrainer {
+            component.playPrompt()
+            runCurrent()
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            assertEquals(1, audio.callbacks.size)
+            finishPlayback()
+            advanceTimeBy(10_000)
+            runCurrent()
+            assertEquals(0L, state.trialId)
+            assertNull(state.lastResultCorrect)
+            assertEquals(1, audio.callbacks.size)
+            component.setAutoChangeEnabled(false)
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            assertEquals(2, audio.callbacks.size, "Enabling on an unanswered trial replays its prompt")
+        }
+    }
+
+    @Test
+    fun destroyingExerciseCancelsItsPendingAdvance() = runTest {
+        withTrainer {
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            runCurrent()
+            lifecycle.destroy()
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(0L, state.trialId)
+            assertEquals(1, audio.callbacks.size)
+            assertFalse(state.isPlayingAudio)
+        }
+    }
+
+    @Test
+    fun autoChangePlaysImmediatelyAndAdvancesBothAnswerResultsAfterDelay() = runTest {
+        withTrainer {
+            assertFalse(state.autoChangeEnabled)
+            component.setAutoChangeEnabled(true)
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            assertEquals(1, audio.callbacks.size)
+            component.onSelectAnswer(state.targetWord)
+            assertNull(state.lastResultCorrect)
+            for (correct in listOf(true, false)) {
+                finishPlayback()
+                val previous = state
+                component.onSelectAnswer(if (correct) state.targetWord else otherWord)
+                component.onSelectAnswer(state.targetWord)
+                assertEquals(correct, state.lastResultCorrect)
+                assertEquals(0f, state.autoChangeProgress)
+                runCurrent()
+                advanceTimeBy(750)
+                runCurrent()
+                assertEquals(0.5f, state.autoChangeProgress, "The bar uses the advancement timer's elapsed time")
+                advanceTimeBy(749)
+                runCurrent()
+                assertEquals(previous.trialId, state.trialId)
+                advanceTimeBy(1)
+                runCurrent()
+                assertEquals(previous.trialId + 1, state.trialId)
+                assertEquals(previous.targetWord, state.targetWord, "Repeated targets still create a new trial")
+                assertFalse(state.hasPlayedPrompt)
+                assertNull(state.lastResultCorrect)
+                assertTrue(state.isPlayingAudio)
+                assertNull(state.autoChangeProgress)
+                audio.callbacks.first().invoke()
+                runCurrent()
+                assertFalse(state.hasPlayedPrompt, "Stale callbacks cannot finish the new prompt")
+            }
+            assertEquals(3, audio.callbacks.size)
+        }
+    }
+
+    @Test
+    fun disablingCancelsAdvanceAndKeepsPlayingAudioWhileManualNextAutoplays() = runTest {
+        withTrainer {
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            component.setAutoChangeEnabled(false)
+            assertTrue(state.isPlayingAudio)
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            advanceTimeBy(5_000)
+            assertEquals(0L, state.trialId)
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            advanceTimeBy(500)
+            component.setAutoChangeEnabled(false)
+            assertNull(state.autoChangeProgress)
+            advanceTimeBy(2_000)
+            assertEquals(0L, state.trialId)
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            advanceTimeBy(500)
+            component.nextTrial()
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            assertTrue(state.isPlayingAudio)
+            finishPlayback()
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            assertEquals(2, audio.callbacks.size)
+        }
+    }
+
+    @Test
+    fun replayComparisonAndTipsRestartTheFullAdvanceDelay() = runTest {
+        withTrainer {
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            runCurrent()
+            advanceTimeBy(1_000)
+            for (comparison in listOf(false, true)) {
+                if (comparison) component.playOption(otherWord) else component.playPrompt()
+                runCurrent()
+                assertNull(state.autoChangeProgress)
+                advanceTimeBy(5_000)
+                assertEquals(0L, state.trialId)
+                finishPlayback()
+                assertEquals(0f, state.autoChangeProgress)
+                advanceTimeBy(1_499)
+                runCurrent()
+                assertEquals(0L, state.trialId)
+            }
+            component.setAutoChangePaused(true)
+            assertNull(state.autoChangeProgress)
+            advanceTimeBy(5_000)
+            assertEquals(0L, state.trialId)
+            component.setAutoChangePaused(false)
+            assertEquals(0f, state.autoChangeProgress)
+            runCurrent()
+            advanceTimeBy(1_499)
+            runCurrent()
+            assertEquals(0L, state.trialId)
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+        }
+    }
+
+    @Test
+    fun lifecyclePausesAutoChangeAndReturnRestartsInterruptedPromptsOrFeedback() = runTest {
+        withTrainer {
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            lifecycle.pause()
+            runCurrent()
+            finishPlayback()
+            assertFalse(state.hasPlayedPrompt)
+            assertFalse(state.isPlayingAudio)
+            advanceTimeBy(5_000)
+            lifecycle.resume()
+            runCurrent()
+            assertTrue(state.isPlayingAudio)
+            assertEquals(2, audio.callbacks.size)
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            runCurrent()
+            advanceTimeBy(1_000)
+            lifecycle.stop()
+            assertNull(state.autoChangeProgress)
+            advanceTimeBy(5_000)
+            assertEquals(0L, state.trialId)
+            lifecycle.resume()
+            runCurrent()
+            advanceTimeBy(1_499)
+            runCurrent()
+            assertEquals(0L, state.trialId)
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            component.onBack()
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            assertFalse(state.isPlayingAudio)
+        }
+    }
+
+    @Test
+    fun autoPromptFailuresWaitForExplicitRetryEvenAfterTipsAndLifecycleResume() = runTest {
+        withTrainer {
+            failLoading = true
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            assertNotNull(state.playbackError)
+            component.setAutoChangePaused(true)
+            component.setAutoChangePaused(false)
+            lifecycle.stop()
+            lifecycle.resume()
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(1, loadedWords.size)
+            assertFalse(state.hasPlayedPrompt)
+            failLoading = false
+            component.playPrompt()
+            runCurrent()
+            finishPlayback()
+            component.onSelectAnswer(state.targetWord)
+            runCurrent()
+            advanceTimeBy(1_500)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            audio.failPlayback = true
+            // Retry a failed automatic prompt through the same existing playback path.
+            lifecycle.stop()
+            lifecycle.resume()
+            runCurrent()
+            assertNotNull(state.playbackError)
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+        }
+    }
+
+    @Test
+    fun autoChangeRecordsEachAnswerOnceAndAllowsRetryingFailedSaves() = runTest {
+        withTrainer(recordProgress = true) {
+            component.setAutoChangeEnabled(true)
+            runCurrent()
+            finishPlayback()
+            failSaving = true
+            component.onSelectAnswer(state.targetWord)
+            component.onSelectAnswer(otherWord)
+            runCurrent()
+            assertNotNull(state.progressSaveError)
+            advanceTimeBy(1_500)
+            runCurrent()
+            assertEquals(1L, state.trialId)
+            failSaving = false
+            component.retryProgressSaves()
+            runCurrent()
+            assertEquals(1, savedTrials.size)
+            finishPlayback()
+            component.onSelectAnswer(otherWord)
+            component.onSelectAnswer(state.targetWord)
+            runCurrent()
+            assertEquals(2, savedTrials.size)
+            assertEquals(listOf(true, false), savedTrials.map { it.isCorrect })
+        }
+    }
+
     @Test
     fun dashboardExposesEveryContrastAndNewDrillsSupportThePracticeFlow() = runTest {
         val lifecycle = LifecycleRegistry()
@@ -450,8 +709,8 @@ class EarTrainerComponentTest {
         }
     }
 
-    private suspend fun TestScope.withTrainer(contrastId: String = "i_vs_I", block: suspend Fixture.() -> Unit) {
-        val fixture = Fixture(this, contrastId)
+    private suspend fun TestScope.withTrainer(contrastId: String = "i_vs_I", recordProgress: Boolean = false, block: suspend Fixture.() -> Unit) {
+        val fixture = Fixture(this, contrastId, recordProgress)
         try {
             fixture.block()
         } finally {
@@ -460,12 +719,14 @@ class EarTrainerComponentTest {
         }
     }
 
-    private class Fixture(private val testScope: TestScope, contrastId: String) {
+    private class Fixture(private val testScope: TestScope, contrastId: String, recordProgress: Boolean) {
         val lifecycle = LifecycleRegistry().apply { resume() }
         val audio = FakeAudioPlayer()
         val tracker = PhonemeConfusionTracker()
         var backCount = 0
         var failLoading = false
+        var failSaving = false
+        val savedTrials = mutableListOf<TrialRecordEntity>()
         var wordPcm: ShortArray? = ShortArray(1600)
         val loadedWords = mutableListOf<String>()
         val component = DefaultEarTrainerComponent(
@@ -478,6 +739,19 @@ class EarTrainerComponentTest {
             audioDispatcher = StandardTestDispatcher(testScope.testScheduler),
             timeSource = testScope.testScheduler.timeSource,
             random = object : Random() { override fun nextBits(bitCount: Int) = 0 },
+            progressRepository = if (recordProgress) ProgressRepository(
+                store = object : ProgressStore {
+                    override fun observe() = flowOf(ProgressSnapshot(emptyList(), emptyList(), emptyList()))
+                    override suspend fun record(trial: TrialRecordEntity, quality: Int) {
+                        check(!failSaving)
+                        savedTrials += trial
+                    }
+                    override suspend fun recordSpeaking(record: SpeakingRecordEntity) = Unit
+                },
+                scope = testScope.backgroundScope,
+                refresh = flowOf(Unit),
+                aggregationDispatcher = StandardTestDispatcher(testScope.testScheduler)
+            ) else null,
             loadWordPcm = { word ->
                 loadedWords += word
                 check(!failLoading)

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.ui.theme.PracticeTheme
 
 /** Small, shared vector set: consistent strokes and no platform-dependent emoji. */
-enum class PracticeIcon { Listen, Speak, Progress, Stories, Rhythm, Back, Forward, Close, Check, Tips, Stop }
+enum class PracticeIcon { Listen, Speak, Progress, Stories, Rhythm, Back, Forward, Close, Check, Tips, Stop, ChevronRight, AutoChange }
 
 private val icons = PracticeIcon.entries.associateWith { icon ->
     ImageVector.Builder(icon.name, 24.dp, 24.dp, 24f, 24f).apply {
@@ -63,6 +63,13 @@ private val icons = PracticeIcon.entries.associateWith { icon ->
                 }
                 PracticeIcon.Back -> { moveTo(20f, 12f); lineTo(4f, 12f); moveTo(11f, 5f); lineTo(4f, 12f); lineTo(11f, 19f) }
                 PracticeIcon.Forward -> { moveTo(4f, 12f); lineTo(20f, 12f); moveTo(13f, 5f); lineTo(20f, 12f); lineTo(13f, 19f) }
+                PracticeIcon.AutoChange -> {
+                    moveTo(17f, 2f); lineTo(21f, 6f); lineTo(17f, 10f)
+                    moveTo(3f, 11f); lineTo(3f, 10f); curveTo(3f, 7f, 5f, 6f, 8f, 6f); lineTo(21f, 6f)
+                    moveTo(7f, 22f); lineTo(3f, 18f); lineTo(7f, 14f)
+                    moveTo(21f, 13f); lineTo(21f, 14f); curveTo(21f, 17f, 19f, 18f, 16f, 18f); lineTo(3f, 18f)
+                }
+                PracticeIcon.ChevronRight -> { moveTo(9f, 5f); lineTo(16f, 12f); lineTo(9f, 19f) }
                 PracticeIcon.Close -> { moveTo(6f, 6f); lineTo(18f, 18f); moveTo(6f, 18f); lineTo(18f, 6f) }
                 PracticeIcon.Check -> { moveTo(5f, 12f); lineTo(10f, 17f); lineTo(19f, 7f) }
                 PracticeIcon.Tips -> {
