@@ -18,6 +18,9 @@ object MeaningTrapCatalog {
             promptCharacter = "Old Farmer Giles",
             promptDialogue = "Welcome to Giles' Farm! What gentle creature would you like to adopt today?",
             promptInstruction = "Ask for a sheep: 'Can I have that sheep, please?'",
+            targetPhrase = "Can I have that sheep, please?",
+            targetPhraseIpa = "k ə n aɪ h æ v ð æ t ʃ iː p p l iː z",
+            targetPhonemeIndex = 11,
             intendedOutcome = ComicOutcome(
                 illustrationEmoji = "🐑 🏡 ✨",
                 soundEffect = "BAAA! ❤️",
@@ -44,6 +47,9 @@ object MeaningTrapCatalog {
             promptCharacter = "Strict Professor Smith",
             promptDialogue = "The exam starts in two minutes. All students must have an ink utensil ready.",
             promptInstruction = "Ask the proctor: 'Excuse me, could you lend me a pen?'",
+            targetPhrase = "Excuse me, could you lend me a pen?",
+            targetPhraseIpa = "ɪ k s k j uː z m iː k ʊ d j uː l e n d m iː ə p e n",
+            targetPhonemeIndex = 22,
             intendedOutcome = ComicOutcome(
                 illustrationEmoji = "🖊️ 📝 🎓",
                 soundEffect = "CLICK!",
@@ -70,6 +76,9 @@ object MeaningTrapCatalog {
             promptCharacter = "Cupid's Florist",
             promptDialogue = "What romantic message would you like engraved across the gold pendant?",
             promptInstruction = "Dictate: 'You hold the key to my heart.'",
+            targetPhrase = "You hold the key to my heart.",
+            targetPhraseIpa = "j uː h əʊ l d ð ə k iː t ə m aɪ h ɑː t",
+            targetPhonemeIndex = 15,
             intendedOutcome = ComicOutcome(
                 illustrationEmoji = "❤️ 🌹 💍",
                 soundEffect = "Awww! 💕",
@@ -96,6 +105,9 @@ object MeaningTrapCatalog {
             promptCharacter = "The Emperor's Butler",
             promptDialogue = "Would your lordship care for another roasted boar tenderloin?",
             promptInstruction = "Decline politely: 'No thank you, I am completely full.'",
+            targetPhrase = "No thank you, I am completely full.",
+            targetPhraseIpa = "n əʊ θ æ ŋ k j uː aɪ æ m k ə m p l iː t l i f ʊ l",
+            targetPhonemeIndex = 21,
             intendedOutcome = ComicOutcome(
                 illustrationEmoji = "🍷 🍽️ 👑",
                 soundEffect = "CLINK!",

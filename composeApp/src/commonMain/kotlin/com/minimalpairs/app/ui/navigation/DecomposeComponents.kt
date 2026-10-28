@@ -36,6 +36,8 @@ import com.minimalpairs.app.domain.srs.DrillProgressionManager
 import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
+import com.minimalpairs.app.domain.MeaningTrapEvaluator
+import com.minimalpairs.app.core.model.MeaningTrapBranch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
@@ -929,8 +931,12 @@ data class MeaningTrapUiState(
     val branch: com.minimalpairs.app.core.model.MeaningTrapBranch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
     val isRecording: Boolean = false,
     val isPlayingAudio: Boolean = false,
+    val isScoring: Boolean = false,
     val gopScore: Float? = null,
-    val feedbackText: String = ""
+    val alternateScore: Float? = null,
+    val feedbackText: String = "",
+    val feedbackIsError: Boolean = false,
+    val isSimulated: Boolean = false
 )
 
 interface MeaningTrapComponent {
@@ -972,14 +978,24 @@ class DefaultMeaningTrapComponent(
     private val playback = ModulePlaybackSession(scope, audioPlayer) { playing ->
         _state.value = _state.value.copy(isPlayingAudio = playing)
     }
+    private val evaluator = MeaningTrapEvaluator(scorerApi)
     private val recording = ModuleRecordingSession(scope, recorder,
-        onRecording = { active -> _state.value = _state.value.copy(isRecording = active) },
-        onError = { message -> _state.value = _state.value.copy(feedbackText = message) },
+        onRecording = { active -> _state.value = _state.value.copy(isRecording = active, isScoring = false) },
+        onError = { message -> _state.value = _state.value.copy(feedbackText = message, feedbackIsError = true, isScoring = false) },
         stopPlayback = playback::stop)
 
     init {
-        lifecycle.doOnStop { recording.cancel() }
-        lifecycle.doOnDestroy { recording.cancel(); scope.cancel() }
+        lifecycle.doOnStop { cancelReply() }
+        lifecycle.doOnDestroy { cancelReply(); scope.cancel() }
+    }
+
+    private fun cancelReply() {
+        val interrupted = _state.value.isRecording || _state.value.isScoring
+        recording.cancel()
+        if (interrupted) _state.value = _state.value.copy(
+            isScoring = false, feedbackIsError = false,
+            feedbackText = "Reply cancelled. Record the full phrase when you're ready."
+        )
     }
 
     override fun selectStory(storyId: String) {
@@ -1015,70 +1031,68 @@ class DefaultMeaningTrapComponent(
         if (recording.busy) return
         val story = _state.value.activeStory
         if (!_state.value.isRecording) _state.value = _state.value.copy(
-            branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
-            gopScore = null, feedbackText = "Listening… Speak the phrase clearly.")
+            branch = MeaningTrapBranch.PENDING,
+            gopScore = null, alternateScore = null, feedbackIsError = false, isSimulated = false,
+            feedbackText = "Listening… Speak the full phrase, then stop to review.")
         recording.toggle { samples ->
-            val durationMs = samples.size * 1000 / recorder.sampleRate
-            val voiced = withContext(analysisDispatcher) {
-                com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples).any { it.isVoiced }
+            _state.value = _state.value.copy(isScoring = true, feedbackText = "Checking the sounds in your reply…")
+            try {
+                val durationMs = samples.size * 1000 / recorder.sampleRate
+                val voiced = withContext(analysisDispatcher) {
+                    com.minimalpairs.app.core.dsp.PitchTracker.trackPitch(samples).any { it.isVoiced }
+                }
+                if (!voiced || durationMs < 80) {
+                    _state.value = _state.value.copy(feedbackText = "No clear voice detected. Try the full phrase again. No result was saved.", feedbackIsError = true)
+                    return@toggle
+                }
+                val result = withContext(analysisDispatcher) { evaluator.evaluate(samples, story) }
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                val resolved = result.branch != MeaningTrapBranch.PENDING
+                if (resolved) {
+                    val success = result.branch == MeaningTrapBranch.INTENDED_SUCCESS
+                    onScored(ModulePracticeRecordEntity(0, "STORIES", story.id, story.title, story.contrastId,
+                        result.intendedScore, success, durationMs, Clock.System.now().toEpochMilliseconds()))
+                    confusionTracker.recordTrial(result.intendedPhoneme,
+                        if (success) result.intendedPhoneme else result.trapPhoneme, success)
+                }
+                _state.value = _state.value.copy(
+                    branch = result.branch, gopScore = result.intendedScore, alternateScore = result.trapScore,
+                    feedbackIsError = false,
+                    feedbackText = when (result.branch) {
+                        MeaningTrapBranch.INTENDED_SUCCESS -> "Your reply matched the sound in “${story.intendedWord}”."
+                        MeaningTrapBranch.TRAP_TRIGGERED -> "Your reply matched the sound in “${story.trapWord}”. Hear the phrase and try again."
+                        MeaningTrapBranch.PENDING -> "I couldn't distinguish “${story.intendedWord}” from “${story.trapWord}” confidently. Hear the phrase and record it again. No ending was chosen and no result was saved."
+                    }
+                )
+                if (resolved) playOutcomeAudio()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                _state.value = _state.value.copy(gopScore = null, alternateScore = null, feedbackIsError = true,
+                    feedbackText = if (error is PracticeScoringException) error.message.orEmpty()
+                        else "Couldn't score this reply. Please try again. No ending was chosen and no result was saved.")
+            } finally {
+                _state.value = _state.value.copy(isScoring = false)
             }
-            if (!voiced || durationMs < 80) {
-                _state.value = _state.value.copy(feedbackText = "No clear voice detected. Try the phrase again.")
-                return@toggle
-            }
-            val result = withContext(analysisDispatcher) {
-                scorerApi.scoreAudio(samples, story.intendedWord, story.intendedIpa, story.contrastId)
-            }
-            kotlinx.coroutines.currentCoroutineContext().ensureActive()
-            if (!result.overallScore.isFinite() || result.overallScore !in 0f..100f) {
-                _state.value = _state.value.copy(feedbackText = "Couldn't score this recording. Please try again.")
-                return@toggle
-            }
-            val success = result.overallScore >= 70f
-            onScored(ModulePracticeRecordEntity(0, "STORIES", story.id, story.title, story.contrastId,
-                result.overallScore, success, durationMs, Clock.System.now().toEpochMilliseconds()))
-            applyEvaluationResult(success, result.overallScore)
         }
     }
 
     override fun triggerSimulatedOutcome(isCorrect: Boolean) {
         recording.cancel()
-        applyEvaluationResult(isCorrect, if (isCorrect) 92.5f else 48.0f)
-    }
-
-    private fun applyEvaluationResult(isCorrect: Boolean, score: Float) {
-        val story = _state.value.activeStory
-        val targetPhoneme = story.intendedIpa.replace("/", "").trim().split(" ").firstOrNull { it.isNotEmpty() } ?: story.intendedIpa
-        val trapPhoneme = story.trapIpa.replace("/", "").trim().split(" ").firstOrNull { it.isNotEmpty() } ?: story.trapIpa
-
-        if (isCorrect) {
-            confusionTracker.recordTrial(targetPhoneme, targetPhoneme, true)
-            _state.value = _state.value.copy(
-                branch = com.minimalpairs.app.core.model.MeaningTrapBranch.INTENDED_SUCCESS,
-                gopScore = score,
-                feedbackText = "Splendid pronunciation! (${score.toInt()}% match for /${targetPhoneme}/)"
-            )
-        } else {
-            confusionTracker.recordTrial(targetPhoneme, trapPhoneme, false)
-            _state.value = _state.value.copy(
-                branch = com.minimalpairs.app.core.model.MeaningTrapBranch.TRAP_TRIGGERED,
-                gopScore = score,
-                feedbackText = "Oh no, you slipped into the Meaning Trap! (${score.toInt()}% match)"
-            )
-        }
+        _state.value = _state.value.copy(
+            branch = if (isCorrect) MeaningTrapBranch.INTENDED_SUCCESS else MeaningTrapBranch.TRAP_TRIGGERED,
+            gopScore = null, alternateScore = null, isSimulated = true, feedbackIsError = false,
+            feedbackText = "Example ending — no recording was evaluated and your progress was not changed."
+        )
         playOutcomeAudio()
     }
 
     override fun resetCurrentStory() {
         recording.cancel()
-        _state.value = _state.value.copy(
-            branch = com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING,
-            gopScore = null,
-            feedbackText = ""
-        )
+        _state.value = MeaningTrapUiState(activeStory = _state.value.activeStory)
     }
 
-    override fun onBack() { recording.cancel(); onBackClicked() }
+    override fun onBack() { cancelReply(); onBackClicked() }
 }
 
 // --- Module 4: Prosody Component ---

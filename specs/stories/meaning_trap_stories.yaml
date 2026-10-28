@@ -9,6 +9,9 @@ stories:
     intended_ipa: "ʃ iː p"
     trap_word: "ship"
     trap_ipa: "ʃ ɪ p"
+    target_phrase: "Can I have that sheep, please?"
+    target_phrase_ipa: "k ə n aɪ h æ v ð æ t ʃ iː p p l iː z"
+    target_phoneme_index: 11 # Zero-based index in target_phrase_ipa
     panels:
       - index: 1
         character: "Old Farmer Giles"
@@ -35,6 +38,9 @@ stories:
     intended_ipa: "p e n"
     trap_word: "pan"
     trap_ipa: "p æ n"
+    target_phrase: "Excuse me, could you lend me a pen?"
+    target_phrase_ipa: "ɪ k s k j uː z m iː k ʊ d j uː l e n d m iː ə p e n"
+    target_phoneme_index: 22
     panels:
       - index: 1
         character: "Strict Professor Smith"
@@ -61,6 +67,9 @@ stories:
     intended_ipa: "h ɑː t"
     trap_word: "hut"
     trap_ipa: "h ʌ t"
+    target_phrase: "You hold the key to my heart."
+    target_phrase_ipa: "j uː h əʊ l d ð ə k iː t ə m aɪ h ɑː t"
+    target_phoneme_index: 15
     panels:
       - index: 1
         character: "Cupid's Florist"
@@ -87,6 +96,9 @@ stories:
     intended_ipa: "f ʊ l"
     trap_word: "fool"
     trap_ipa: "f uː l"
+    target_phrase: "No thank you, I am completely full."
+    target_phrase_ipa: "n əʊ θ æ ŋ k j uː aɪ æ m k ə m p l iː t l i f ʊ l"
+    target_phoneme_index: 21
     panels:
       - index: 1
         character: "The Emperor's Butler"

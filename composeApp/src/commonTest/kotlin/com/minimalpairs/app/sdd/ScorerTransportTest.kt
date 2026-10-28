@@ -195,4 +195,35 @@ class ScorerTransportTest {
             }
         } finally { client.close() }
     }
+
+    @Test
+    fun phraseScoringNeverFallsBackAndExplainsQualityAndServiceErrors() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.BadRequest, """{"detail":{"code":"uncertain_alignment","message":"private server text"}}""", "target sound reliably"),
+            Triple(HttpStatusCode.InternalServerError, "private server text", "HTTP 500"),
+            Triple(HttpStatusCode.OK, validResponse, "supports phrase scoring")
+        )
+        for ((status, body, guidance) in cases) {
+            val client = HttpClient(engine { respond(body, status, headersOf(HttpHeaders.ContentType, "application/json")) }) {
+                install(ContentNegotiation) { json() }
+            }
+            try {
+                val error = assertFailsWith<PracticeScoringException> {
+                    PhonemeScorerClient("https://scorer.example", client)
+                        .scorePhraseAudio(samples, "A sheep", "ə ʃ iː p", 2)
+                }
+                assertTrue(error.message!!.contains(guidance))
+                assertTrue(error.message!!.contains("No result was saved"))
+                assertFalse(error.message!!.contains("private server text"))
+                assertFalse(error.message!!.contains("replay"))
+            } finally { client.close() }
+        }
+        val client = HttpClient(engine { error("No upload without an endpoint") })
+        try {
+            val error = assertFailsWith<PracticeScoringException> {
+                PhonemeScorerClient(null, client).scorePhraseAudio(samples, "A sheep", "ə ʃ iː p", 2)
+            }
+            assertTrue(error.message!!.contains("Configure its address"))
+        } finally { client.close() }
+    }
 }

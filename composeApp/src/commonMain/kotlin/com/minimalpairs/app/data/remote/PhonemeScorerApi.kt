@@ -41,6 +41,16 @@ interface PhonemeScorerApi {
         expectedIpa: String,
         contrastId: String? = null
     ): PhonemeScoringResponse
+
+    suspend fun scorePhraseAudio(
+        audioSamples: ShortArray,
+        transcript: String,
+        expectedIpa: String,
+        targetPhonemeIndex: Int,
+        alternativePhoneme: String? = null
+    ): PhonemeScoringResponse {
+        throw PracticeScoringException("Phrase scoring is unavailable. Check the phoneme service connection and try again. No result was saved.")
+    }
 }
 
 class PhonemeScorerClient(
@@ -68,22 +78,51 @@ class PhonemeScorerClient(
         targetWord: String,
         expectedIpa: String,
         contrastId: String?
+    ): PhonemeScoringResponse = scoreRequest(audioSamples, targetWord, expectedIpa, contrastId)
+
+    override suspend fun scorePhraseAudio(
+        audioSamples: ShortArray,
+        transcript: String,
+        expectedIpa: String,
+        targetPhonemeIndex: Int,
+        alternativePhoneme: String?
     ): PhonemeScoringResponse {
+        val tokens = expectedIpa.trim().split(Regex("\\s+"))
+        require(tokens.size > 1 && targetPhonemeIndex in tokens.indices)
+        require(alternativePhoneme == null || (alternativePhoneme.isNotBlank() &&
+            alternativePhoneme.split(Regex("\\s+")).size == 1 && alternativePhoneme != tokens[targetPhonemeIndex]))
+        return scoreRequest(audioSamples, transcript, expectedIpa, null, targetPhonemeIndex, alternativePhoneme)
+    }
+
+    private suspend fun scoreRequest(
+        audioSamples: ShortArray,
+        targetWord: String,
+        expectedIpa: String,
+        contrastId: String?,
+        phraseTargetIndex: Int? = null,
+        alternativePhoneme: String? = null
+    ): PhonemeScoringResponse {
+        val phrase = phraseTargetIndex != null
         val practice = contrastId?.let(ListeningContrastsCatalog::getContrastById)
         val consonant = practice != null && practice.vowelReference == null
+        val strict = consonant || phrase
+        val unit = if (phrase) "phrase" else "word"
+        val retrySuffix = if (phrase) "No result was saved." else "No score was saved; your recording can still be replayed."
         val target = if (consonant) {
             ConsonantScoringTargets.find(practice.id, targetWord, expectedIpa)
                 ?: throw PracticeScoringException("The selected sound has no matching word transcript.")
         } else null
-        if (consonant) {
+        if (strict) {
             if (!SpeechAudioValidation.hasUsableAudio(audioSamples)) {
-                throw PracticeScoringException("No clear sound detected. Record the whole word and try again.")
+                throw PracticeScoringException("No clear sound detected. Record the whole $unit and try again.")
             }
             if (baseUrl.isNullOrBlank()) {
+                if (phrase) throw PracticeScoringException("Phrase scoring needs the phoneme service. Configure its address, then record again. No result was saved.")
                 throw PracticeScoringException("Consonant scoring needs the phoneme service. Configure its address, then record again. Your recording can still be replayed.")
             }
         }
         val requestIpa = target?.ipa ?: expectedIpa
+        val selectedIndex = phraseTargetIndex ?: target?.index
         // Remote failure remains visible when falling back to the local estimate.
         var fallbackMessage: String? = null
         if (!baseUrl.isNullOrBlank()) {
@@ -101,7 +140,9 @@ class PhonemeScorerClient(
                             formData {
                                 append("target_transcript", targetWord)
                                 append("expected_ipa", requestIpa)
-                                target?.let { append("target_phoneme_index", it.index.toString()) }
+                                selectedIndex?.let { append("target_phoneme_index", it.toString()) }
+                                if (phrase) append("utterance_kind", "phrase")
+                                alternativePhoneme?.let { append("alternative_phoneme", it) }
                                 append("audio_file", wavBytes, Headers.build {
                                     append(HttpHeaders.ContentType, "audio/wav")
                                     append(HttpHeaders.ContentDisposition, "filename=\"audio.wav\"")
@@ -122,32 +163,39 @@ class PhonemeScorerClient(
                     }
                     result
                 } ?: throw PracticeScoringException(
-                    "The phoneme service is taking too long to start. Try again shortly. No score was saved; your recording can still be replayed.")
+                    "The phoneme service is taking too long to start. Try again shortly. $retrySuffix")
                 if (httpResponse.status.value == 401 || httpResponse.status.value == 403) {
-                    throw PracticeScoringException("The phoneme service rejected its access key. Check the scorer configuration and try again. No score was saved; your recording can still be replayed.")
+                    throw PracticeScoringException("The phoneme service rejected its access key. Check the scorer configuration and try again. $retrySuffix")
                 }
-                if (consonant && httpResponse.status.value == 400) {
+                if (strict && httpResponse.status.value == 400) {
                     val code = runCatching {
                         Json.parseToJsonElement(httpResponse.bodyAsText()).jsonObject["detail"]
                             ?.jsonObject?.get("code")?.jsonPrimitive?.content
                     }.getOrNull()
                     val guidance = when (code) {
-                        "no_clear_speech" -> "No clear voice was captured. Check your microphone and record the whole word again."
+                        "no_clear_speech" -> "No clear voice was captured. Check your microphone and record the whole $unit again."
                         "noisy_audio" -> "Background noise is too strong for a reliable score. Move closer to the microphone and try in a quieter place."
                         "clipped_audio" -> "The microphone is clipping. Move farther away or lower its input level."
-                        "multiple_utterances" -> "Say the selected word once, without other speech."
-                        "uncertain_alignment" -> "The model could not identify /$expectedIpa/ reliably. Record the word again."
+                        "multiple_utterances" -> "Say the selected $unit once, without other speech."
+                        "uncertain_alignment" -> if (phrase) "The model could not locate the target sound reliably. Record the full phrase again."
+                            else "The model could not identify /$expectedIpa/ reliably. Record the word again."
                         else -> null
                     }
-                    if (guidance != null) throw PracticeScoringException("$guidance No score was saved. You can replay your recording.")
+                    if (guidance != null) throw PracticeScoringException("$guidance ${if (phrase) retrySuffix else "No score was saved. You can replay your recording."}")
                 }
-                if (httpResponse.status.value != 200 && consonant) {
-                    throw PracticeScoringException("The phoneme service returned HTTP ${httpResponse.status.value}. Try again shortly. No score was saved; your recording can still be replayed.")
+                if (httpResponse.status.value != 200 && strict) {
+                    throw PracticeScoringException("The phoneme service returned HTTP ${httpResponse.status.value}. Try again shortly. $retrySuffix")
                 }
                 require(httpResponse.status.value == 200)
                 val response: PhonemeScoringResponse = httpResponse.body()
                 require(response.overallScore.isFinite() && response.overallScore in 0f..100f)
-                require(response.scoringMethod == (if (consonant) "neural_ctc_phoneme" else "neural_ctc") && !response.modelId.isNullOrBlank())
+                val method = if (alternativePhoneme != null) "neural_ctc_phrase_contrast"
+                    else if (phrase) "neural_ctc_phrase_phoneme" else if (consonant) "neural_ctc_phoneme" else "neural_ctc"
+                require(response.scoringMethod == method && !response.modelId.isNullOrBlank())
+                if (alternativePhoneme != null) {
+                    require(response.alternativePhoneme == alternativePhoneme)
+                    require(response.contrastEvidence?.let { it.isFinite() && it in .1f..1f } == true)
+                }
                 val expectedTokens = requestIpa.trim().trim('/').split(Regex("\\s+")).filter { it.isNotBlank() }
                 require(response.phonemes.map { it.phoneme } == expectedTokens)
                 require(response.phonemes.zipWithNext().all { (before, after) -> before.endTime <= after.startTime })
@@ -157,11 +205,12 @@ class PhonemeScorerClient(
                         it.startTime >= 0f && it.endTime > it.startTime &&
                         it.endTime <= audioSamples.size / 16000f + .001f
                 })
-                if (target != null) {
-                    require(response.targetPhonemeIndex == target.index)
-                    val selected = response.phonemes[target.index]
-                    require(selected.phoneme == expectedIpa)
+                if (selectedIndex != null) {
+                    require(response.targetPhonemeIndex == selectedIndex)
+                    val selected = response.phonemes[selectedIndex]
                     require(abs(response.overallScore - selected.gopScore) < .001f)
+                    if (phrase) return response
+                    require(selected.phoneme == expectedIpa)
                     return response.copy(overallScore = selected.gopScore,
                         feedback = "Selected /$expectedIpa/ in “$targetWord”. Listen to the example and practise that sound within the word.")
                 }
@@ -171,6 +220,7 @@ class PhonemeScorerClient(
             } catch (e: PracticeScoringException) {
                 throw e
             } catch (e: Exception) {
+                if (phrase) throw PracticeScoringException("The phoneme service could not align this phrase. Check that the service supports phrase scoring and try again. No result was saved.")
                 if (consonant) throw PracticeScoringException(
                     "The phoneme service could not score /$expectedIpa/ in this word. Check the service and try recording again. No word-similarity score was substituted.")
                 fallbackMessage = "The model service was unavailable or returned an invalid result; used formants and duration instead."

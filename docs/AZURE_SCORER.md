@@ -58,6 +58,8 @@ With Azure CLI signed in, launch the desktop app or run the rendered Speak test:
 ```sh
 build/phoneme-model-venv/bin/python scripts/azure_speak.py run
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify
+build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --module stories
+build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --module all
 # Confirm zero replicas before Speak makes its first scoring request:
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --cold-start
 ```
@@ -70,6 +72,16 @@ checks saved Progress after reopening an isolated Room database. It also checks
 that noise rejection does not save a score. No physical microphone is activated
 and retained microphone WAVs are excluded. Reports and screenshots are in
 `composeApp/build/reports/articulator-azure/`.
+
+Stories verification drives the real Stories composable and component against
+Azure HTTPS scoring, checking all four reference replies, selected-vowel scores,
+outcome playback, and saved progress after reopening an isolated Room database.
+When `build/reports/stories/controlled/` contains the generated controls, it also
+checks the four alternate endings and rejects an out-of-pair vowel without adding
+a result. Silence and example endings do not add personal scores or confusion
+trials. Screenshots and persisted test scores are written to
+`composeApp/build/reports/stories-azure/`. This uses injected reference PCM at the
+recorder boundary, not a physical microphone or the user's personal progress data.
 
 The shared client sends `x-functions-key` only for HTTPS requests, disables
 redirects in its default HTTP client, and allows 120 seconds for cold-start
@@ -143,7 +155,7 @@ The script builds Linux/amd64 locally, exports the image, audits every filesyste
 layer and its configuration against current Docker Hub and Function credentials,
 and runs Trivy's secret scanner offline. Publication stops if either audit fails.
 Only then does it push the public image, update Azure, wait for the new revision to become ready, and run the rendered
-Speak verification. The launcher retries transient key-management startup failures. Audit reports remain under `build/reports/dockerhub/<tag>/`; the
+Speak and Stories verification. The launcher retries transient key-management startup failures. Audit reports remain under `build/reports/dockerhub/<tag>/`; the
 large export is removed after successful verification. `SCORER_IMAGE_TAG` and
 `SCORER_PYTHON` override the timestamp tag and Python executable.
 
@@ -167,6 +179,39 @@ The deployment command uses the current Azure CLI Function-on-Container-Apps
 preview integration. See [Microsoft's hosting documentation](https://learn.microsoft.com/en-us/azure/azure-functions/functions-container-apps-hosting).
 
 ## Verification
+
+### Stories rollout (2026-10-28)
+
+Backend 2.3.0 was published as
+`estebanlopez/minimalpairs-scorer:20261028T233923Z`, digest
+`sha256:d100f303e04b5bd2aebe89151c4b23fb6537713028977a3c93ae4d48dcd9e524`.
+Revision `minimalpairs-scorer--0000004` receives 100% of traffic. Key protection,
+the 0–1 replica limits, and the 60-second scale-to-zero cooldown were preserved.
+The image loaded its pinned model successfully on Linux; full-layer and offline
+secret audits passed before publication.
+
+Both live UI tests passed against Azure. Stories verified intended and alternate
+endings for all four stories, the correct outcome audio, visible scores, and eight
+results surviving database reopening. Out-of-pair speech, silence, and simulated
+endings did not add results. Intended reference contrast confidence was 99.0
+(sheep/ship), 95.3 (pen/pan), 98.1 (heart/hut), and 94.2 (full/fool).
+
+Evidence is in `build/reports/azure/stories-deployment.json`,
+`composeApp/build/reports/stories-azure/`, and
+`build/reports/dockerhub/20261028T233923Z/`. The connected iPhone was rebuilt,
+installed, and provisioned with the existing Azure connection without clearing
+its data. The live scoring evidence above comes from the shared rendered app
+screen with controlled PCM, not a new physical microphone capture.
+
+The physical iPhone 13 mini UI smoke test also passed: each of the four Stories
+could be selected, its Record control reached, and its ungraded example ending
+opened. It did not activate the microphone or add synthetic results to personal
+progress. Run it again with
+`scripts/run_articulator_device_tests.sh DEVICE_UDID -only-testing:ArticulatorDeviceTests/ArticulatorDeviceTests/testStoriesCatalogAndExampleEndings`.
+The successful result bundle is
+`build/ArticulatorDeviceTests/20261028T235144Z.xcresult`.
+
+### General service checks
 
 ```sh
 build/phoneme-model-venv/bin/python -m pip install -r backend/requirements-azure.txt

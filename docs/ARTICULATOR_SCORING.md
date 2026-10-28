@@ -39,6 +39,77 @@ results are written to `build/reports/phoneme-model/consonant-selected.json`.
 
 ## Optional neural service
 
+### Stories phrase scoring
+
+Stories require backend 2.3.0 or later. They send the full phrase IPA sequence,
+an explicit `target_phoneme_index`, `utterance_kind=phrase`, and the other vowel
+as `alternative_phoneme` to `POST /v1/score/phoneme`. The new response uses
+`scoring_method=neural_ctc_phrase_contrast`, echoes the alternate, and includes
+`contrast_evidence`. Requests without an alternate retain their previous scoring
+behavior, including `neural_ctc_phrase_phoneme` for legacy selected phrase scores.
+
+Both vowels share one state in the CTC alignment, using their summed posterior
+for alignment. Reversing the pair therefore evaluates the same occurrence in the
+phrase. Only the selected state's confidence is conditioned on that pair; other
+phoneme scores retain their existing meaning. Each candidate's score is the
+geometric mean of its conditional probability on nonblank speech frames within
+the aligned local region. A diffuse multilingual vocabulary no longer turns a
+clear contrast into a low absolute confidence score.
+
+Pair normalization alone can be overconfident on unrelated sounds. Before
+returning a score, the geometric mean of the pair's original posterior mass must
+reach 0.1 and at least half the strongest full-vocabulary posterior on those
+frames. A different supported English vowel dominating the region also causes
+an uncertain-alignment rejection. Sustained competing speech cannot be hidden
+by one matching spike. Blank frames never establish contrast evidence. The app
+rejects mismatching model IDs, target regions, evidence, indices, or alternates.
+
+One candidate must reach 80/100 (at least 4:1 conditional support) and lead the
+other by at least 15 points to choose an ending. The old 70-point absolute-score
+threshold was tightened for this new confidence measure after an additional
+voice control produced an incorrect decision at 78.1/100. These rules are not calibrated
+pronunciation-accuracy thresholds. Uncertain, invalid, unavailable, and cancelled
+evaluations never create a practice result or confusion trial. There is no
+offline whole-recording estimate for this task. Restart or redeploy the scorer
+before using the updated app; older service responses cannot choose an ending.
+No extra runtime model or model download is required.
+
+Phrase mode keeps clipping, noise, and speech checks while allowing internal
+pauses and up to 30 seconds of recording. It estimates the noise floor from the
+quietest 5% of frames because a clean, continuous reply need not contain 20%
+silence. Word endpointing retains its existing behavior and 20% estimate.
+
+Run `build/phoneme-model-venv/bin/python scripts/validate_story_scoring.py` for a
+repeatable real-model check. It now requires all four bundled reference replies
+to select the intended ending. On 2026-10-28, the intended/alternate scores were
+99.0/1.0 (sheep/ship), 95.3/4.7 (pen/pan), 98.1/1.9 (heart/hut), and 94.2/5.8
+(full/fool). App audio resources and the checkpoint were unchanged.
+
+Extra controls can be generated explicitly using the existing ElevenLabs project
+connection with `scripts/generate_story_controls.py --voice tutor` and
+`--voice professor_smith`, run with the model virtual environment's Python.
+These use Flash v2 pronunciation tags for intended, alternate, and third-vowel
+words, plus unrelated-speech controls. Files stay under `build/reports/stories/`
+and existing recordings are preserved unless `--force` is supplied. The default
+output includes a voice folder and provenance manifest.
+
+Validate those controls with `scripts/validate_story_scoring.py --controls-dir
+build/reports/stories/controlled --allow-uncertain-controls`. The optional flag
+reports unclear additional controls as explicit `RETRY` cases; incorrect confident
+endings always fail, and the four bundled references must still resolve. Omitting
+the flag requires every intended/alternate control to resolve as well. The report
+at `build/reports/stories/reference-scoring.json` retains every result and retry.
+Additional controls must also demonstrate both endings for each story they cover;
+retries alone cannot establish that coverage. The final 2026-10-28 run covered 36
+cases: all four bundled replies resolved, both endings were demonstrated for all
+four stories, all 16 third-vowel/unrelated controls were rejected, and three extra
+intended/alternate controls remained explicit retries. There were no incorrect
+confident endings in that controlled set.
+Generated speech is integration evidence, not independent human-speaker or accent
+validation. Unclear speech must remain eligible for retry.
+
+### Model behavior
+
 The backend now runs actual phoneme CTC inference using a locally provisioned
 Hugging Face Wav2Vec2 checkpoint. It aligns the supplied IPA sequence with a
 Viterbi CTC path, including blank transitions between repeated phonemes.

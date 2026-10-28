@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -38,6 +39,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -102,6 +106,7 @@ fun MeaningTrapScreen(
                 speechBubbleText = story.promptDialogue,
                 subCaption = story.premise,
                 isPlayingAudio = state.isPlayingAudio,
+                canPlayAudio = !state.isRecording && !state.isScoring,
                 onListenClick = component::playPromptAudio
             )
 
@@ -130,7 +135,7 @@ fun MeaningTrapScreen(
                         OutlinedButton(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                             onClick = component::playTargetPhraseAudio,
-                            enabled = !state.isPlayingAudio,
+                            enabled = !state.isPlayingAudio && !state.isRecording && !state.isScoring,
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(if (state.isPlayingAudio) "Playing..." else "Hear phrase", fontSize = 12.sp)
@@ -186,10 +191,37 @@ fun MeaningTrapScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            if (state.feedbackText.isNotBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                    colors = CardDefaults.cardColors(containerColor = if (state.feedbackIsError) scheme.errorContainer else scheme.surfaceVariant)
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (state.isScoring) CircularProgressIndicator(Modifier.width(20.dp).height(20.dp), strokeWidth = 2.dp)
+                            Text(
+                                if (state.isScoring) "Checking your reply" else if (state.isSimulated) "Example ending" else "Reply feedback",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                        Text(state.feedbackText, style = MaterialTheme.typography.bodyMedium)
+                        state.gopScore?.let { score ->
+                            Text("Sound confidence · ${story.intendedWord}: ${score.toInt()}/100", style = MaterialTheme.typography.bodyMedium)
+                            state.alternateScore?.let { alternate ->
+                                Text("Sound confidence · ${story.trapWord}: ${alternate.toInt()}/100", style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Text("Experimental confidence between these two vowels within the phrase; not pronunciation accuracy.", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             // Speech Control Bar
             val isRec = state.isRecording
             Button(
                 onClick = component::toggleRecording,
+                enabled = !state.isScoring,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRec) scheme.error else scheme.primary,
@@ -198,7 +230,7 @@ fun MeaningTrapScreen(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
             ) {
                 Text(
-                    text = if (isRec) "Stop and review" else "Record your reply",
+                    text = if (state.isScoring) "Checking your reply…" else if (isRec) "Stop and review" else "Record your reply",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
@@ -216,6 +248,7 @@ fun MeaningTrapScreen(
                     OutlinedButton(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                         onClick = { component.triggerSimulatedOutcome(true) },
+                        enabled = !state.isRecording && !state.isScoring,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -224,6 +257,7 @@ fun MeaningTrapScreen(
                     OutlinedButton(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                         onClick = { component.triggerSimulatedOutcome(false) },
+                        enabled = !state.isRecording && !state.isScoring,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -299,7 +333,7 @@ fun MeaningTrapScreen(
                                         OutlinedButton(
                                             colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                                             onClick = component::playOutcomeAudio,
-                                            enabled = !state.isPlayingAudio,
+                                            enabled = !state.isPlayingAudio && !state.isRecording && !state.isScoring,
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(if (state.isPlayingAudio) "Playing..." else "Listen", fontSize = 12.sp)
@@ -317,7 +351,9 @@ fun MeaningTrapScreen(
                             Spacer(Modifier.height(12.dp))
 
                             Text(
-                                text = outcome.outcomeDescription,
+                                text = if (state.isSimulated) outcome.outcomeDescription
+                                    else if (isSuccess) "Your reply matched the intended ending."
+                                    else "Your reply matched the alternate ending.",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
@@ -372,6 +408,7 @@ fun ComicPanelCard(
     speechBubbleText: String,
     subCaption: String,
     isPlayingAudio: Boolean = false,
+    canPlayAudio: Boolean = true,
     onListenClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -407,7 +444,7 @@ fun ComicPanelCard(
                     OutlinedButton(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                         onClick = onListenClick,
-                        enabled = !isPlayingAudio,
+                        enabled = !isPlayingAudio && canPlayAudio,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(if (isPlayingAudio) "Playing..." else "Listen", fontSize = 12.sp)

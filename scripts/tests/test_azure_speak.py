@@ -64,6 +64,19 @@ class AzureSpeakTest(unittest.TestCase):
         self.assertEqual(command[-1], '*LiveSpeakScoringTest')
         self.assertEqual(environment['MINIMAL_PAIRS_LIVE_SCORING'], '1')
 
+    def test_all_verifies_speak_and_stories_without_persisting_credentials(self):
+        _, command, environment = self.launch('verify', '--module', 'all')
+        self.assertIn('*LiveSpeakScoringTest', command)
+        self.assertIn('*LiveStoriesScoringTest', command)
+        self.assertEqual(environment['MINIMAL_PAIRS_LIVE_STORIES'], '1')
+        self.assertEqual(environment['MINIMAL_PAIRS_LIVE_SCORING'], '1')
+
+    def test_stories_only_does_not_select_speak(self):
+        _, command, environment = self.launch('verify', '--module', 'stories')
+        self.assertEqual(command[-1], '*LiveStoriesScoringTest')
+        self.assertNotIn('*LiveSpeakScoringTest', command)
+        self.assertEqual(environment['MINIMAL_PAIRS_LIVE_STORIES'], '1')
+
     def test_invalid_ios_options_fail_before_accessing_azure(self):
         for arguments in [('ios',), ('ios', '--device', 'phone', '--cold-start'), ('run', '--device', 'phone')]:
             with self.subTest(arguments=arguments), \

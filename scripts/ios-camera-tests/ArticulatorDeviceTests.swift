@@ -85,6 +85,77 @@ final class ArticulatorDeviceTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    /// Check the production Stories UI on the installed phone without recording
+    /// ambient audio or adding synthetic results to the user's personal history.
+    func testStoriesCatalogAndExampleEndings() {
+        continueAfterFailure = false
+        let cases = [
+            ("sheep_vs_ship", "sheep vs ship", "The Farmer's Fleet", "Splendid choice!"),
+            ("pen_vs_pan", "pen vs pan", "The Exam Frying Trap", "Certainly, here is"),
+            ("heart_vs_hut", "heart vs hut", "The Valentine Shelter", "How utterly poetic!"),
+            ("fool_vs_full", "full vs fool", "The Royal Banquet", "Very good, my lord"),
+        ]
+        func revealStoryElement(_ element: XCUIElement, preferSwipeUp: Bool = true) {
+            for attempt in 0..<12 {
+                if element.exists && element.isHittable && element.frame.minY >= 114 && element.frame.maxY <= 698 { return }
+                let swipeUp = element.exists ? element.frame.minY >= 114 : (attempt < 6 ? preferSwipeUp : !preferSwipeUp)
+                scroll(swipeUp)
+            }
+            XCTAssertTrue(element.exists, "Missing Stories control\n\(app.debugDescription)")
+            XCTAssertTrue(element.isHittable)
+        }
+        func matchingText(_ text: String) -> XCUIElement {
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        }
+        for (id, chipLabel, title, dialogue) in cases {
+            // Start each case at the same scroll position, preserving all app data.
+            app.terminate()
+            app.launch()
+            XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+            app.buttons["Stories"].press(forDuration: 0.3)
+            XCTAssertTrue(app.buttons["sheep vs ship"].waitForExistence(timeout: 5))
+            let chip = app.buttons[chipLabel]
+            for _ in 0..<5 {
+                if chip.exists && chip.isHittable { break }
+                let row = app.buttons["sheep vs ship"].exists ? app.buttons["sheep vs ship"] : app.buttons["pen vs pan"]
+                let y = max(100, min(170, row.frame.midY))
+                let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.width * 0.88, dy: y))
+                let end = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.width * 0.12, dy: y))
+                start.press(forDuration: 0.05, thenDragTo: end)
+            }
+            XCTAssertTrue(chip.waitForExistence(timeout: 5))
+            XCTAssertTrue(chip.isHittable)
+            chip.press(forDuration: 0.3)
+            XCTAssertTrue(matchingText(title).waitForExistence(timeout: 5))
+            let record = app.buttons["Record your reply"]
+            revealStoryElement(record)
+            XCTAssertTrue(record.isEnabled)
+            let expand = app.buttons["+ Explore example endings"]
+            let expanded = app.buttons["− Explore example endings"]
+            for _ in 0..<3 {
+                revealStoryElement(expand)
+                expand.press(forDuration: 0.3)
+                if expanded.waitForExistence(timeout: 2) { break }
+            }
+            XCTAssertTrue(expanded.exists, "Stories examples did not expand\n\(app.debugDescription)")
+            let example = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Intended sound")).firstMatch
+            revealStoryElement(example)
+            example.press(forDuration: 0.3)
+            let feedback = matchingText("no recording was evaluated")
+            revealStoryElement(feedback, preferSwipeUp: false)
+            XCTAssertTrue(feedback.exists)
+            let outcome = matchingText(dialogue)
+            revealStoryElement(outcome)
+            XCTAssertTrue(outcome.exists)
+            XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Sound confidence")).count, 0)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "stories-\(id)-example"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            print("STORIES_DEVICE \(id) example=true personal_score=false")
+        }
+    }
+
     func testTrueDepthDiscovery() {
         let devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInTrueDepthCamera], mediaType: .video, position: .front).devices
         print("ARTICULATOR_TRUEDEPTH_DEVICE_COUNT \(devices.count)")

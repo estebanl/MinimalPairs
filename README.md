@@ -9,6 +9,8 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 - **Module 3: The Meaning Trap** — Narrative branching comic scenarios highlighting high-stakes minimal pair semantic blunders.
 - **Module 4: Rhythm & Pitch Ribbon** — Continuous YIN F0 pitch tracking ribbon, real-time prosody overlay, and connected speech assimilation practice.
 
+Stories display recording guidance, scoring state, errors, and experimental sound-confidence scores. Record the full prompted phrase: the phoneme service compares the intended and alternate vowels in a shared phrase alignment, checking support against the full vocabulary before returning contrast confidence. An ending requires one candidate to score at least 80/100 with a lead of at least 15 points. Otherwise, the story stays open for a retry and no result is saved. Phrase contrast scoring requires backend 2.3.0 or later; offline whole-recording acoustic estimates cannot choose an ending. Example endings do not create personal scores or change confusion tracking. See the [Stories behavior contract](specs/features/meaning_trap.feature) and [scoring setup and validation](docs/ARTICULATOR_SCORING.md#stories-phrase-scoring).
+
 ## Progress
 
 Progress stores listening attempts, mastery, review schedules, and scored speaking, Stories, and Rhythm results locally. It includes listening accuracy, daily streaks, recent trends, per-contrast confusion matrices, and separate module summaries. Practice buttons open the relevant exercise. Failed reads retain the last loaded totals.

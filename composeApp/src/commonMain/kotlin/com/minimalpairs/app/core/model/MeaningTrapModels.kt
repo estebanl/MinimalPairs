@@ -23,6 +23,9 @@ data class ComicStory(
     val promptCharacter: String,
     val promptDialogue: String,
     val promptInstruction: String,
+    val targetPhrase: String,
+    val targetPhraseIpa: String,
+    val targetPhonemeIndex: Int,
     val intendedOutcome: ComicOutcome,
     val trapOutcome: ComicOutcome,
     val semanticTakeaway: String

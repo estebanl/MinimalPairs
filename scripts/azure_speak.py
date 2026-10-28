@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch or verify Speak without bundling or logging Azure credentials."""
+"""Launch or verify practice without bundling or logging Azure credentials."""
 import argparse
 import json
 import os
@@ -11,6 +11,8 @@ import httpx
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('mode', choices=['run', 'verify', 'ios'])
+parser.add_argument('--module', choices=['speak', 'stories', 'all'], default='speak',
+                    help='Practice screens to exercise in verify mode (default: speak)')
 parser.add_argument('--device', help='Connected iPhone name or UDID (ios mode only)')
 parser.add_argument('--bundle-id', default='com.estebanl.minimalpairs',
                     help='Installed iOS app bundle identifier (ios mode only)')
@@ -20,6 +22,10 @@ parser.add_argument('--cold-start', action='store_true',
 args = parser.parse_args()
 if args.cold_start and args.mode != 'verify':
     parser.error('--cold-start requires verify mode')
+if args.module != 'speak' and args.mode != 'verify':
+    parser.error('--module requires verify mode')
+if args.cold_start and args.module != 'speak':
+    parser.error('--cold-start currently requires --module speak')
 if args.mode == 'ios' and not args.device:
     parser.error('ios mode requires --device')
 if args.mode != 'ios' and (args.device or args.console):
@@ -84,7 +90,7 @@ if args.mode == 'ios':
     if args.console:
         command += ['--console']
     command += [args.bundle_id]
-    print('Launching iOS Speak with runtime configuration; the app saves it in device Keychain.', flush=True)
+    print('Launching the iOS app with runtime configuration; the app saves it in device Keychain.', flush=True)
     os.execvpe(command[0], command, child_env)
 child_env['MINIMAL_PAIRS_SCORER_URL'] = base
 child_env['MINIMAL_PAIRS_SCORER_KEY'] = key
@@ -93,13 +99,23 @@ child_env.pop('MINIMAL_PAIRS_MIC_REPLAY_WAV', None)
 child_env.pop('MINIMAL_PAIRS_PHYSICAL_MIC', None)
 command = [str(root / 'gradlew'), '--no-daemon']
 if args.mode == 'verify':
-    child_env['MINIMAL_PAIRS_LIVE_SCORING'] = '1'
     child_env['MINIMAL_PAIRS_LIVE_SCORER_EXPECTED_URL'] = base
-    child_env['MINIMAL_PAIRS_LIVE_REPORT_DIR'] = str(root / 'composeApp/build/reports/articulator-azure')
-    command += [':composeApp:jvmTest', '--rerun', '--tests', '*LiveSpeakScoringTest']
+    command += [':composeApp:jvmTest', '--rerun']
+    if args.module in ('speak', 'all'):
+        child_env['MINIMAL_PAIRS_LIVE_SCORING'] = '1'
+        child_env['MINIMAL_PAIRS_LIVE_REPORT_DIR'] = str(root / 'composeApp/build/reports/articulator-azure')
+        command += ['--tests', '*LiveSpeakScoringTest']
+    if args.module in ('stories', 'all'):
+        child_env['MINIMAL_PAIRS_LIVE_STORIES'] = '1'
+        child_env['MINIMAL_PAIRS_LIVE_STORIES_REPORT_DIR'] = str(root / 'composeApp/build/reports/stories-azure')
+        controls = root / 'build/reports/stories/controlled'
+        if controls.is_dir():
+            child_env['MINIMAL_PAIRS_STORY_CONTROLS_DIR'] = str(controls)
+        command += ['--tests', '*LiveStoriesScoringTest']
 else:
     child_env.pop('MINIMAL_PAIRS_LIVE_SCORING', None)
     command += [':composeApp:run']
-print(f'{args.mode.capitalize()} Speak using {base} (key not displayed or saved)', flush=True)
+label = {'speak': 'Speak', 'stories': 'Stories', 'all': 'Speak and Stories'}[args.module]
+print(f'{args.mode.capitalize()} {label} using {base} (key not displayed or saved)', flush=True)
 os.chdir(root)
 os.execvpe(command[0], command, child_env)

@@ -67,11 +67,15 @@ data class PhonemeScoringResponse(
     @SerialName("scoring_method") val scoringMethod: String = "unknown",
     @SerialName("model_id") val modelId: String? = null,
     val feedback: String? = null,
-    @SerialName("target_phoneme_index") val targetPhonemeIndex: Int? = null
+    @SerialName("target_phoneme_index") val targetPhonemeIndex: Int? = null,
+    @SerialName("alternative_phoneme") val alternativePhoneme: String? = null,
+    @SerialName("contrast_evidence") val contrastEvidence: Float? = null
 ) {
     val scoringDescription: String get() = when (scoringMethod) {
         "neural_ctc" -> "Model confidence (experimental) · ${modelId ?: "phoneme CTC"}. ${feedback ?: "Not validated for isolated-vowel coaching or calibrated pronunciation grading."}"
         "neural_ctc_phoneme" -> "Selected-phoneme model confidence (experimental) · ${modelId ?: "phoneme CTC"}. The word supplies alignment context; the score evaluates the selected sound, not the word average. Not calibrated pronunciation accuracy."
+        "neural_ctc_phrase_phoneme" -> "Selected-phoneme model confidence (experimental) · ${modelId ?: "phoneme CTC"}. The phrase supplies alignment context; the score evaluates the selected sound, not the phrase average. Not calibrated pronunciation accuracy."
+        "neural_ctc_phrase_contrast" -> "Vowel-contrast model confidence (experimental) · ${modelId ?: "phoneme CTC"}. Compares the two vowels in a shared phrase alignment after checking evidence across the full vocabulary. Not calibrated pronunciation accuracy."
         "word_similarity" -> "Offline word similarity (experimental). Compares the whole recording with both example words; does not isolate the consonant or measure pronunciation accuracy. Voice and microphone differences can affect the score."
         "acoustic_estimate" -> "Offline acoustic estimate. ${feedback ?: "Based on vowel formants and duration, not word recognition."}"
         else -> "Scoring method unavailable."

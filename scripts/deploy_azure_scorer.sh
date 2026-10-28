@@ -35,6 +35,6 @@ for ((attempt=0; attempt<60; attempt++)); do
 done
 [[ "$scorer_ready" == true ]] || { echo 'Azure revision did not become ready; audit files retained.' >&2; exit 1; }
 "$scorer_python" scripts/configure_azure_scorer_scaling.py --cooldown 60
-"$scorer_python" scripts/azure_speak.py verify
+"$scorer_python" scripts/azure_speak.py verify --module all
 # Keep the small audit reports; the local Docker image remains available.
 rm "$scorer_report/image.tar"

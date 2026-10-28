@@ -1,6 +1,6 @@
 """Local phoneme-CTC inference and Viterbi alignment; no network model downloads.
 
-Scores are aligned model posterior confidence, not calibrated human GOP ratings.
+Scores are aligned posterior or declared-contrast confidence, not human GOP ratings.
 """
 import json
 import os
@@ -25,12 +25,13 @@ class RecordingQualityError(ValueError):
         self.code = code
 
 
-def prepare_word_audio(samples):
-    """Conservative single-word endpointing, with fixed 150ms model context.
+def prepare_word_audio(samples, *, allow_phrase=False):
+    """Conservative speech endpointing, with fixed 150ms model context.
 
     This energy gate is not a speech recognizer or a calibrated SNR estimator.
     Reject poor input rather than treating microphone conditions as pronunciation.
     Return the crop's (possibly negative, for padding) original sample offset.
+    Phrase mode permits internal pauses and more than three seconds of speech.
     """
     samples = np.asarray(samples, dtype=np.float32)
     if samples.ndim != 1 or len(samples) < 1280 or not np.isfinite(samples).all():
@@ -40,7 +41,9 @@ def prepare_word_audio(samples):
     hop, window, context = 160, 320, 2400
     frames = np.lib.stride_tricks.sliding_window_view(samples, window)[::hop]
     energy = np.std(frames, axis=1)  # Ignore DC offset when locating activity.
-    peak, floor = float(energy.max()), float(np.quantile(energy, .2))
+    # Continuous phrases need not contain 20% silence. Their quietest 5% keeps
+    # clean, promptly started replies from being mistaken for steady room noise.
+    peak, floor = float(energy.max()), float(np.quantile(energy, .05 if allow_phrase else .2))
     if peak < .003:
         raise RecordingQualityError("no_clear_speech", "No clear voice was captured. Check the microphone and record again.")
     if peak < 20 * max(floor, 1e-8):
@@ -55,7 +58,7 @@ def prepare_word_audio(samples):
     cores = [group for group in groups if len(group) >= 6]
     if not cores:
         raise RecordingQualityError("no_clear_speech", "Record one complete word clearly.")
-    if any(right[0] - left[-1] > 65 for left, right in zip(cores, cores[1:])):
+    if not allow_phrase and any(right[0] - left[-1] > 65 for left, right in zip(cores, cores[1:])):
         raise RecordingQualityError("multiple_utterances", "Say the selected word once, without other speech.")
     first, last = int(cores[0][0]), int(cores[-1][-1])
     for frame in active[active < first][::-1]:
@@ -66,7 +69,7 @@ def prepare_word_audio(samples):
         if frame - last > 10:
             break
         last = int(frame)
-    if (last - first) * hop > 48000:
+    if not allow_phrase and (last - first) * hop > 48000:
         raise RecordingQualityError("multiple_utterances", "Say the selected word once, without other speech.")
     start = first * hop - context
     end = last * hop + window + context
@@ -78,11 +81,14 @@ def prepare_word_audio(samples):
     return audio.astype(np.float32), start
 
 
-def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=False, selected_index=None):
+def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=False, selected_index=None,
+                     alternative_target=None, other_vowel_targets=()):
     """Return per-target posterior confidence and true CTC frame intervals.
 
     Expanded states alternate blank and target; repeated adjacent targets must
     pass through a blank. No equal-duration slicing or fabricated alignment.
+    A declared alternate shares the selected state and yields conditional pair
+    confidence only after full-vocabulary evidence checks.
     """
     logits = np.asarray(logits, dtype=np.float64)
     if logits.ndim != 2 or not logits.size or not np.isfinite(logits).all():
@@ -92,6 +98,17 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
         raise InvalidTarget("Unsupported or empty phoneme target")
     if not 0 <= blank_id < vocabulary or not np.isfinite(duration) or duration <= 0:
         raise ValueError("Invalid alignment metadata")
+    contrast = alternative_target is not None
+    if contrast:
+        if (not segment_scores or selected_index is None or not 0 <= selected_index < len(targets)
+                or not 0 <= alternative_target < vocabulary or alternative_target == blank_id
+                or alternative_target == targets[selected_index]):
+            raise InvalidTarget("Provide two distinct phonemes and a selected contrast position")
+        # A shared state may emit either vowel. Adjacent repetitions would need a
+        # larger CTC lattice; reject that unsupported context rather than merge them.
+        neighbors = targets[max(0, selected_index - 1):selected_index] + targets[selected_index + 1:selected_index + 2]
+        if any(token in (targets[selected_index], alternative_target) for token in neighbors):
+            raise InvalidTarget("The selected contrast must be separated from adjacent matching phonemes")
     required_frames = len(targets) + sum(a == b for a, b in zip(targets, targets[1:]))
     if frames < required_frames:
         raise InvalidTarget("Recording is too short to align the requested phonemes")
@@ -100,9 +117,15 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
     states = [blank_id]
     for target in targets:
         states.extend((target, blank_id))
+    emissions = logp[:, states].copy()
+    if contrast:
+        # The same joint alignment is used in either request direction. A weak
+        # forced target cannot move its score to a different part of the phrase.
+        pair_logp = np.logaddexp(logp[:, targets[selected_index]], logp[:, alternative_target])
+        emissions[:, selected_index * 2 + 1] = pair_logp
     scores = np.full(len(states), -np.inf)
-    scores[0] = logp[0, blank_id]
-    scores[1] = logp[0, targets[0]]
+    scores[0] = emissions[0, 0]
+    scores[1] = emissions[0, 1]
     back = np.zeros((frames, len(states)), dtype=np.int16)
     for time in range(1, frames):
         next_scores = np.full(len(states), -np.inf)
@@ -113,7 +136,7 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
             if state > 1 and token != blank_id and token != states[state - 2]:
                 previous.append(state - 2)
             best = max(previous, key=lambda index: scores[index])
-            next_scores[state] = scores[best] + logp[time, token]
+            next_scores[state] = scores[best] + emissions[time, state]
             back[time, state] = best
         scores = next_scores
     state = max((len(states) - 1, len(states) - 2), key=lambda index: scores[index])
@@ -149,7 +172,21 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
             local = np.arange(left, right)
             evaluated = np.union1d(times, local[speech_frames[local]])
             confidence = float(np.exp(logp[evaluated, target].mean()))
-            if index == selected_index:
+            if index == selected_index and contrast:
+                evidence = local[speech_frames[local]]
+                if not len(evidence):
+                    raise RecordingQualityError("uncertain_alignment", "No speech evidence supports the selected contrast.")
+                if np.isin(np.argmax(logp[evidence], axis=1), other_vowel_targets).any():
+                    raise RecordingQualityError("uncertain_alignment", "A different vowel dominates the selected region. Record the phrase again.")
+                # Condition on the declared pair only after checking its support
+                # against the full vocabulary. Geometric means ensure one matching
+                # spike cannot hide sustained unrelated speech in this region.
+                support = float(np.exp(pair_logp[evidence].mean()))
+                strongest = float(np.exp(logp[evidence].max(axis=1).mean()))
+                if support < .1 or support < strongest * .5:
+                    raise RecordingQualityError("uncertain_alignment", "The selected vowel contrast is not supported reliably. Record the phrase again.")
+                confidence = float(np.exp((logp[evidence, target] - pair_logp[evidence]).mean()))
+            elif index == selected_index:
                 evidence = local[speech_frames[local]]
                 if not len(evidence) or float(np.exp(logp[evidence].max(axis=1)).max()) < .6:
                     raise RecordingQualityError("uncertain_alignment", "The model could not identify the selected sound reliably. Record the word again.")
@@ -158,6 +195,8 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
             "start_time": float(times[0] * duration / frames),
             "end_time": float((times[-1] + 1) * duration / frames),
         })
+        if contrast and index == selected_index:
+            results[-1]["contrast_evidence"] = support
     return results
 
 
@@ -198,7 +237,8 @@ class LocalPhonemeModel:
                 raise ModelUnavailable("Model emissions do not match its vocabulary")
         return logits
 
-    def score(self, samples, phonemes, target_phoneme_index=None):
+    def score(self, samples, phonemes, target_phoneme_index=None, *, utterance_kind="word",
+              alternative_phoneme=None):
         # Independent isolated-nucleus evaluation found this checkpoint largely
         # blank and unreliable. Do not turn its occasional token spike into a
         # learner grade. The app can explicitly fall back to acoustic estimates.
@@ -208,19 +248,38 @@ class LocalPhonemeModel:
         # label while using the correct narrow model token.
         if target_phoneme_index is not None and not 0 <= target_phoneme_index < len(phonemes):
             raise InvalidTarget("Target phoneme index is outside the word transcript")
+        if utterance_kind not in ("word", "phrase") or (utterance_kind == "phrase" and target_phoneme_index is None):
+            raise InvalidTarget("Phrase scoring requires a selected phoneme index")
         aliases = {"e": "ɛ", "r": "ɹ", "ɪə": "iə"}
         model_tokens = [aliases.get(token, token) for token in phonemes]
         if any(token not in self.vocab or token.startswith("<") for token in model_tokens):
             raise InvalidTarget("An IPA token is not supported by this model")
         targets = [self.vocab[token] for token in model_tokens]
+        alternative_target = None
+        other_vowel_targets = ()
+        if alternative_phoneme is not None:
+            if utterance_kind != "phrase" or target_phoneme_index is None:
+                raise InvalidTarget("Contrast scoring requires a selected phoneme in a phrase")
+            alternative = aliases.get(alternative_phoneme, alternative_phoneme)
+            if alternative not in self.vocab or alternative.startswith("<"):
+                raise InvalidTarget("The alternate phoneme is not supported by this model")
+            alternative_target = self.vocab[alternative]
+            if alternative_target == targets[target_phoneme_index]:
+                raise InvalidTarget("The alternate phoneme must differ from the selected phoneme")
+            vowels = {self.vocab[token] for token in ("iː", "ɪ", "æ", "ɛ", "ɑː", "ʌ", "ʊ", "uː", "ɒ", "ɔː") if token in self.vocab}
+            pair = {targets[target_phoneme_index], alternative_target}
+            if pair <= vowels:
+                other_vowel_targets = tuple(vowels - pair)
         duration = len(samples) / 16000
         offset = 0
         if target_phoneme_index is not None:
-            samples, offset = prepare_word_audio(samples)
+            samples, offset = prepare_word_audio(samples, allow_phrase=utterance_kind == "phrase")
         logits = self.infer_logits(samples)
         aligned = align_posteriors(logits, targets, self.blank_id, len(samples) / 16000,
                                    segment_scores=target_phoneme_index is not None,
-                                   selected_index=target_phoneme_index)
+                                   selected_index=target_phoneme_index,
+                                   alternative_target=alternative_target,
+                                   other_vowel_targets=other_vowel_targets)
         for score in aligned:
             score["start_time"] = max(0., score["start_time"] + offset / 16000)
             score["end_time"] = min(duration, score["end_time"] + offset / 16000)
