@@ -73,7 +73,7 @@ Feature: Articulator Lab guided speaking practice
     Then Camera is the selected visual mode
     And the camera remains off until I choose Start camera
     And the preview area explains how to start the practice mirror
-    And the selected vowel has a nearby lip reference and placement cue
+    And the selected sound has a nearby lip reference and placement cue
     And recorded phoneme example playback is available outside sound measurement details
     And example playback and recording remain in the pinned bottom bar while the content scrolls
 
@@ -160,6 +160,9 @@ Feature: Articulator Lab guided speaking practice
     And Example plays the selected bundled word used in Listen
     And the instruction asks me to say the word and focus on the selected consonant
     And Mouth position and Camera are available
+    And both consonants have bundled front and side mouth-position illustrations with accessible descriptions
+    And Camera shows the selected consonant's front reference while capture is off
+    And voiced and unvoiced sounds with the same placement share illustrations but keep distinct cues
     And vowel sound maps, vowel anatomy models, and formant targets are hidden
     When I record and stop
     Then I can replay my recording without passing a voiced-vowel detection gate
@@ -171,3 +174,9 @@ Feature: Articulator Lab guided speaking practice
     And silence, unavailable phoneme service, and invalid scores show a retryable error without saving a score
     When I switch sound pairs
     Then previous audio and feedback are cleared
+
+  Scenario: Mouth references blend into either app theme
+    Given any vowel or consonant is selected
+    Then its front and side reference images have transparent backgrounds
+    And light teeth and anatomy remain visible
+    And Mouth position and Camera do not add a white backing behind the artwork

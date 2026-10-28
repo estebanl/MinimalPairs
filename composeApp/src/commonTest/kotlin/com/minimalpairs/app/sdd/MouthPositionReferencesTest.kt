@@ -1,5 +1,6 @@
 package com.minimalpairs.app.sdd
 
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import kotlin.test.Test
@@ -12,8 +13,8 @@ import kotlin.test.assertTrue
 
 class MouthPositionReferencesTest {
     @Test
-    fun everySupportedSoundHasItsOwnPairOfViewsAndAccessibleGuidance() {
-        val phonemes = VowelContrastsCatalog.defaultContrasts
+    fun everySpeakSoundHasViewsAndAccessibleGuidance() {
+        val phonemes = ListeningContrastsCatalog.defaultContrasts
             .flatMap { listOf(it.phoneme1, it.phoneme2) }.toSet()
         assertEquals(phonemes, MouthPositionReferences.byPhoneme.keys)
         val references = phonemes.map { phoneme ->
@@ -24,8 +25,8 @@ class MouthPositionReferencesTest {
                 assertNotEquals(it.front, it.side, phoneme)
             }
         }
-        assertEquals(phonemes.size, references.map { it.assetKey }.toSet().size)
-        assertEquals(phonemes.size * 2, references.flatMap { listOf(it.front, it.side) }.toSet().size)
+        val placementCount = references.map { it.assetKey }.toSet().size
+        assertEquals(placementCount * 2, references.flatMap { listOf(it.front, it.side) }.toSet().size)
     }
 
     @Test
@@ -41,12 +42,26 @@ class MouthPositionReferencesTest {
             MouthPositionReferences.forPhoneme(badBed.phoneme2),
             MouthPositionReferences.forPhoneme(penPin.phoneme1)
         )
-        for (contrast in VowelContrastsCatalog.defaultContrasts) {
+        for (contrast in ListeningContrastsCatalog.defaultContrasts) {
             assertNotEquals(
                 MouthPositionReferences.forPhoneme(contrast.phoneme1),
                 MouthPositionReferences.forPhoneme(contrast.phoneme2),
                 contrast.id
             )
+        }
+    }
+
+    @Test
+    fun voicedConsonantPairsSharePlacementButKeepTheirOwnCues() {
+        for ((unvoiced, voiced) in listOf(
+            "p" to "b", "t" to "d", "k" to "ɡ", "f" to "v", "θ" to "ð",
+            "s" to "z", "ʃ" to "ʒ", "tʃ" to "dʒ"
+        )) {
+            val first = assertNotNull(MouthPositionReferences.forPhoneme(unvoiced))
+            val second = assertNotNull(MouthPositionReferences.forPhoneme(voiced))
+            assertEquals(first.front, second.front)
+            assertEquals(first.side, second.side)
+            assertNotEquals(first.placementCue, second.placementCue)
         }
     }
 

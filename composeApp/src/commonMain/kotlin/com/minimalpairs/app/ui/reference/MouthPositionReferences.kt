@@ -82,7 +82,7 @@ object MouthPositionReferences {
             "Rounded lips with a medium oval opening, smaller than in cot.",
             "The back of the tongue is raised partway, higher than in cot, with a moderately open jaw."
         )
-    )
+    ) + consonantMouthPositionReferences
 
     fun forPhoneme(phoneme: String): MouthPositionReference? = byPhoneme[phoneme]
 }

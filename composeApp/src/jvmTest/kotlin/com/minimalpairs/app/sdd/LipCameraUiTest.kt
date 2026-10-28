@@ -17,6 +17,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.minimalpairs.app.core.cv.*
+import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
+import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import com.minimalpairs.app.ui.components.LipCameraFeedbackCard
 import com.minimalpairs.app.ui.theme.MinimalPairsTheme
 import java.io.File
@@ -24,6 +26,33 @@ import kotlin.test.*
 
 @OptIn(ExperimentalComposeUiApi::class)
 class LipCameraUiTest {
+    @Test
+    fun everySpeakTargetHasACameraReferenceWithoutStartingCapture() {
+        val owner = Owner()
+        val controller = LipCameraController()
+        val phoneme = mutableStateOf("iː")
+        ImageComposeScene(390, 844) {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                MinimalPairsTheme {
+                    LipCameraFeedbackCard(phoneme.value, "example", controller = controller, preview = { _, _ -> })
+                }
+            }
+        }.use { scene ->
+            val targets = ListeningContrastsCatalog.defaultContrasts
+                .flatMap { listOf(it.phoneme1, it.phoneme2) }.distinct()
+            for (target in targets) {
+                phoneme.value = target
+                scene.render().close()
+                val reference = assertNotNull(MouthPositionReferences.forPhoneme(target))
+                val images = scene.nodes().flatMap {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+                }.filter { it.startsWith("Target lips.") }
+                assertEquals(listOf("Target lips. ${reference.frontDescription}"), images, target)
+                assertEquals(LipCameraStatus.OFF, controller.state.value.status)
+            }
+        }
+    }
+
     @Test
     fun trackingDiagnosticsShowMeasuredRatesAndClearAfterStopping() {
         val owner = Owner()

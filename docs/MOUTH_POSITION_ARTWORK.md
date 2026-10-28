@@ -1,24 +1,32 @@
 # Mouth-position reference artwork
 
 The Mouth position tab shows a static front view and left-facing side cutaway for
-the selected vowel. The Sound map retains live acoustic feedback. Recording does
+the selected sound, including consonants. Camera uses the matching front view.
+The Sound map retains live acoustic feedback for vowels. Recording does
 not change the reference pose. These are simplified teaching illustrations,
 not measurements of a learner's anatomy.
 
 ## Resources and maintenance
 
 Artwork is bundled under `composeApp/src/commonMain/composeResources/drawable/`.
-Each `mouth_<lexical-set>_front.jpg` has a matching `_side.jpg`; both use a 3:2
-canvas and an opaque white illustration backdrop. The UI supplies all labels,
-placement cues, and accessibility descriptions outside the images. Images fit
-their bounds without cropping and retain their original colors in dark mode.
+Each `mouth_<placement-or-lexical-set>_front.png` has a matching `_side.png`;
+both use a 3:2 canvas with a transparent background. The UI supplies all labels,
+placement cues, and accessibility descriptions outside the images. Mouth position
+views fit their bounds without cropping and render directly on the card surface,
+without a white backing, in both themes. Camera thumbnails use the same alpha
+artwork.
 
-`MouthPositionReferences` maps the ten phonemes to resources and descriptions.
-Shared vowels reuse the same entry across contrasts. Keep these poses separate
+`MouthPositionReferences` maps all 29 catalog phonemes (ten vowels and nineteen
+consonants) to resources and descriptions. `ConsonantMouthPositionReferences`
+provides eleven consonant placements, each with front and side views. Voiced and
+unvoiced counterparts share the visible placement images while retaining their
+own cues for voicing and release. The 42 bundled images cover every Speak pair.
+Shared sounds reuse the same entry across contrasts. Keep these poses separate
 from the older contrast-level `VisualIndicators` used elsewhere in the app.
-For a new vowel, add both resources and a catalog entry; the coverage test will
-fail if a contrast introduces an unsupported sound. The UI also has a text-only
-fallback rather than displaying an unrelated illustration.
+For a new sound, add both resources and a catalog entry; the coverage test checks
+the full Listen/Speak catalog and fails if a contrast introduces an unsupported
+sound. The UI also has a text-only fallback rather than displaying an unrelated
+illustration.
 
 ## Phonetic basis
 
@@ -49,16 +57,52 @@ the traditional back-vowel reference consistent with the app's existing catalog;
 actual British-English realizations can be more central. No artwork encodes an
 exact jaw distance, tongue coordinate, or acoustic target.
 
+## Consonant placements
+
+| Asset key | Phonemes | Visible placement |
+| --- | --- | --- |
+| bilabial | p, b | Both lips closed before release |
+| alveolar_stop | t, d | Tongue tip contacts the tooth ridge before release |
+| velar_stop | k, ɡ | Tongue dorsum contacts the soft palate before release |
+| labiodental | f, v | Upper incisors meet the lower lip |
+| dental | θ, ð | Tongue tip lightly between the incisors |
+| alveolar_fricative | s, z | Narrow air channel near the tooth ridge |
+| postalveolar_fricative | ʃ, ʒ | Tongue blade farther back, gently rounded lips |
+| postalveolar_affricate | tʃ, dʒ | Initial closure behind the tooth ridge |
+| lateral | l | Tongue tip contacts the tooth ridge |
+| rhotic | r | Tongue drawn back without palate contact |
+| labiovelar | w | Rounded lips and raised rear tongue without contact |
+
+Static illustrations cannot show voicing, a complete release, or a glide. The
+stop and affricate side views show the initial closure stage. The /l/ central
+cutaway shows tongue contact; lateral airflow passes outside that plane. The
+/r/ illustration shows one simplified approximant pose. Lips also vary with the
+surrounding vowel. Use each sound's placement cue and recorded example together
+with the images.
+
 ## Generation and review
 
 Generated with the built-in imagegen tool. The exact prompt set is recorded in
 `design/mouth-position-prompts.json`. FLEECE supplies the visual templates for
 the remaining poses. The original generated images remain outside the project;
-the app consumes only the bundled copies. The final PNGs are encoded as JPEGs
-at quality 90 for packaging, retaining the original 1536 × 1024 dimensions.
+the app consumes only the bundled copies. The original vowel artwork was
+packaged as 1536 × 1024 JPEGs before background removal.
+
+Consonant prompts and revisions are recorded in
+`design/consonant-mouth-position-prompts.json`, using the built-in imagegen tool.
+Front views were extracted from paired sheets; corrections and side views were
+generated individually to make the speech contacts clearer. Final consonant
+artwork was originally bundled as 1086 × 724 JPEGs at quality 90.
+
+The white backgrounds were subsequently removed from all 42 images with the
+built-in imagegen tool, preserving the skin, tissue, ivory teeth and highlights.
+`design/mouth-background-removal-prompts.json` records this edit pass. Final
+images use PNG encoding with alpha, retaining each asset's original dimensions
+and 3:2 canvas. Transparent margins show the
+underlying app surface; no white rectangle is added by the UI.
 
 Review the visible lip shape, jaw opening, tongue height/backness, continuous
-tongue body, and clear airway together with the placement cue. Images are
+tongue body, and intended contacts or air gaps together with the placement cue. Images are
 illustrative and have not been independently reviewed by a phonetics specialist.
 Do not describe them as clinically or anatomically certified.
 
@@ -66,14 +110,16 @@ Do not describe them as clinically or anatomically certified.
 
 - Common tests cover all current phonemes, distinct views, reuse across pairs,
   and unsupported-sound handling.
-- JVM resource tests decode all 20 bundled images without network access and
-  check image dimensions and consistent aspect ratios.
-- For UI review, switch both sounds in all seven contrasts, record with the Mouth
+- JVM resource tests decode all 42 bundled images without network access and
+  check image dimensions, consistent aspect ratios, and alpha pixels for both
+  transparent backgrounds and visible artwork.
+- For UI review, switch both sounds in all twenty contrasts, record with the Mouth
   position tab selected, and check the Sound map still receives live feedback.
-- JVM Compose scene tests exercise both sounds in all seven contrasts, recording
+- JVM Compose scene tests exercise both sounds in all twenty contrasts, recording
   stability, and returning to the Sound map. They render narrow and wide cards
   in both themes with normal and enlarged text, checking labels for overflow.
-  Review images are written to `composeApp/build/reports/mouth-position/`.
+  Camera tests also check a matching target image for all 29 sounds without
+  starting capture. Review images are written to `composeApp/build/reports/mouth-position/`.
 
 ## Interactive 3D reference
 
@@ -131,7 +177,7 @@ on-device without recording or uploading them.
 
 The learner sees a mirrored preview, a normalized live lip outline, the inner
 lip opening as a percentage of outer mouth width, contour circularity, and the
-selected vowel's reference image and placement cue. A temporary personal pose
+selected sound's reference image and placement cue. A temporary personal pose
 can be captured for repeatability comparisons; it is not a verified target.
 See [camera measurements](ARTICULATOR_CAMERA.md) for smoothing and metric limits.
 This is a visible-lip comparison, not a

@@ -1,7 +1,6 @@
 package com.minimalpairs.app.ui.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -16,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -86,8 +84,6 @@ private fun ReferenceView(label: String, resource: DrawableResource, description
                 .fillMaxWidth()
                 .aspectRatio(1.5f)
                 .clip(RoundedCornerShape(12.dp))
-                // The opaque artwork has a white studio backdrop in both app themes.
-                .background(Color.White)
         )
     }
 }

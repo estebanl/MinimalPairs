@@ -68,20 +68,21 @@ class MouthPositionUiTest {
 
     @Test
     fun cardRendersWithoutTextOverflowAtNarrowAndWideSizesInBothThemes() {
+        for ((phoneme, word) in listOf("uː" to "fool", "θ" to "think", "v" to "vet"))
         for ((width, fontScale) in listOf(272 to 1f, 272 to 1.8f, 720 to 1f)) {
             for (dark in listOf(false, true)) {
                 ImageComposeScene(width, 1400, density = Density(1f, fontScale)) {
                     MinimalPairsTheme(darkTheme = dark) {
                         Surface(color = MaterialTheme.colorScheme.background) {
                             Box(Modifier.fillMaxSize().padding(8.dp)) {
-                                MouthPositionReferenceCard("uː", "fool")
+                                MouthPositionReferenceCard(phoneme, word)
                             }
                         }
                     }
                 }.use { scene ->
                     scene.render().close()
                     val image = scene.render()
-                    val file = File("build/reports/mouth-position/card-$width-$fontScale-$dark.png")
+                    val file = File("build/reports/mouth-position/card-$word-$width-$fontScale-$dark.png")
                     file.parentFile.mkdirs()
                     file.writeBytes(image.encodeToData()!!.bytes)
                     image.close()
@@ -121,7 +122,7 @@ class MouthPositionUiTest {
             previewFile.parentFile.mkdirs()
             previewFile.writeBytes(preview.encodeToData()!!.bytes)
             preview.close()
-            for (contrast in VowelContrastsCatalog.defaultContrasts) {
+            for (contrast in ListeningContrastsCatalog.defaultContrasts) {
                 component.state.value = ArticulatorLabUiState(ListeningContrastsCatalog.getContrastById(contrast.id)!!)
                 for (first in listOf(true, false)) {
                     component.switchTargetPhoneme(first)
@@ -134,6 +135,10 @@ class MouthPositionUiTest {
                         listOf("Front view. ${reference.frontDescription}", "Side view. ${reference.sideDescription}"),
                         scene.descriptions()
                     )
+                    if (contrast.id == "f_vs_v" && first) {
+                        val file = File("build/reports/mouth-position/speak-consonant.png")
+                        scene.render().use { file.writeBytes(it.encodeToData()!!.bytes) }
+                    }
                     val beforeRecording = scene.descriptions()
                     component.state.value = component.state.value.copy(
                         recorderState = AudioRecorderState.RECORDING, liveF1 = 700f, liveF2 = 1200f
@@ -142,6 +147,8 @@ class MouthPositionUiTest {
                     assertEquals(beforeRecording, scene.descriptions())
                 }
             }
+            component.state.value = ArticulatorLabUiState(ListeningContrastsCatalog.defaultContrasts.first())
+            scene.render().close()
             scene.click("Sound map")
             scene.render().close()
             assertTrue(scene.descriptions().isEmpty())

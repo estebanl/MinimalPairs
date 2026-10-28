@@ -45,7 +45,7 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
     }) {
     val largeText = LocalDensity.current.fontScale > 1.3f
     val state by controller.state.collectAsState()
-    // A reference belongs to one sound and one camera session; never compare another vowel/session.
+    // A reference belongs to one sound and one camera session; never compare another sound/session.
     var comparisonReference by remember(phoneme, state.session) { mutableStateOf<LipMeasurement?>(null) }
     val reference = MouthPositionReferences.forPhoneme(phoneme)
     val scheme = MaterialTheme.colorScheme

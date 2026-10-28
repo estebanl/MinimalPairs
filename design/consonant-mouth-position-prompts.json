@@ -1,0 +1,202 @@
+{
+  "generator": "Built-in image_gen",
+  "composition": "Front views extracted from the top half of paired sheets; final side views and two corrected front views generated individually with finalViewPrompts.",
+  "references": [
+    "mouth_fleece_front.jpg",
+    "mouth_fleece_side.jpg"
+  ],
+  "poses": [
+    {
+      "key": "bilabial",
+      "phonemes": [
+        "p",
+        "b"
+      ],
+      "front": "Both lips meet fully in a relaxed horizontal seal; no teeth or tongue visible.",
+      "side": "Both lips touch fully to close the exit for air. Tongue rests low and neutral with an open oral cavity above it. Show the closure stage of a bilabial stop.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: bilabial consonants p, b.\nTOP FRONT VIEW: Both lips meet fully in a relaxed horizontal seal; no teeth or tongue visible.\nBOTTOM SIDE VIEW: Both lips touch fully to close the exit for air. Tongue rests low and neutral with an open oral cavity above it. Show the closure stage of a bilabial stop.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget bilabial (p, b). Crucial speech posture: Both lips touch fully to close the exit for air. Tongue rests low and neutral with an open oral cavity above it. Show the closure stage of a bilabial stop.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_bilabial_front.png",
+        "side": "mouth_bilabial_side.png"
+      }
+    },
+    {
+      "key": "alveolar_stop",
+      "phonemes": [
+        "t",
+        "d"
+      ],
+      "front": "Lips slightly parted, upper and lower teeth visible; tongue tip is behind upper incisors, not protruding.",
+      "side": "Tongue tip makes firm contact with the alveolar ridge immediately behind upper incisors, fully closing the oral air passage there. Back of tongue remains low; lips slightly apart.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: alveolar_stop consonants t, d.\nTOP FRONT VIEW: Lips slightly parted, upper and lower teeth visible; tongue tip is behind upper incisors, not protruding.\nBOTTOM SIDE VIEW: Tongue tip makes firm contact with the alveolar ridge immediately behind upper incisors, fully closing the oral air passage there. Back of tongue remains low; lips slightly apart.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget alveolar_stop (t, d). Crucial speech posture: Tongue tip makes firm contact with the alveolar ridge immediately behind upper incisors, fully closing the oral air passage there. Back of tongue remains low; lips slightly apart.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_alveolar_stop_front.png",
+        "side": "mouth_alveolar_stop_side.png"
+      }
+    },
+    {
+      "key": "velar_stop",
+      "phonemes": [
+        "k",
+        "ɡ"
+      ],
+      "front": "Lips relaxed and slightly apart, teeth visible; tongue stays inside the mouth with no protrusion.",
+      "side": "The rear dorsum of the tongue rises to contact the soft palate and fully blocks the passage there. Tongue tip stays low behind lower incisors. Lips slightly apart.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: velar_stop consonants k, ɡ.\nTOP FRONT VIEW: Lips relaxed and slightly apart, teeth visible; tongue stays inside the mouth with no protrusion.\nBOTTOM SIDE VIEW: The rear dorsum of the tongue rises to contact the soft palate and fully blocks the passage there. Tongue tip stays low behind lower incisors. Lips slightly apart.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE anatomically clear static English /k/ or /g/ mouth-position teaching illustration. This is a SIDE VIEW only, a midsagittal oral cutaway facing LEFT. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth and palate bone, softly shaded realistic editorial medical textbook rendering. Fully contain the nose-to-chin profile and tongue root with 8 percent white margin. Crucial target: The rear dorsum of the tongue rises to contact the soft palate and fully blocks the passage there. Tongue tip stays low behind lower incisors. Lips slightly apart. The dorsum must visibly TOUCH THE SOFT PALATE at the rear of the oral cavity, with no air gap at the contact. The anterior tongue remains low and the tongue tip points LEFT toward the lower incisors, never curled down and backward. Draw a single solid tongue connected to the floor and root, no loops. No text, labels, arrows, borders or UI. Do not draw a vowel pose. Show teeth at the front of the mouth only."
+      },
+      "assets": {
+        "front": "mouth_velar_stop_front.png",
+        "side": "mouth_velar_stop_side.png"
+      }
+    },
+    {
+      "key": "labiodental",
+      "phonemes": [
+        "f",
+        "v"
+      ],
+      "front": "Upper incisor biting edges rest LIGHTLY on the inner edge of the LOWER lip. Lower lip folds gently inward; upper lip raised slightly to reveal upper teeth. No tongue protrusion.",
+      "side": "Upper incisor edge lightly touches the LOWER lip with a tiny friction gap. Lower lip drawn inward under upper incisors; tongue rests low, mouth cavity open above it.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: labiodental consonants f, v.\nTOP FRONT VIEW: Upper incisor biting edges rest LIGHTLY on the inner edge of the LOWER lip. Lower lip folds gently inward; upper lip raised slightly to reveal upper teeth. No tongue protrusion.\nBOTTOM SIDE VIEW: Upper incisor edge lightly touches the LOWER lip with a tiny friction gap. Lower lip drawn inward under upper incisors; tongue rests low, mouth cavity open above it.",
+      "finalViewPrompts": {
+        "front": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nFRONT VIEW ONLY: straight-on close-up of mouth and surrounding skin, centered with 8 percent white margin. No nose or chin, no side view.\nTarget labiodental (f, v). Crucial speech posture: Upper incisor biting edges rest LIGHTLY on the inner edge of the LOWER lip. Lower lip folds gently inward; upper lip raised slightly to reveal upper teeth. No tongue protrusion.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth.",
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget labiodental (f, v). Crucial speech posture: Upper incisor edge lightly touches the LOWER lip with a tiny friction gap. Lower lip drawn inward under upper incisors; tongue rests low, mouth cavity open above it.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_labiodental_front.png",
+        "side": "mouth_labiodental_side.png"
+      }
+    },
+    {
+      "key": "dental",
+      "phonemes": [
+        "θ",
+        "ð"
+      ],
+      "front": "A narrow tongue tip is lightly visible between upper and lower incisors, projecting just a few millimetres. Lips slightly parted and relaxed; tongue not exaggerated.",
+      "side": "Tongue tip extends slightly between upper and lower incisors, touching lightly at the upper incisor edge with a narrow gap for air. Do not form a full stop closure. Lips relaxed and slightly open.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: dental consonants θ, ð.\nTOP FRONT VIEW: A narrow tongue tip is lightly visible between upper and lower incisors, projecting just a few millimetres. Lips slightly parted and relaxed; tongue not exaggerated.\nBOTTOM SIDE VIEW: Tongue tip extends slightly between upper and lower incisors, touching lightly at the upper incisor edge with a narrow gap for air. Do not form a full stop closure. Lips relaxed and slightly open.",
+      "finalViewPrompts": {
+        "front": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nFRONT VIEW ONLY: straight-on close-up of mouth and surrounding skin, centered with 8 percent white margin. No nose or chin, no side view.\nTarget dental (θ, ð). Crucial speech posture: A narrow tongue tip is lightly visible between upper and lower incisors, projecting just a few millimetres. Lips slightly parted and relaxed; tongue not exaggerated.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth.",
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget dental (θ, ð). Crucial speech posture: Tongue tip extends slightly between upper and lower incisors, touching lightly at the upper incisor edge with a narrow gap for air. Do not form a full stop closure. Lips relaxed and slightly open.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_dental_front.png",
+        "side": "mouth_dental_side.png"
+      }
+    },
+    {
+      "key": "alveolar_fricative",
+      "phonemes": [
+        "s",
+        "z"
+      ],
+      "front": "Lips gently spread, teeth close together but not touching, narrow opening; tongue remains behind incisors.",
+      "side": "Front of tongue approaches the alveolar ridge just behind upper incisors but leaves a small visible air gap; tip near lower front teeth. No tongue-palate contact seal. Lips slightly apart.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: alveolar_fricative consonants s, z.\nTOP FRONT VIEW: Lips gently spread, teeth close together but not touching, narrow opening; tongue remains behind incisors.\nBOTTOM SIDE VIEW: Front of tongue approaches the alveolar ridge just behind upper incisors but leaves a small visible air gap; tip near lower front teeth. No tongue-palate contact seal. Lips slightly apart.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget alveolar_fricative (s, z). Crucial speech posture: Front of tongue approaches the alveolar ridge just behind upper incisors but leaves a small visible air gap; tip near lower front teeth. No tongue-palate contact seal. Lips slightly apart.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_alveolar_fricative_front.png",
+        "side": "mouth_alveolar_fricative_side.png"
+      }
+    },
+    {
+      "key": "postalveolar_fricative",
+      "phonemes": [
+        "ʃ",
+        "ʒ"
+      ],
+      "front": "Lips gently rounded and slightly protruded, small oval opening; upper and lower teeth slightly separated, tongue stays inside.",
+      "side": "Tongue blade rises toward the region just BEHIND the alveolar ridge, farther back than /s/, leaving a narrow visible air gap; no full closure. Lips gently rounded and protruded.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: postalveolar_fricative consonants ʃ, ʒ.\nTOP FRONT VIEW: Lips gently rounded and slightly protruded, small oval opening; upper and lower teeth slightly separated, tongue stays inside.\nBOTTOM SIDE VIEW: Tongue blade rises toward the region just BEHIND the alveolar ridge, farther back than /s/, leaving a narrow visible air gap; no full closure. Lips gently rounded and protruded.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget postalveolar_fricative (ʃ, ʒ). Crucial speech posture: Tongue blade rises toward the region just BEHIND the alveolar ridge, farther back than /s/, leaving a narrow visible air gap; no full closure. Lips gently rounded and protruded.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_postalveolar_fricative_front.png",
+        "side": "mouth_postalveolar_fricative_side.png"
+      }
+    },
+    {
+      "key": "postalveolar_affricate",
+      "phonemes": [
+        "tʃ",
+        "dʒ"
+      ],
+      "front": "Lips gently rounded and slightly protruded, teeth slightly separated, tongue stays inside behind the tooth ridge.",
+      "side": "Show the INITIAL CLOSURE stage: tongue blade contacts the area just behind the alveolar ridge, making a full closure before releasing into a postalveolar fricative. Lips gently rounded; no extra tongue or duplicate positions.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: postalveolar_affricate consonants tʃ, dʒ.\nTOP FRONT VIEW: Lips gently rounded and slightly protruded, teeth slightly separated, tongue stays inside behind the tooth ridge.\nBOTTOM SIDE VIEW: Show the INITIAL CLOSURE stage: tongue blade contacts the area just behind the alveolar ridge, making a full closure before releasing into a postalveolar fricative. Lips gently rounded; no extra tongue or duplicate positions.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget postalveolar_affricate (tʃ, dʒ). Crucial speech posture: Show the INITIAL CLOSURE stage: tongue blade contacts the area just behind the alveolar ridge, making a full closure before releasing into a postalveolar fricative. Lips gently rounded; no extra tongue or duplicate positions.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_postalveolar_affricate_front.png",
+        "side": "mouth_postalveolar_affricate_side.png"
+      }
+    },
+    {
+      "key": "lateral",
+      "phonemes": [
+        "l"
+      ],
+      "front": "Lips relaxed and slightly apart; tongue tip visibly raised behind the upper incisors toward the tooth ridge, not projecting between the teeth.",
+      "side": "Tongue tip touches the alveolar ridge behind the upper incisors, with tongue body lower and relaxed. This midsagittal view shows the central contact; lateral airflow cannot be seen here and must not be drawn as a central gap.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: lateral consonants l.\nTOP FRONT VIEW: Lips relaxed and slightly apart; tongue tip visibly raised behind the upper incisors toward the tooth ridge, not projecting between the teeth.\nBOTTOM SIDE VIEW: Tongue tip touches the alveolar ridge behind the upper incisors, with tongue body lower and relaxed. This midsagittal view shows the central contact; lateral airflow cannot be seen here and must not be drawn as a central gap.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget lateral (l). Crucial speech posture: Tongue tip touches the alveolar ridge behind the upper incisors, with tongue body lower and relaxed. This midsagittal view shows the central contact; lateral airflow cannot be seen here and must not be drawn as a central gap.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_lateral_front.png",
+        "side": "mouth_lateral_side.png"
+      }
+    },
+    {
+      "key": "rhotic",
+      "phonemes": [
+        "r"
+      ],
+      "front": "Lips slightly rounded, small opening, tongue stays inside the mouth and does not touch the teeth.",
+      "side": "English approximant /r/: tongue front gently drawn back and slightly raised toward the hard palate WITHOUT contact, a clearly visible gap above it. Tongue tip not tightly curled. Lips slightly rounded.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: rhotic consonants r.\nTOP FRONT VIEW: Lips slightly rounded, small opening, tongue stays inside the mouth and does not touch the teeth.\nBOTTOM SIDE VIEW: English approximant /r/: tongue front gently drawn back and slightly raised toward the hard palate WITHOUT contact, a clearly visible gap above it. Tongue tip not tightly curled. Lips slightly rounded.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget rhotic (r). Crucial speech posture: English approximant /r/: tongue front gently drawn back and slightly raised toward the hard palate WITHOUT contact, a clearly visible gap above it. Tongue tip not tightly curled. Lips slightly rounded.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_rhotic_front.png",
+        "side": "mouth_rhotic_side.png"
+      }
+    },
+    {
+      "key": "labiovelar",
+      "phonemes": [
+        "w"
+      ],
+      "front": "Lips strongly rounded and protruded around a very small round opening. Teeth concealed; upper teeth do NOT touch lower lip.",
+      "side": "Lips strongly rounded and protruded around a small air opening. Rear tongue dorsum raised near soft palate WITHOUT contact, leaving a visible air gap. Tongue tip behind lower teeth.",
+      "prompt": "Use case: scientific-educational. Create a single paired reference sheet for an English pronunciation app. Input image 1 supplies the FRONT VIEW visual style; input image 2 supplies the SIDE CUTAWAY style and continuous tongue anatomy. Warm natural peach skin, terracotta lips and tongue, ivory teeth, realistic softly shaded medical textbook illustration on opaque white. Output a portrait 3:4 canvas with EXACTLY TWO equal panels stacked vertically, no dividing line: top half is a 3:2 landscape FRONT close-up of just mouth and nearby skin, bottom half is a 3:2 landscape LEFT-FACING midsagittal side cutaway from nose to chin with full tongue rooted in floor of mouth. Leave a white margin inside each half, subjects centered and contained in their own half. The sheet will be split exactly at the horizontal midpoint into separate front and side illustrations. No text, phonemes, labels, arrows, symbols, borders or UI. Keep one continuous tongue, no floating teeth, one upper and one lower incisor in side cross section. These are static teaching poses, not animation.\nTarget: labiovelar consonants w.\nTOP FRONT VIEW: Lips strongly rounded and protruded around a very small round opening. Teeth concealed; upper teeth do NOT touch lower lip.\nBOTTOM SIDE VIEW: Lips strongly rounded and protruded around a small air opening. Rear tongue dorsum raised near soft palate WITHOUT contact, leaving a visible air gap. Tongue tip behind lower teeth.",
+      "finalViewPrompts": {
+        "side": "Use case: scientific-educational. Create ONE mouth-position reference illustration for an English pronunciation app. Opaque pure white background, landscape 3:2 canvas, warm peach skin, terracotta tongue and lips, ivory teeth, softly shaded realistic medical textbook rendering. No text, labels, arrows, symbols, UI or borders.\nSIDE VIEW ONLY: a midsagittal oral cutaway facing LEFT. Fully contain nose-to-chin profile and tongue root within the frame. One single solid tongue connected to floor and root, no loops or curled-back tip. In side view the mouth front and teeth are at LEFT, the throat is at RIGHT. Show incisors only at front; no floating internal teeth.\nTarget labiovelar (w). Crucial speech posture: Lips strongly rounded and protruded around a small air opening. Rear tongue dorsum raised near soft palate WITHOUT contact, leaving a visible air gap. Tongue tip behind lower teeth.\nThe specified speech contact or air gap must be unmistakable; do not substitute a generic vowel or a relaxed smiling mouth."
+      },
+      "assets": {
+        "front": "mouth_labiovelar_front.png",
+        "side": "mouth_labiovelar_side.png"
+      }
+    }
+  ],
+  "packaging": {
+    "format": "RGBA PNG",
+    "width": 1086,
+    "height": 724,
+    "backgroundRemovalPrompts": "mouth-background-removal-prompts.json"
+  }
+}

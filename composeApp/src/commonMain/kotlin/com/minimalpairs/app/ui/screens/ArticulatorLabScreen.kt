@@ -275,16 +275,17 @@ fun ArticulatorLabScreen(
                         isRecording = isRecording
                     )
                 } else if (!isVowel) {
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = scheme.surface)) {
-                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("$targetWord /$targetPhoneme/", style = MaterialTheme.typography.titleLarge)
-                            Text(consonantCue.orEmpty(), style = MaterialTheme.typography.bodyLarge)
-                            Text(state.contrast.soundTip, style = MaterialTheme.typography.bodyMedium)
-                            Text("Listen to the example, record the word, then play yours to compare.",
-                                style = MaterialTheme.typography.bodyMedium)
-                            Text("Record the whole word. The phoneme service aligns it and scores the selected sound.",
-                                style = MaterialTheme.typography.bodySmall)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MouthPositionReferenceCard(phoneme = targetPhoneme, exampleWord = targetWord)
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = scheme.surface)) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(state.contrast.soundTip, style = MaterialTheme.typography.bodyMedium)
+                                Text("Listen to the example, record the word, then play yours to compare.",
+                                    style = MaterialTheme.typography.bodyMedium)
+                                Text("Record the whole word. The phoneme service aligns it and scores the selected sound.",
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 } else {
