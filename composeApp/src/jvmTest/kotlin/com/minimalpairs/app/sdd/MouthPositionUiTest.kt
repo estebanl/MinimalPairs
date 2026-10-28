@@ -269,7 +269,10 @@ class MouthPositionUiTest {
     }.filter { it.startsWith("Front view.") || it.startsWith("Side view.") }
 
     private fun ImageComposeScene.click(text: String) {
-        val node = nodes().first { it.text() == text && it.config.getOrNull(SemanticsActions.OnClick) != null }
+        val node = nodes().first {
+            (it.text() == text || it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true) &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null
+        }
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
 

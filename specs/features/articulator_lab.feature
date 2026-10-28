@@ -17,7 +17,7 @@ Feature: Articulator Lab guided speaking practice
 
   Scenario: Choose a sound pair from word cards
     Given the Speak screen is idle
-    When I choose Change beside the current sound pair
+    When I tap the current sound pair in the compact Speak header
     Then a modal bottom sheet shows a scrollable two-column grid of word cards
     And each card shows the reference words and phonetic labels
     And the current pair has a highlighted card, stronger border, and check mark
@@ -69,8 +69,7 @@ Feature: Articulator Lab guided speaking practice
     And the validation report distinguishes observed passes from checks that could not run
 
   Scenario: Open camera practice without starting capture
-    Given I open the Speak screen
-    When I select Camera
+    Given I open the Speak screen for the first time
     Then Camera is the selected visual mode
     And the camera remains off until I choose Start camera
     And the preview area explains how to start the practice mirror
@@ -78,23 +77,30 @@ Feature: Articulator Lab guided speaking practice
     And recorded phoneme example playback is available outside sound measurement details
     And example playback and recording remain in the pinned bottom bar while the content scrolls
 
-  Scenario: Match the practice mirror visual hierarchy
+  Scenario: Use the Pocket studio layout
     Given the Camera mode is selected
-    Then the two vowel tiles share one selector card with a change-sound control
-    And all four labeled icon tabs remain in one row at standard text sizes
+    Then a compact Speak header contains the current sound-pair picker
+    And both sound targets share one selector with an inline phoneme and example word
+    And the short Map, Mouth, 3D, and Camera icon tabs stay in one row at standard text sizes
+    And the tabs retain descriptive accessibility labels
     And larger accessibility text uses two rows without clipping labels
-    And camera status and start or stop controls overlay the preview
-    And the lip reference is beside the serif practice heading
-    And the pinned bottom bar presents equally wide actions in one row
-    And bottom actions allow their labels to wrap on narrow screens
-    And recording credits and expandable sound measurements remain in the scrollable content
+    And the practice mirror is 196 dp tall at standard text sizes
+    And Start camera is centered in the inactive mirror
+    And active camera status and Turn off overlay the preview
+    And the small lip reference is beside the practice cue
+    And collapsed sound measurements fit above the pinned controls on a 320 by 640 dp content area
+    And Record is wider than Example before a recording is available
+    And pinned actions use inline icons and labels at standard text sizes
+    And larger accessibility text stacks the header and action icons without breaking words
+    And playback actions use two rows at larger accessibility text sizes
+    And recording credits are accessible inside expanded sound measurements
     And detailed camera measurements and explanations stay inside sound measurements
     And the dotted lip alignment guide is identified as a guide rather than a measurement
 
-  Scenario: Keep the custom header below the device status bar
+  Scenario: Keep the compact header below the device status bar
     Given the device has a top or horizontal safe-area inset
     When I open the Speak screen
-    Then the title and back control remain inside the safe area
+    Then the Speak header and sound-pair picker remain inside the safe area
     And insets already consumed by the host are not applied twice
 
   Scenario: Listen to isolated recorded vowels offline
@@ -127,7 +133,8 @@ Feature: Articulator Lab guided speaking practice
     Then the primary action is Stop while recording
     When I stop recording and processing finishes
     Then Play mine is the primary action if audio is available
-    And Example, Play mine, and Record appear in one row with icons above their short labels
+    And Example, Play mine, and Record appear in one pinned row at standard text sizes
+    And icons sit beside their short labels at standard text sizes
     And playback stays visible while the reference content scrolls
     And the actions are disabled during processing or playback
     When I record again or select a different practice target

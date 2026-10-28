@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -43,12 +41,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.hal.rememberMicrophonePermissionRequest
 import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.ui.components.LabIcon
@@ -77,6 +75,7 @@ fun ArticulatorLabScreen(
 ) {
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
+    val largeText = LocalDensity.current.fontScale > 1.3f
     val state by component.state.collectAsState()
     val vowel = state.contrast.vowelReference
     val isVowel = vowel != null
@@ -90,7 +89,7 @@ fun ArticulatorLabScreen(
         if (!canSelectTarget) soundPairPickerOpen = false
     }
     val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
-    var visualMode by rememberSaveable { mutableStateOf(0) }
+    var visualMode by rememberSaveable { mutableStateOf(3) }
     val activeVisualMode = if (!isVowel && visualMode != 3) 1 else visualMode
     var permissionDenied by remember { mutableStateOf(false) }
     val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
@@ -102,7 +101,7 @@ fun ArticulatorLabScreen(
         contentWindowInsets = contentWindowInsets,
         bottomBar = {
             Surface(color = scheme.background) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     if (isRecording) {
                         Text("Recording · ${state.liveDurationMs / 1000}s / 30s",
@@ -121,46 +120,44 @@ fun ArticulatorLabScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                     }
-                    Row(
-                        modifier = Modifier.widthIn(max = 524.dp).fillMaxWidth().height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    FlowRow(
+                        modifier = Modifier.widthIn(max = 524.dp).fillMaxWidth(),
+                        maxItemsInEachRow = if (largeText) 2 else 3,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
                             onClick = { component.playPhonemeExample(state.isTargetPhoneme1) },
                             enabled = !state.isBusy && !isRecording,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             border = BorderStroke(1.dp, scheme.outlineVariant),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.onBackground),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
-                            modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                                 .semantics { contentDescription = if (isVowel) "Hear /$targetPhoneme/ example" else "Hear $targetWord example" }
                         ) {
-                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.height(4.dp))
-                                Text("Example", fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            SpeakActionLabel("Example", largeText) {
+                                PracticeIcon(PracticeIcon.Listen, modifier = Modifier.size(18.dp))
                             }
                         }
                         if (showPlayback) {
                             Button(
                                 onClick = component::playRecording,
                                 enabled = !state.isBusy,
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
-                                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                                     .semantics { contentDescription = "Play my recording" }
                             ) {
-                                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    LabIcon(LabIcon.Play, modifier = Modifier.size(20.dp))
-                                    Spacer(Modifier.height(4.dp))
-                                    Text("Play mine", fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                                SpeakActionLabel("Play mine", largeText) {
+                                    LabIcon(LabIcon.Play, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
                         Button(
                             onClick = { if (isRecording) component.toggleRecording() else requestMicrophone() },
                             enabled = !state.isBusy,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             border = if (showPlayback) BorderStroke(1.dp, scheme.outlineVariant) else null,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = when {
@@ -175,14 +172,11 @@ fun ArticulatorLabScreen(
                                 }
                             ),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
-                            modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 64.dp)
+                            modifier = Modifier.weight(if (showPlayback) 1f else 1.4f).heightIn(min = 48.dp)
                                 .semantics { contentDescription = if (isRecording) "Stop recording" else "Record your sound" }
                         ) {
-                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                PracticeIcon(if (isRecording) PracticeIcon.Stop else PracticeIcon.Speak, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.height(4.dp))
-                                Text(if (isRecording) "Stop" else "Record", fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            SpeakActionLabel(if (isRecording) "Stop" else "Record", largeText) {
+                                PracticeIcon(if (isRecording) PracticeIcon.Stop else PracticeIcon.Speak, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -208,52 +202,46 @@ fun ArticulatorLabScreen(
                 modifier = Modifier
                     .widthIn(max = 560.dp)
                     .fillMaxSize()
-                    .padding(horizontal = 18.dp)
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Sound pair", style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
-                Box(Modifier.fillMaxWidth()) {
+                FlowRow(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 14.dp),
+                    maxItemsInEachRow = if (largeText) 1 else 2,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("MINIMAL PAIRS", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                        Text("Speak", style = MaterialTheme.typography.headlineSmall)
+                    }
                     Surface(onClick = { soundPairPickerOpen = true }, enabled = canSelectTarget,
-                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Change sound pair" },
-                        shape = RoundedCornerShape(16.dp), color = scheme.surface,
+                        modifier = Modifier.weight(1.15f).semantics { contentDescription = "Change sound pair" },
+                        shape = RoundedCornerShape(24.dp), color = scheme.surface,
                         border = BorderStroke(1.dp, scheme.outlineVariant)) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                val referencePair = state.contrast.pairs.first()
-                                Text("${referencePair.word1} / ${referencePair.word2}",
-                                    style = MaterialTheme.typography.titleMedium)
-                                Text("/${state.contrast.phoneme1}/ and /${state.contrast.phoneme2}/",
-                                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
-                            }
-                            Surface(
-                                modifier = Modifier.padding(start = 12.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (canSelectTarget) scheme.primary else scheme.surfaceVariant,
-                                contentColor = if (canSelectTarget) scheme.onPrimary else scheme.onSurfaceVariant
-                            ) {
-                                Text("Change", style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
-                            }
+                        Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("${state.selectedPair.word1} / ${state.selectedPair.word2}",
+                                style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                            LabIcon(LabIcon.Chevron, Modifier.size(16.dp))
                         }
                     }
                 }
-                Text("Choose the sound to practise", style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LabTarget(state.selectedPair.word1, state.contrast.phoneme1, state.isTargetPhoneme1,
-                        canSelectTarget, { component.switchTargetPhoneme(true) }, Modifier.weight(1f))
-                    LabTarget(state.selectedPair.word2, state.contrast.phoneme2, !state.isTargetPhoneme1,
-                        canSelectTarget, { component.switchTargetPhoneme(false) }, Modifier.weight(1f))
+                Surface(shape = RoundedCornerShape(18.dp), color = scheme.surfaceVariant) {
+                    Row(Modifier.fillMaxWidth().selectableGroup().padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        LabTarget(state.selectedPair.word1, state.contrast.phoneme1, state.isTargetPhoneme1,
+                            canSelectTarget, { component.switchTargetPhoneme(true) }, Modifier.weight(1f))
+                        LabTarget(state.selectedPair.word2, state.contrast.phoneme2, !state.isTargetPhoneme1,
+                            canSelectTarget, { component.switchTargetPhoneme(false) }, Modifier.weight(1f))
+                    }
                 }
-                Text(if (isVowel) "Say /$targetPhoneme/ on its own. The word helps you identify the vowel."
-                    else "Say “$targetWord” and focus on /$targetPhoneme/. The example plays the whole word.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 LabModeTabs(activeVisualMode, { visualMode = it }, vowelModes = isVowel)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
+                if (activeVisualMode != 3) {
+                    Text(if (isVowel) "Say /$targetPhoneme/ on its own."
+                        else "Say “$targetWord” and focus on /$targetPhoneme/.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
+                }
 
                 if (activeVisualMode == 0 && vowel != null) {
                     VowelTrapezoidPlot(
@@ -311,9 +299,10 @@ fun ArticulatorLabScreen(
                 Spacer(Modifier.height(14.dp))
 
                 if (activeVisualMode != 3) {
-                    LabRecordingCredits(wordExamples = !isVowel)
-                    Spacer(Modifier.height(12.dp))
-                    LabMeasurements { ArticulatorMeasurements(state, isRecording) }
+                    LabMeasurements {
+                        ArticulatorMeasurements(state, isRecording)
+                        LabRecordingCredits(wordExamples = !isVowel)
+                    }
                 }
 
                 state.progressSaveError?.let { message ->
@@ -344,6 +333,22 @@ fun ArticulatorLabScreen(
             },
             onDismiss = { soundPairPickerOpen = false }
         )
+    }
+}
+
+@Composable
+private fun SpeakActionLabel(label: String, stacked: Boolean, icon: @Composable () -> Unit) {
+    if (stacked) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            icon()
+            Text(label, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+        }
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            icon()
+            Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f, fill = false))
+        }
     }
 }
 

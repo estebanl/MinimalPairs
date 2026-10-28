@@ -21,8 +21,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
@@ -64,43 +62,41 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
         }
     }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.fillMaxWidth().then(if (largeText && !state.status.active) Modifier.heightIn(min = 360.dp) else Modifier.aspectRatio(1.17f)).clip(RoundedCornerShape(20.dp))
+        Box(Modifier.fillMaxWidth().semantics { contentDescription = "Practice mirror" }.height(if (largeText) 300.dp else 196.dp).clip(RoundedCornerShape(18.dp))
             .background(scheme.surfaceVariant)) {
             if (state.status.active) {
                 key(state.session) {
                     val session = state.session
                     preview(Modifier.fillMaxSize()) { controller.accept(session, it) }
                 }
+                Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp),
+                        color = Color(0xB3202B28), contentColor = Color.White) {
+                        Text("Camera on", modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelSmall)
+                    }
+                    Surface(onClick = { controller.stop() }, shape = RoundedCornerShape(20.dp),
+                        color = Color(0xB3202B28), contentColor = Color.White) {
+                        Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                            Text("Turn off", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
             } else {
-                Column(Modifier.align(Alignment.Center).padding(horizontal = 24.dp, vertical = 36.dp)
-                    .then(if (largeText) Modifier.padding(top = 90.dp) else Modifier),
+                Text("PRACTICE MIRROR", modifier = Modifier.align(Alignment.TopStart).fillMaxWidth().padding(12.dp),
+                    style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                Column(Modifier.align(Alignment.Center).padding(horizontal = 16.dp).padding(top = 30.dp, bottom = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (!largeText) {
-                        LabIcon(LabIcon.Camera, Modifier.size(42.dp))
-                        Text("Your practice mirror", modifier = Modifier.fillMaxWidth(), fontFamily = FontFamily.Serif,
-                            fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    }
-                    Text("Start the camera to see your lips here.", modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                }
-            }
-            Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                Surface(modifier = if (largeText) Modifier.weight(1f) else Modifier, shape = RoundedCornerShape(12.dp), color = Color(0xB3202B28), contentColor = Color.White) {
-                    Row(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Surface(Modifier.size(8.dp), shape = RoundedCornerShape(50),
-                            color = if (state.status.active) Color(0xFF85D782) else Color(0xFFCDD2CC)) {}
-                        Text(if (state.status.active) "Camera on" else "Camera off", fontSize = 12.sp, lineHeight = 16.sp)
-                    }
-                }
-                if (!largeText) Spacer(Modifier.weight(1f))
-                Surface(modifier = if (largeText) Modifier.weight(1f) else Modifier,
-                    onClick = { if (state.status.active) controller.stop() else controller.start() },
-                    shape = RoundedCornerShape(12.dp), color = Color(0xB3202B28), contentColor = Color.White) {
-                    Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                        Text(if (state.status.active) "Turn off" else "Start camera", fontSize = 12.sp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (!largeText) LabIcon(LabIcon.Camera, Modifier.size(28.dp))
+                    Text("Your practice mirror", modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
+                    Text("Camera off", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                    OutlinedButton(onClick = { controller.start() }, shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = scheme.surface, contentColor = scheme.onSurface),
+                        border = BorderStroke(1.dp, scheme.outlineVariant), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text("Start camera", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
@@ -131,30 +127,22 @@ fun LipCameraFeedbackCard(phoneme: String, exampleWord: String, modifier: Modifi
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Match the lip shape", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp, lineHeight = 27.sp)
-                Text(practiceInstruction, fontSize = 17.sp, lineHeight = 22.sp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Match the lip shape", style = MaterialTheme.typography.titleSmall)
+                Text(practiceInstruction, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
             reference?.let {
-                Surface(Modifier.width(112.dp), shape = RoundedCornerShape(18.dp),
-                    color = scheme.surfaceVariant.copy(alpha = .5f), border = BorderStroke(1.dp, scheme.outlineVariant)) {
-                    Column(Modifier.padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Image(painterResource(it.front), contentDescription = "Target lips. ${it.frontDescription}",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(10.dp)))
-                        Text("Reference", fontSize = 12.sp, lineHeight = 16.sp)
-                    }
-                }
+                Image(painterResource(it.front), contentDescription = "Target lips. ${it.frontDescription}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.width(74.dp).height(58.dp).clip(RoundedCornerShape(12.dp)))
             }
         }
-        footer()
         LabMeasurements {
             Text("$exampleWord /$phoneme/", style = MaterialTheme.typography.titleMedium)
             Text(placementCue ?: reference?.placementCue ?: "Use the sound map to explore this vowel.",
                 style = MaterialTheme.typography.bodyMedium)
             measurements()
+            footer()
             state.measurement?.let { measurement ->
                 Text("Lip opening: ${(measurement.openingRatio * 100).toInt()}% of mouth width",
                     style = MaterialTheme.typography.labelLarge)

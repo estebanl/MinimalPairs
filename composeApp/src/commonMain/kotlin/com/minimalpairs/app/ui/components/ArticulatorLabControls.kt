@@ -1,11 +1,11 @@
 package com.minimalpairs.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -65,18 +64,23 @@ fun LabTarget(word: String, phoneme: String, selected: Boolean, enabled: Boolean
     onClick: () -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val largeText = LocalDensity.current.fontScale > 1.3f
-    Surface(modifier = modifier.alpha(if (enabled) 1f else .55f), shape = RoundedCornerShape(18.dp),
-        color = if (selected) scheme.primary else scheme.surfaceVariant.copy(alpha = .55f),
+    Surface(modifier = modifier.alpha(if (enabled) 1f else .55f), shape = RoundedCornerShape(14.dp),
+        color = if (selected) scheme.primary else scheme.surfaceVariant,
         contentColor = if (selected) scheme.onPrimary else scheme.onSurface) {
         Row(Modifier.selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics { contentDescription = "$word /$phoneme/" }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .heightIn(min = 48.dp).padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Column(Modifier.weight(1f)) {
-                Text("/$phoneme/", fontFamily = FontFamily.Serif, fontSize = 27.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
-                Text("as in $word", fontSize = 15.sp, lineHeight = 20.sp)
+            if (largeText) {
+                Column(Modifier.weight(1f)) {
+                    Text("/$phoneme/", fontFamily = FontFamily.Serif, fontSize = 25.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
+                    Text(word, style = MaterialTheme.typography.bodySmall)
+                }
+            } else {
+                Text("/$phoneme/", fontFamily = FontFamily.Serif, fontSize = 25.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
+                Text(word, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                LabIcon(if (selected) LabIcon.Selected else LabIcon.Unselected, Modifier.size(16.dp))
             }
-            if (!largeText) LabIcon(if (selected) LabIcon.Selected else LabIcon.Unselected, Modifier.size(20.dp))
         }
     }
 }
@@ -84,23 +88,24 @@ fun LabTarget(word: String, phoneme: String, selected: Boolean, enabled: Boolean
 @Composable
 fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit, vowelModes: Boolean = true) {
     val scheme = MaterialTheme.colorScheme
-    val labels = listOf("Sound map", "Mouth position", "3D model", "Camera")
+    val labels = listOf("Map", "Mouth", "3D", "Camera")
+    val descriptions = listOf("Sound map", "Mouth position", "3D model", "Camera")
     val icons = listOf(LabIcon.Sound, LabIcon.Mouth, LabIcon.Model, LabIcon.Camera)
     val columns = if (LocalDensity.current.fontScale > 1.3f) 2 else 4
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         (if (vowelModes) labels.indices.toList() else listOf(1, 3)).chunked(columns).forEach { indices ->
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 indices.forEach { index ->
-                    Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(16.dp),
-                        color = if (selected == index) scheme.onBackground else scheme.surfaceVariant.copy(alpha = .55f),
+                    Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(12.dp),
+                        color = if (selected == index) scheme.onBackground else scheme.background,
                         contentColor = if (selected == index) scheme.background else scheme.onBackground) {
-                        Column(Modifier.fillMaxHeight().selectable(selected == index, role = Role.Tab, onClick = { onSelect(index) })
-                            .heightIn(min = 64.dp).padding(horizontal = 2.dp, vertical = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)) {
-                            LabIcon(icons[index], Modifier.size(25.dp))
-                            Text(labels[index], modifier = Modifier.fillMaxWidth(), fontSize = 11.sp,
-                                lineHeight = 14.sp, textAlign = TextAlign.Center)
+                        Row(Modifier.fillMaxHeight().selectable(selected == index, role = Role.Tab, onClick = { onSelect(index) })
+                            .semantics { contentDescription = descriptions[index] }
+                            .heightIn(min = 48.dp).padding(horizontal = 2.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+                            LabIcon(icons[index], Modifier.size(16.dp))
+                            Text(labels[index], fontSize = 12.sp, lineHeight = 17.sp)
                         }
                     }
                 }
@@ -144,18 +149,18 @@ fun LabMeasurements(content: @Composable () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth()) {
-        Surface(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp), color = scheme.background,
-            border = BorderStroke(1.dp, scheme.outlineVariant)) {
-            Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        HorizontalDivider(color = scheme.outlineVariant)
+        Surface(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth(), color = scheme.background) {
+            Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 2.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (LocalDensity.current.fontScale <= 1.3f) {
-                    PracticeIcon(PracticeIcon.Progress, modifier = Modifier.size(22.dp))
+                    PracticeIcon(PracticeIcon.Progress, modifier = Modifier.size(18.dp))
                 }
-                Text("Sound measurements", fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f))
-                LabIcon(LabIcon.Chevron, Modifier.size(20.dp))
+                Text("Sound measurements", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                LabIcon(LabIcon.Chevron, Modifier.size(16.dp))
             }
         }
+        HorizontalDivider(color = scheme.outlineVariant)
         AnimatedVisibility(expanded) { Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { content() } }
     }
 }

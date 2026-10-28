@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalComposeUiApi::class)
 class ArticulatorSelectionUiTest {
     @Test
-    fun contentRespectsSafeAreaWithoutHeaderOrApplyingConsumedInsetsTwice() {
+    fun compactHeaderRespectsSafeAreaWithoutApplyingConsumedInsetsTwice() {
         var baselineContentTop = 0f
         var baselineContentLeft = 0f
         for ((top, side, parentConsumes) in listOf(
@@ -46,12 +46,13 @@ class ArticulatorSelectionUiTest {
                 }
             }.use { scene ->
                 scene.render().close()
-                val content = scene.nodes().first { it.text() == "Sound pair" }.boundsInRoot
-                assertTrue(scene.nodes().none { it.text() == "Speak" || it.matches("Back") || it.text() == "Camera practice" })
+                val content = scene.nodes().first { it.text() == "MINIMAL PAIRS" }.boundsInRoot
+                assertTrue(scene.nodes().any { it.text() == "Speak" })
+                assertTrue(scene.nodes().none { it.matches("Back") || it.text() == "Camera practice" })
                 if (top == 0) {
                     baselineContentTop = content.top
                     baselineContentLeft = content.left
-                    assertEquals(0f, content.top, "Content should use the space freed by the header")
+                    assertTrue(content.top in 16f..20f, "Compact header stays close to the top inside the safe area")
                 }
                 assertEquals(baselineContentTop + top, content.top, "Safe area must be applied exactly once")
                 assertEquals(baselineContentLeft + side, content.left)
@@ -61,6 +62,43 @@ class ArticulatorSelectionUiTest {
                     output.parentFile.mkdirs()
                     scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
                 }
+            }
+        }
+    }
+
+    @Test
+    fun pocketStudioFitsDefaultCameraGuidanceAndControlsWithoutScrolling() {
+        for (width in listOf(320, 390)) for (dark in listOf(false, true)) {
+            ImageComposeScene(width, 640) {
+                MinimalPairsTheme(darkTheme = dark) { ArticulatorLabScreen(SelectionComponent()) }
+            }.use { scene ->
+                scene.render().close()
+                val camera = scene.nodes().first { it.matches("Practice mirror") }.boundsInRoot
+                assertEquals(196f, camera.height)
+                val cameraTab = scene.nodes().first {
+                    it.matches("Camera") && it.config.getOrNull(SemanticsActions.OnClick) != null
+                }
+                assertEquals(true, cameraTab.config[SemanticsProperties.Selected])
+                assertTrue(scene.nodes().any { it.matches("Start camera") })
+                val record = scene.nodes().first {
+                    it.matches("Record your sound") && it.config.getOrNull(SemanticsActions.OnClick) != null
+                }.boundsInRoot
+                val example = scene.nodes().first {
+                    it.matches("Example") && it.config.getOrNull(SemanticsActions.OnClick) != null
+                }.boundsInRoot
+                assertTrue(record.width > example.width)
+                assertTrue(record.height >= 48f && record.bottom <= 640f)
+                val measurements = scene.nodes().first {
+                    it.matches("Sound measurements") && it.config.getOrNull(SemanticsActions.OnClick) != null
+                }.boundsInRoot
+                assertTrue(measurements.bottom <= record.top, "Collapsed measurements fit above pinned recording controls")
+                assertTrue(scene.nodes().any {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { d -> d.startsWith("Target lips.") } == true &&
+                        it.boundsInRoot.top >= camera.bottom && it.boundsInRoot.bottom <= measurements.top
+                })
+                val output = File("build/reports/articulator/pocket-studio-$width-$dark.png")
+                output.parentFile.mkdirs()
+                scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
             }
         }
     }
@@ -86,7 +124,7 @@ class ArticulatorSelectionUiTest {
     }
 
     @Test
-    fun mirrorLayoutKeepsIconTabsInOneRowAndSupportsLargeText() {
+    fun pocketStudioKeepsCompactTabsAndSupportsLargeText() {
         for ((width, scale) in listOf(320 to 1f, 390 to 1f, 320 to 1.8f)) {
             for (dark in listOf(false, true)) {
                 ImageComposeScene(width, 932, density = Density(1f, scale)) {
@@ -103,6 +141,11 @@ class ArticulatorSelectionUiTest {
                     assertTrue(tabs.all { it.boundsInRoot.left >= 0 && it.boundsInRoot.right <= width })
                     val layouts = mutableListOf<TextLayoutResult>()
                     scene.nodes().forEach { it.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts) }
+                    for (layout in layouts) {
+                        if (layout.layoutInput.text.text in setOf("Speak", "Camera", "Example", "Record")) {
+                            assertEquals(1, layout.lineCount, "$width / $scale / ${layout.layoutInput.text} should not break across lines")
+                        }
+                    }
                     for (layout in layouts) for (line in 0 until layout.lineCount) {
                         assertTrue(!layout.isLineEllipsized(line), layout.layoutInput.text.text)
                         assertTrue(layout.getLineBottom(line) <= layout.size.height + 1f, "$width / $scale / ${layout.layoutInput.text}: bottom ${layout.getLineBottom(line)} > ${layout.size.height}")
