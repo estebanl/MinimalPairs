@@ -46,6 +46,7 @@ import com.minimalpairs.app.ui.reference.ConsonantPracticeReferences
 import com.minimalpairs.app.ui.reference.MouthPositionReferences
 import com.minimalpairs.app.ui.reference.OralCavityModel
 import com.minimalpairs.app.ui.reference.OralPart
+import com.minimalpairs.app.ui.reference.OralSection
 import com.minimalpairs.app.ui.reference.OralPoint
 import com.minimalpairs.app.ui.reference.VocalTractLabMeshes
 import com.minimalpairs.app.ui.reference.OralTriangle
@@ -93,6 +94,7 @@ fun OralCavityReferenceCard(
     var pitch by rememberSaveable { mutableStateOf(0f) }
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var cutaway by rememberSaveable { mutableStateOf(true) }
+    var sectionFill by rememberSaveable { mutableStateOf(true) }
     fun reset() { yaw = 90f; pitch = 0f; zoom = 1f; cutaway = true }
     fun front() { yaw = 0f; pitch = 0f; cutaway = false }
     fun side() { yaw = 90f; pitch = 0f; cutaway = true }
@@ -105,15 +107,18 @@ fun OralCavityReferenceCard(
             targetBounds?.let { bounds ->
                 AcousticPlacementComparisonCard(bounds, observedF1, observedF2, isRecording)
             }
-            Text(if (VocalTractLabMeshes.isDerived(phoneme)) "Derived teaching pose" else "VocalTractLab reference",
+            Text(when {
+                phoneme == "r" -> "Authored teaching examples"
+                VocalTractLabMeshes.isDerived(phoneme) -> "Derived teaching pose"
+                else -> "VocalTractLab reference"
+            },
                 style = MaterialTheme.typography.labelMedium, color = accentInk)
             if (VocalTractLabMeshes.isDerived(phoneme)) {
                 Text("${VocalTractLabMeshes.poseDescription(phoneme)} Approximate and unvalidated; not an exact English speaker pose.",
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
             if (sourceShape == null) {
-                Text(ConsonantModelReferences.pendingReason(phoneme)
-                    ?: "This sound does not yet have a matching 3D reference.", style = MaterialTheme.typography.bodyMedium)
+                Text("This sound does not yet have a matching 3D reference.", style = MaterialTheme.typography.bodyMedium)
                 val cue = ConsonantPracticeReferences.forPhoneme(phoneme)
                 if (cue != null) Text(cue, style = MaterialTheme.typography.bodyMedium)
                 else MouthPositionReferenceCard(phoneme, exampleWord)
@@ -137,7 +142,10 @@ fun OralCavityReferenceCard(
                 return@Column
             }
             reference?.let { Text(it.placementCue, style = MaterialTheme.typography.bodyMedium) }
-            val mesh = remember(baseMesh, cutaway, yaw >= 0f) { OralCavityModel.cutaway(baseMesh, cutaway, yaw >= 0f) }
+            val mesh = remember(baseMesh, cutaway, sectionFill, yaw >= 0f) {
+                OralCavityModel.cutaway(baseMesh, cutaway, yaw >= 0f) +
+                    if (cutaway && sectionFill) OralSection.tongueFill(baseMesh, yaw >= 0f) else emptyList()
+            }
             val view = OralView(yaw, pitch, zoom)
             val faces = remember(mesh, view) {
                 mesh.map { triangle ->
@@ -146,9 +154,9 @@ fun OralCavityReferenceCard(
                 }.sortedBy { (it.a.z + it.b.z + it.c.z) / 3f }
             }
             val colors = mapOf(
-                OralPart.TONGUE to Color(0xFFD76B79), OralPart.PALATE to Color(0xFFDEB6A4),
-                OralPart.TEETH to Color(0xFFFFF5DE), OralPart.LIPS to Color(0xFFAB485D),
-                OralPart.TISSUE to Color(0xFFE5BCA7)
+                OralPart.TONGUE to Color(0xFFC97982), OralPart.PALATE to Color(0xFFD4ACA0),
+                OralPart.TEETH to Color(0xFFF2E7D4), OralPart.LIPS to Color(0xFFA85C6A),
+                OralPart.TISSUE to Color(0xFFCBA69B)
             )
             val sceneBackground = scheme.surfaceVariant
             val shadow = scheme.onSurface.copy(alpha = .08f)
@@ -157,7 +165,7 @@ fun OralCavityReferenceCard(
                     contentDescription = "3D mouth reference for /$phoneme/. " +
                         (phase?.let { "${it.label}. ${it.description}" } ?: "${reference?.sideDescription} ${reference?.frontDescription}")
                     stateDescription = "Rotation ${yaw.toInt()} degrees, tilt ${pitch.toInt()} degrees, zoom ${(zoom * 100).toInt()} percent. " +
-                        if (cutaway) "Cutaway on." else "Cutaway off."
+                        if (cutaway) "Cutaway on. ${if (sectionFill) "Illustrative tongue section filled." else "Surface only."}" else "Cutaway off."
                     customActions = listOf(
                         CustomAccessibilityAction("Show front") { front(); true },
                         CustomAccessibilityAction("Show side cutaway") { side(); true },
@@ -186,7 +194,10 @@ fun OralCavityReferenceCard(
                 for (face in faces) {
                     val base = colors.getValue(face.part)
                     for ((point, normal) in listOf(face.a to face.na, face.b to face.nb, face.c to face.nc)) {
-                        val light = (.45f + .55f * abs(normal.x * -.3f + normal.y * .6f + normal.z * .74f)).coerceIn(.4f, 1f)
+                        // Broad diffuse light: avoid bright rims on both sides of
+                        // a surface. Section faces stay matte and readable.
+                        val light = if (face.isSection) .95f else
+                            (.76f + .24f * (normal.x * -.3f + normal.y * .6f + normal.z * .74f)).coerceIn(.58f, 1f)
                         positions += screen(point)
                         vertexColors += Color(base.red * light, base.green * light, base.blue * light)
                     }
@@ -207,6 +218,7 @@ fun OralCavityReferenceCard(
                 FilterChip(yaw == 0f && pitch == 0f && !cutaway, onClick = ::front, label = { Text("Front") })
                 FilterChip(yaw == 90f && pitch == 0f && cutaway, onClick = ::side, label = { Text("Side") })
                 FilterChip(cutaway, onClick = { cutaway = !cutaway }, label = { Text("Cutaway") })
+                if (cutaway) FilterChip(sectionFill, onClick = { sectionFill = !sectionFill }, label = { Text("Tongue section") })
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(colors = ButtonDefaults.textButtonColors(contentColor = accentInk), onClick = { zoom = (zoom - .15f).coerceAtLeast(.7f) }, enabled = zoom > .7f) { Text("Zoom out") }
@@ -216,6 +228,8 @@ fun OralCavityReferenceCard(
             Text("Rose: tongue · Cream: teeth · Tan: tract walls · Burgundy: lips",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             Text("Representative speaker anatomy. English articulations vary; this is not a measurement of your mouth.",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            if (cutaway && sectionFill) Text("The filled tongue section joins source surface contours for clarity. It does not show measured internal anatomy.",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             VocalTractLabCredits()
         }

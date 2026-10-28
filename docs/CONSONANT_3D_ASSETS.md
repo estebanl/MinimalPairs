@@ -9,9 +9,11 @@ need for one GLB per word. Full-word transcriptions contain other phones; this
 inventory concerns selected exercise targets, not a whole-word animation system.
 
 This change uses the existing cross-platform VocalTractLab pipeline and `.vtlm`
-format, independently of PR #1's separate iOS sheep/ship GLB prototype. Nine new
-reusable files cover seventeen consonants, with another sound (/w/) reusing an
-existing mesh. One sound (/r/) is explicitly pending a suitable design.
+format, independently of PR #1's separate iOS sheep/ship GLB prototype. Nine source-gesture
+files cover seventeen consonants, with /w/ reusing an existing mesh. Following
+user approval, two additional authored files now illustrate bunched and tip-up
+/r/ alternatives. All nineteen selected consonants have explicit, unreviewed
+3D coverage; /w/ remains an approximation.
 
 | Selected sound(s) | Mesh asset key(s) | Source / status |
 | --- | --- | --- |
@@ -25,11 +27,11 @@ existing mesh. One sound (/r/) is explicitly pending a suitable design.
 | /tʃ dʒ/ | postalveolar-closure → postalveolar-fricative | `tt-postalveolar-closure(a)` followed by the existing friction gesture; separate selectable snapshots |
 | /l/ | alveolar-lateral | `tt-alveolar-lateral(a)`; context-dependent lateral snapshot |
 | /w/ | goose (reused) | JD3 `u`; explicitly approximate rounded starting snapshot, not a /w/ trajectory |
-| /r/ | none | No matching English source preset; placement guidance and explanation retained |
+| /r/ | rhotic-bunched, rhotic-tip-up | Two authored illustrative alternatives, not upstream presets or reviewed British targets; neither is obligatory |
 
 Each new key corresponds to `files/vtl/<key>.vtlm` in Compose resources and a
-matching export under `design/vocaltractlab-preview/meshes/`. The nine additions
-are 156,468 bytes each (1,408,212 bytes total), with 1,811 vertices and 2,804
+matching export under `design/vocaltractlab-preview/meshes/`. The nine source additions
+and the two later /r/ additions are 156,468 bytes each, with 1,811 vertices and 2,804
 triangles per file. Each has eleven source surfaces, grouped into the renderer's
 five existing part categories. The original ten vowel files retain their bytes
 and hashes. Voicing-pair reuse avoids duplicate assets and cached meshes;
@@ -89,7 +91,7 @@ Scoring, progress persistence and audio operations are unchanged.
 The contact sheet below is projected from the actual exported vertices. It is a
 geometry review artifact, not a native device screenshot or phonetic validation.
 Actual JVM Compose renderer checks separately write front/side screenshots for
-all unique gestures, affricate phases, and the /r/ fallback to
+all unique gestures, affricate phases, both /r/ variants and unsupported fallback to
 `composeApp/build/reports/consonant-models/`.
 
 ![Exported consonant geometry](images/consonant-gestures.png)
@@ -101,7 +103,7 @@ Compose rendering, rapid target/phase switching, recording independence and
 existing selection/audio/scoring/progress regressions. Final run results and
 blocked device/CI checks are recorded in the draft PR.
 
-### Verification record — 28 October 2026
+### Original nine-gesture delivery — 28 October 2026
 
 - Final targeted resource/model/selection/render suite: **21 passed**. Actual
   Compose pixels were inspected for the source-geometry sheet and app views,
@@ -122,6 +124,16 @@ blocked device/CI checks are recorded in the draft PR.
 - No iPhone was connected. This Intel host cannot execute the app's ARM64
   simulator target. Native/device visual, touch, accessibility and performance
   checks remain open. No installation, merge, deployment or release occurred.
-- /r/ remains a deliberate pending design/review item; the app retains guidance.
-  All new English teaching mappings still need specialist review before their
-  unreviewed label can be removed.
+- At this delivery stage /r/ was pending. The subsequent user-approved additions
+  are documented below. All English teaching mappings still need specialist
+  review before their unreviewed label can be removed.
+
+### Approved /r/ and appearance follow-up
+
+See [the design, chosen parameters and native before/after review](RHOTIC_AND_ANATOMY_REVIEW.md).
+The two authored /r/ variants increase the package to **21 distinct meshes**.
+All nineteen earlier mesh files retain their original bytes. The native renderer
+now provides a reversible sagittal tongue fill and softer diffuse shading;
+the fill is illustrative, not a measured internal anatomical volume. No broad
+anatomical mesh regeneration has been performed. Current verification results
+and remaining native/specialist review limits are recorded in that review and PR.

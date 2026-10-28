@@ -31,7 +31,7 @@ class ConsonantModelUiTest {
             }
         }.use { scene ->
             for ((sound, word) in listOf("p" to "pear", "t" to "two", "k" to "coat", "f" to "fan",
-                "θ" to "thin", "s" to "sue", "ʃ" to "shoe", "tʃ" to "chair", "l" to "light", "w" to "wet")) {
+                "θ" to "thin", "s" to "sue", "ʃ" to "shoe", "tʃ" to "chair", "l" to "light", "w" to "wet", "r" to "right")) {
                 selection = sound to word
                 val phase = ConsonantModelReferences.forPhoneme(sound)!!.phases.first()
                 scene.awaitModel(sound, phase.label)
@@ -55,10 +55,29 @@ class ConsonantModelUiTest {
             selection = "p" to "pear"; selection = "s" to "sue"; selection = "l" to "light"
             scene.awaitModel("l", "Lateral tongue contact")
             selection = "r" to "right"
+            scene.awaitModel("r", "Bunched")
+            scene.click("Tip-up")
+            scene.awaitModel("r", "Tip-up")
+            scene.click("Side")
+            scene.save("rhotic-tip-up-side")
+            scene.click("Front")
+            scene.save("rhotic-tip-up-front")
+            scene.click("Side")
+            scene.render().close()
+            scene.click("Tongue section")
+            scene.render().close()
+            assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.StateDescription)?.contains("Surface only") == true })
+            scene.click("Tongue section")
+            scene.render().close()
+            repeat(4) {
+                scene.click("Bunched"); scene.click("Tip-up")
+                scene.awaitModel("r", "Tip-up")
+            }
+            selection = "unknown" to "unsupported"
             scene.render().close(); scene.render().close()
             assertNull(scene.description())
-            assertTrue(scene.nodes().any { it.text()?.contains("no matching English /r/ preset") == true })
-            scene.save("r-pending-review")
+            assertTrue(scene.nodes().any { it.text()?.contains("does not yet have a matching 3D reference") == true })
+            scene.save("unsupported-fallback")
         }
     }
 

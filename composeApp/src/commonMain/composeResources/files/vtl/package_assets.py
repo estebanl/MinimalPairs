@@ -16,7 +16,8 @@ def digest(path):
 DEST.mkdir(parents=True, exist_ok=True)
 CONSONANTS = ('bilabial-closure', 'alveolar-closure', 'velar-closure',
               'labiodental-fricative', 'dental-fricative', 'alveolar-fricative',
-              'postalveolar-fricative', 'postalveolar-closure', 'alveolar-lateral')
+              'postalveolar-fricative', 'postalveolar-closure', 'alveolar-lateral',
+              'rhotic-bunched', 'rhotic-tip-up')
 files = {}
 for name in ('dress', 'fleece', 'foot', 'goose', 'kit', 'thought', 'trap', 'palm', 'strut', 'lot') + CONSONANTS:
     path = PREVIEW / 'meshes' / f'{name}.vtlm'
@@ -24,7 +25,7 @@ for name in ('dress', 'fleece', 'foot', 'goose', 'kit', 'thought', 'trap', 'palm
     assert data[:8] == b'VTLM\x01\x00\x00\x00'
     files[path.name] = {'bytes': len(data), 'sha256': digest(path)}
     shutil.copyfile(path, DEST / path.name)
-assert len({entry['sha256'] for entry in files.values()}) == 19, 'Exported gestures must be distinct; phonemes may share a gesture'
+assert len({entry['sha256'] for entry in files.values()}) == 21, 'Exported gestures must be distinct; phonemes may share a gesture'
 recipes = json.loads((PREVIEW / 'meshes' / 'derived-poses.json').read_text())
 manifest = {
     'upstream': 'https://github.com/TUD-STKS/VocalTractLabBackend-dev',
@@ -38,6 +39,7 @@ manifest = {
     'files': files,
     'derived_teaching_poses': recipes,
     'consonant_teaching_poses': json.loads((PREVIEW / 'meshes' / 'consonant-poses.json').read_text()),
+    'rhotic_teaching_poses': json.loads((PREVIEW / 'meshes' / 'rhotic-poses.json').read_text()),
     'consonant_pose_status': 'Original JD3 articulatory snapshots in a-context; unreviewed English references, not word-synchronized motion or visible voicing',
     'derived_pose_status': 'Unvalidated illustrative parameter recipes, not exact English presets or learner anatomy',
 }

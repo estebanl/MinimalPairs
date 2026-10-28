@@ -4,7 +4,7 @@
   "speaker": "resources/JD3.speaker",
   "speaker_sha256": "e1e592dae13991e981c17bcc326cccc7bce3705e3862eb77fdeaeb238418a503",
   "source_archive_sha256": "dc4c930ce261f31e60ba94af122808490881efb8301e55e18baaa611cf52104b",
-  "exporter_sha256": "47db4ded3330b136a3fb1ff3782cf3f04ff85d852629fe37470728e12a0dfea2",
+  "exporter_sha256": "389a6e26f0c51ef6e2963bae2d43b977845b120e441de8364e1cade5c30ab8a3",
   "license": "GPL-3.0-or-later (upstream source; no separate asset exception found)",
   "format_version": 1,
   "files": {
@@ -83,6 +83,14 @@
     "alveolar-lateral.vtlm": {
       "bytes": 156468,
       "sha256": "8a01735e4a601425ababe6def01b1de403371b250d665f4a2fd74d6d0f91196a"
+    },
+    "rhotic-bunched.vtlm": {
+      "bytes": 156468,
+      "sha256": "4c948e0ca96bc9e644d3653e1f1154f3d62dda805265d051a9a9ee5daeaad464"
+    },
+    "rhotic-tip-up.vtlm": {
+      "bytes": 156468,
+      "sha256": "fd6c5834690709b85830c60093da47bb1c5c416a33e1c68219827ce387ccf57c"
     }
   },
   "derived_teaching_poses": {
@@ -423,6 +431,100 @@
         "TS1": 0.2064,
         "TS2": 0.0384,
         "TS3": -1
+      }
+    }
+  },
+  "rhotic_teaching_poses": {
+    "rhotic-bunched": {
+      "status": "authored illustrative/unreviewed British-English approximant example",
+      "automatic_root": false,
+      "parameters": {
+        "HX": 0.7,
+        "HY": -5.1,
+        "JX": 0,
+        "JA": -3,
+        "LP": 0.3,
+        "LD": 0.7,
+        "VS": 0.6,
+        "VO": -0.1,
+        "TCX": 1,
+        "TCY": -0.9,
+        "TTX": 4,
+        "TTY": -1.15,
+        "TBX": 2.8,
+        "TBY": 0.6,
+        "TRX": -2.2,
+        "TRY": -3,
+        "TS1": 0.2,
+        "TS2": 0.25,
+        "TS3": 0.15
+      },
+      "effective_parameters": {
+        "HX": 0.7,
+        "HY": -5.1,
+        "JX": 0,
+        "JA": -3,
+        "LP": 0.3,
+        "LD": 0.7,
+        "VS": 0.6,
+        "VO": -0.1,
+        "TCX": 1,
+        "TCY": -0.9,
+        "TTX": 4,
+        "TTY": -1.15,
+        "TBX": 2.8,
+        "TBY": 0.6,
+        "TRX": -2.2,
+        "TRY": -3,
+        "TS1": 0.2,
+        "TS2": 0.25,
+        "TS3": 0.15
+      }
+    },
+    "rhotic-tip-up": {
+      "status": "authored illustrative/unreviewed British-English approximant example",
+      "automatic_root": false,
+      "parameters": {
+        "HX": 0.7,
+        "HY": -5.1,
+        "JX": 0,
+        "JA": -3,
+        "LP": 0.2,
+        "LD": 0.7,
+        "VS": 0.6,
+        "VO": -0.1,
+        "TCX": 0.7,
+        "TCY": -1.5,
+        "TTX": 3.7,
+        "TTY": 0.65,
+        "TBX": 2.4,
+        "TBY": 0,
+        "TRX": -2.2,
+        "TRY": -3,
+        "TS1": 0.2,
+        "TS2": 0.25,
+        "TS3": 0.15
+      },
+      "effective_parameters": {
+        "HX": 0.7,
+        "HY": -5.1,
+        "JX": 0,
+        "JA": -3,
+        "LP": 0.2,
+        "LD": 0.7,
+        "VS": 0.6,
+        "VO": -0.1,
+        "TCX": 0.7,
+        "TCY": -1.5,
+        "TTX": 3.7,
+        "TTY": 0.65,
+        "TBX": 2.4,
+        "TBY": 0,
+        "TRX": -2.2,
+        "TRY": -3,
+        "TS1": 0.2,
+        "TS2": 0.25,
+        "TS3": 0.15
       }
     }
   },

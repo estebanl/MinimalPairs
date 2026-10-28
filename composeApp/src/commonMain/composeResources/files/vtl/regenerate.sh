@@ -24,4 +24,5 @@ clang++ -std=c++17 -O2 -Wno-return-stack-address -Wno-deprecated-declarations \
   "$task_root/design/vocaltractlab-preview/meshes" "${@:2}"
 python3 "$task_root/scripts/vtl/render_preview.py"
 python3 "$task_root/scripts/vtl/render_preview.py" --consonants
+python3 "$task_root/scripts/vtl/render_preview.py" --r-only
 python3 "$task_root/scripts/vtl/package_assets.py"

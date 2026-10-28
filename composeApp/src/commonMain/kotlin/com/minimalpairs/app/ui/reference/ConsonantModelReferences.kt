@@ -5,7 +5,8 @@ data class ConsonantModelPhase(val assetKey: String, val label: String, val desc
 data class ConsonantModelReference(val phases: List<ConsonantModelPhase>, val explanation: String)
 
 /**
- * Original JD3 gestures in the source's /a/ context. English suitability is unreviewed.
+ * Original JD3 gestures in /a/ context plus explicitly authored /r/ alternatives.
+ * English suitability is unreviewed for all of these teaching snapshots.
  * Voicing pairs share oral geometry: the exported surfaces do not show vocal folds.
  * Provenance and coverage decisions: docs/CONSONANT_3D_ASSETS.md.
  */
@@ -33,11 +34,13 @@ object ConsonantModelReferences {
         )) sounds.forEach { put(it, voicedPair(gesture)) }
         put("tʃ", affricate); put("dʒ", affricate)
         put("l", ConsonantModelReference(listOf(lateral), "Original source lateral gesture in a fixed /a/ context; unreviewed as an English /l/ target."))
+        put("r", ConsonantModelReference(listOf(
+            phase("rhotic-bunched", "Bunched", "Illustrative /r/ example: the tongue body is raised while the tip stays lower; modest lip protrusion is shown."),
+            phase("rhotic-tip-up", "Tip-up", "Illustrative /r/ example: the tongue tip is raised behind the upper gum ridge, with space below the palate. This is not a strongly curled retroflex target.")
+        ), "Two illustrative British-English /r/ alternatives, both unreviewed. Neither tongue shape is obligatory. These authored parameter recipes are not measured speakers or source /r/ presets, and are not matched to the word audio. Keep the sound voiced without tongue contact or tapping."))
         put("w", ConsonantModelReference(listOf(phase("goose", "Rounded starting snapshot",
             "Rounded lips and a raised back tongue, reusing the /u/ source geometry as a starting illustration. The glide into a vowel is not shown.")),
             "Unreviewed illustrative reuse of JD3 u, not an upstream /w/ preset or a validated English /w/ trajectory."))
     }
     fun forPhoneme(phoneme: String): ConsonantModelReference? = byPhoneme[phoneme]
-    fun pendingReason(phoneme: String): String? = if (phoneme == "r")
-        "The supplied speaker has no matching English /r/ preset. A bunched or curled-tongue reference needs a separate reviewed design; placement guidance remains available." else null
 }

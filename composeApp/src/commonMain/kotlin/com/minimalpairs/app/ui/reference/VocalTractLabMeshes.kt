@@ -66,7 +66,7 @@ object VocalTractLabMeshes {
         val count = int()
         require(count in 1..32)
         val faces = mutableListOf<OralTriangle>()
-        repeat(count) {
+        repeat(count) { surfaceIndex ->
             val part = OralPart.entries.getOrNull(int()) ?: error("Unknown mesh material")
             val vertexCount = int(); val triangleCount = int()
             require(vertexCount in 3..10000 && triangleCount in 1..20000)
@@ -74,7 +74,8 @@ object VocalTractLabMeshes {
             val points = List(vertexCount) { point() }
             repeat(triangleCount) {
                 val indices = List(3) { int().also { require(it in points.indices) } }
-                faces += OralTriangle(points[indices[0]], points[indices[1]], points[indices[2]], part, normal(), normal(), normal())
+                faces += OralTriangle(points[indices[0]], points[indices[1]], points[indices[2]], part, normal(), normal(), normal(),
+                    sourceSurface = if (count == 11) surfaceIndex else -1)
             }
         }
         require(offset == bytes.size) { "Unexpected trailing mesh data" }
