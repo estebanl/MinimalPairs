@@ -10,7 +10,9 @@ the simulator interface is available in **Xcode → Open Developer Tool → Devi
 
 ## Listening persistence
 
-1. Open **Progress**. Expect “Your progress starts here” and zero scored recordings.
+1. Open **Progress**. Expect the content to begin with “Every practice counts.”,
+   with no top app bar or back button. The bottom navigation remains available.
+   Expect “Your progress starts here” and zero scored recordings.
 2. Select **Start listening**. Expect the listening home screen.
 3. Select **Start listening** again to open the Sheep / Ship exercise.
 4. Play the word, wait for playback to finish, and select an answer.

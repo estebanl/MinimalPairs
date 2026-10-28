@@ -37,7 +37,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.minimalpairs.app.ui.components.PracticeIcon
-import com.minimalpairs.app.ui.components.PracticeTopBar
 import com.minimalpairs.app.ui.navigation.ConfusionMatrixComponent
 
 @Composable
@@ -50,7 +49,7 @@ fun ConfusionMatrixScreen(
     val state by component.state.collectAsState()
     var showAllContrasts by rememberSaveable { mutableStateOf(false) }
     val practicedContrasts = state.contrasts.filter { ListeningContrastsCatalog.getContrastById(it.contrastId) != null }
-    Scaffold(topBar = { PracticeTopBar("Progress", onBack = component::onBack) }, modifier = modifier) { padding ->
+    Scaffold(modifier = modifier) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
