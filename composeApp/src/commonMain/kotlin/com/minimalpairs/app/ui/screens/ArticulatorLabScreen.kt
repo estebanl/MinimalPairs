@@ -88,7 +88,7 @@ fun ArticulatorLabScreen(
     val canSelectTarget = !isRecording && !state.isBusy
     val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
     var visualMode by rememberSaveable { mutableStateOf(0) }
-    val activeVisualMode = if (!isVowel && visualMode != 3) 1 else visualMode
+    val activeVisualMode = if (!isVowel && visualMode == 0) 1 else visualMode
     var permissionDenied by remember { mutableStateOf(false) }
     val requestMicrophone = rememberMicrophonePermissionRequest { granted ->
         permissionDenied = !granted
@@ -288,13 +288,13 @@ fun ArticulatorLabScreen(
                         },
                         measurements = { ArticulatorMeasurements(state, isRecording) }
                     )
-                } else if (activeVisualMode == 2 && vowel != null) {
+                } else if (activeVisualMode == 2) {
                     OralCavityReferenceCard(
                         phoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2,
                         exampleWord = state.selectedPair.let {
                             if (state.isTargetPhoneme1) it.word1 else it.word2
                         },
-                        targetBounds = if (state.isTargetPhoneme1) vowel.boundsPhoneme1 else vowel.boundsPhoneme2,
+                        targetBounds = vowel?.let { if (state.isTargetPhoneme1) it.boundsPhoneme1 else it.boundsPhoneme2 },
                         observedF1 = state.liveF1.takeIf { it > 0f },
                         observedF2 = state.liveF2.takeIf { it > 0f },
                         isRecording = isRecording

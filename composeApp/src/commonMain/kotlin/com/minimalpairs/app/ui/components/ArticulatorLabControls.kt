@@ -88,7 +88,7 @@ fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit, vowelModes: Boolean = tr
     val icons = listOf(LabIcon.Sound, LabIcon.Mouth, LabIcon.Model, LabIcon.Camera)
     val columns = if (LocalDensity.current.fontScale > 1.3f) 2 else 4
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        (if (vowelModes) labels.indices.toList() else listOf(1, 3)).chunked(columns).forEach { indices ->
+        (if (vowelModes) labels.indices.toList() else listOf(1, 2, 3)).chunked(columns).forEach { indices ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 indices.forEach { index ->
                     Surface(Modifier.weight(1f).fillMaxHeight(), shape = RoundedCornerShape(16.dp),

@@ -17,7 +17,7 @@ class OralCavityResourceTest {
     fun packagedProvenanceMatchesEveryMeshAndIncludesDerivedRecipes() = runTest {
         val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
         val files = manifest.getValue("files").jsonObject
-        assertEquals(10, files.size)
+        assertEquals(21, files.size)
         files.forEach { (name, entry) ->
             val bytes = Res.readBytes("files/vtl/$name")
             val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -61,6 +61,111 @@ class OralCavityResourceTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun consonantResourcesCoverSharedGesturesAndPhasesWithoutDuplicatingVoicing() = runTest {
+        val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
+        val gestures = manifest.getValue("consonant_teaching_poses").jsonObject
+        assertEquals(9, gestures.size)
+        gestures.values.forEach { entry ->
+            assertTrue(entry.jsonObject.getValue("source_preset").jsonPrimitive.content.endsWith("(a)"))
+            assertEquals(19, entry.jsonObject.getValue("parameters").jsonObject.size)
+        }
+        val distinct = mutableSetOf<List<OralTriangle>>()
+        for ((sound, reference) in ConsonantModelReferences.byPhoneme) {
+            for (index in reference.phases.indices) {
+                val mesh = VocalTractLabMeshes.loadConsonant(sound, index)!!
+                assertEquals(2804, mesh.size, "$sound phase $index")
+                assertEquals(OralPart.entries.toSet(), mesh.map { it.part }.toSet())
+                assertTrue(mesh.flatMap { listOf(it.a, it.b, it.c) }.all {
+                    it.x.isFinite() && it.y.isFinite() && it.z.isFinite()
+                })
+                for (left in listOf(true, false)) assertTrue(OralCavityModel.cutaway(mesh, true, left).isNotEmpty())
+                distinct += mesh
+            }
+        }
+        assertEquals(12, distinct.size, "Nine source gestures, two authored rhotics and the reused vowel")
+        for ((a, b) in listOf("p" to "b", "t" to "d", "k" to "ɡ", "f" to "v", "θ" to "ð", "s" to "z", "ʃ" to "ʒ")) {
+            assertSame(VocalTractLabMeshes.loadConsonant(a), VocalTractLabMeshes.loadConsonant(b))
+        }
+        assertSame(VocalTractLabMeshes.loadConsonant("w"), VocalTractLabMeshes.load("uː"))
+        assertSame(VocalTractLabMeshes.loadConsonant("tʃ", 1), VocalTractLabMeshes.loadConsonant("ʃ"))
+        assertNotEquals(VocalTractLabMeshes.loadConsonant("tʃ", 0), VocalTractLabMeshes.loadConsonant("tʃ", 1))
+        assertNull(VocalTractLabMeshes.loadConsonant("unknown"))
+        assertNull(VocalTractLabMeshes.loadConsonant("r", 2))
+        assertNull(VocalTractLabMeshes.loadConsonant("p", 1))
+    }
+
+    @Test
+    fun rhoticExamplesHaveDistinctOpenOralConstrictionsAndTraceableRecipes() = runTest {
+        val manifest = Json.parseToJsonElement(Res.readBytes("files/vtl/manifest.json").decodeToString()).jsonObject
+        val recipes = manifest.getValue("rhotic_teaching_poses").jsonObject
+        assertEquals(setOf("rhotic-bunched", "rhotic-tip-up"), recipes.keys)
+        recipes.values.forEach {
+            val recipe = it.jsonObject
+            assertEquals("false", recipe.getValue("automatic_root").jsonPrimitive.content)
+            for (name in listOf("parameters", "effective_parameters")) {
+                val parameters = recipe.getValue(name).jsonObject
+                assertEquals(19, parameters.size)
+                assertTrue(parameters.values.all { it.jsonPrimitive.content.toDouble().isFinite() })
+            }
+        }
+        val bunched = VocalTractLabMeshes.loadConsonant("r", 0)!!
+        val tipUp = VocalTractLabMeshes.loadConsonant("r", 1)!!
+        assertNotEquals(bunched, tipUp)
+        fun height(mesh: List<OralTriangle>, anteriorCm: Float, part: OralPart): Float {
+            val x = (anteriorCm - 2f) * .23f
+            val heights = OralCavityModel.cutaway(mesh.filter { it.part == part }, true).flatMap { face ->
+                val points = listOf(face.a, face.b, face.c).filter { kotlin.math.abs(it.x) < .00001f }.distinct()
+                if (points.size != 2) emptyList() else {
+                    val (a, b) = points
+                    if (x !in minOf(a.z, b.z)..maxOf(a.z, b.z) || kotlin.math.abs(a.z - b.z) < .00001f) emptyList()
+                    else listOf(a.y + (b.y - a.y) * (x - a.z) / (b.z - a.z))
+                }
+            }
+            // Sample the actual interpolated sagittal boundary, rather than
+            // comparing the parameter recipe with itself.
+            return heights.max()
+        }
+        assertTrue(height(bunched, 1f, OralPart.TONGUE) > height(tipUp, 1f, OralPart.TONGUE) + .08f,
+            "Bunched example must visibly raise the body more")
+        assertTrue(height(tipUp, 3.7f, OralPart.TONGUE) > height(bunched, 3.7f, OralPart.TONGUE) + .10f,
+            "Tip-up example must visibly raise the anterior tongue more")
+        for (mesh in listOf(bunched, tipUp)) {
+            for (position in listOf(1f, 2f, 3f, 3.7f)) {
+                val gap = height(mesh, position, OralPart.PALATE) - height(mesh, position, OralPart.TONGUE)
+                assertTrue(gap > .02f, "Illustrative approximant must not make an oral closure at $position cm")
+            }
+        }
+    }
+
+    @Test
+    fun sectionFillRetainsSourceContoursAndFailsSafelyForUnknownAnatomy() = runTest {
+        val assets = VocalTractLabMeshes.sourceShapes.keys.map { VocalTractLabMeshes.load(it)!! } +
+            ConsonantModelReferences.byPhoneme.flatMap { (sound, reference) ->
+                reference.phases.indices.map { VocalTractLabMeshes.loadConsonant(sound, it)!! }
+            }
+        for (mesh in assets.toSet()) {
+            val original = mesh.toList()
+            val left = OralSection.tongueFill(mesh, true)
+            val right = OralSection.tongueFill(mesh, false)
+            assertTrue(left.isNotEmpty(), "Pinned geometry should have a connected tongue/floor section")
+            assertTrue(left.size < 200, "Section fill should add only a small bounded mesh")
+            assertEquals(left.size, right.size)
+            assertEquals(original, mesh, "Display fill must not move source anatomy")
+            left.forEach { face ->
+                assertTrue(face.isSection && face.part == OralPart.TONGUE)
+                assertTrue(listOf(face.a, face.b, face.c).all { it.x == 0f && it.y.isFinite() && it.z.isFinite() })
+            }
+            assertTrue(left.all { it.na.x == -1f } && right.all { it.na.x == 1f })
+        }
+        assertTrue(OralSection.tongueFill(emptyList()).isEmpty())
+        val known = assets.first()
+        assertTrue(OralSection.tongueFill(known.map { it.copy(sourceSurface = -1) }).isEmpty())
+        val started = System.nanoTime()
+        repeat(20) { OralSection.tongueFill(known) }
+        println("Sagittal fill: ${(System.nanoTime() - started) / 20_000_000.0} ms mean, JVM host only")
     }
 
     @Test

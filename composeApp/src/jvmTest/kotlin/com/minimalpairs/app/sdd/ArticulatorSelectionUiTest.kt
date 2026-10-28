@@ -219,7 +219,22 @@ class ArticulatorSelectionUiTest {
             scene.render().close()
             assertTrue(scene.nodes().any { it.matches("Hear vet example") })
             assertTrue(scene.nodes().any { it.text()?.contains("Say “vet” and focus on /v/") == true })
-            assertTrue(scene.nodes().none { it.matches("Sound map") || it.matches("3D model") })
+            assertTrue(scene.nodes().none { it.matches("Sound map") })
+            assertTrue(scene.nodes().any { it.matches("3D model") })
+            scene.click("3D model")
+            val modelDeadline = System.nanoTime() + 5_000_000_000L
+            var rendered = false
+            while (System.nanoTime() < modelDeadline) {
+                scene.render().close()
+                rendered = scene.nodes().any { node ->
+                    node.config.getOrNull(SemanticsProperties.ContentDescription)?.any {
+                        it.startsWith("3D mouth reference for /v/.")
+                    } == true
+                }
+                if (rendered) break
+                Thread.sleep(10)
+            }
+            assertTrue(rendered, "The consonant 3D tab must load the selected sound's actual mesh")
             scene.click("Camera")
             scene.render().close()
             assertTrue(scene.nodes().any { it.matches("Camera off") })
