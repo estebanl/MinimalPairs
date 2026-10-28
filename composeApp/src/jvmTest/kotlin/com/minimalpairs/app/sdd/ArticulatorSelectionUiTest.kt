@@ -202,16 +202,18 @@ class ArticulatorSelectionUiTest {
     }
 
     @Test
-    fun menuIncludesEveryListenPairAndConsonantsUseWordGuidance() {
+    fun gridIncludesEveryListenPairAndConsonantsUseWordGuidance() {
         val component = SelectionComponent()
         ImageComposeScene(390, 1800) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
             scene.render().close()
             scene.click("Change sound pair")
             scene.render().close()
             for (contrast in ListeningContrastsCatalog.defaultContrasts) {
+                scene.scrollToContrast(contrast.id)
                 val pair = contrast.pairs.first()
                 assertTrue(scene.nodes().any { it.matches("${pair.word1} / ${pair.word2}") }, contrast.id)
             }
+            scene.scrollToContrast("w_vs_v")
             scene.click("wet / vet")
             scene.render().close()
             assertEquals("w_vs_v", component.state.value.contrast.id)
@@ -240,6 +242,90 @@ class ArticulatorSelectionUiTest {
             val output = File("build/reports/articulator/consonant-practice.png")
             output.parentFile.mkdirs()
             scene.render().use { output.writeBytes(it.encodeToData()!!.bytes) }
+        }
+    }
+
+    @Test
+    fun wordCardsHighlightTheSelectionAndCloseOnSelectionDismissalOrBusyState() {
+        val component = SelectionComponent()
+        ImageComposeScene(390, 844) { MinimalPairsTheme { ArticulatorLabScreen(component) } }.use { scene ->
+            scene.settle()
+            scene.click("Change sound pair")
+            scene.settle()
+            val initial = component.state.value.contrast.pairs.first()
+            fun card(label: String) = scene.nodes().first {
+                it.matches(label) && it.config.getOrNull(SemanticsProperties.Selected) != null
+            }
+            assertEquals(true, card("${initial.word1} / ${initial.word2}").config[SemanticsProperties.Selected])
+            assertEquals(false, card("bad / bed").config[SemanticsProperties.Selected])
+            scene.click("bad / bed")
+            scene.settle()
+            assertEquals("ae_vs_e", component.state.value.contrast.id)
+            assertTrue(scene.nodes().none { it.matches("Choose a sound pair") })
+            scene.click("Change sound pair")
+            scene.settle()
+            assertEquals(true, card("bad / bed").config[SemanticsProperties.Selected])
+            scene.click("Close sound pair picker")
+            scene.settle()
+            assertTrue(scene.nodes().none { it.matches("Choose a sound pair") })
+            assertEquals("ae_vs_e", component.state.value.contrast.id)
+            scene.click("Change sound pair")
+            scene.settle()
+            component.state.value = component.state.value.copy(isBusy = true, isScoring = true)
+            scene.settle()
+            assertTrue(scene.nodes().none { it.matches("Choose a sound pair") })
+            component.state.value = component.state.value.copy(isBusy = false, isScoring = false)
+            scene.settle()
+            assertTrue(scene.nodes().none { it.matches("Choose a sound pair") })
+        }
+    }
+
+    @Test
+    fun wordCardsStayReadableAndScrollToTheLastPairAcrossSizesAndThemes() {
+        for ((width, height, scale) in listOf(
+            Triple(320, 640, 1f), Triple(390, 844, 1f), Triple(1000, 800, 1f), Triple(320, 640, 1.8f)
+        )) for (dark in listOf(false, true)) {
+            val component = SelectionComponent()
+            ImageComposeScene(width, height, density = Density(1f, scale)) {
+                MinimalPairsTheme(darkTheme = dark) { ArticulatorLabScreen(component) }
+            }.use { scene ->
+                scene.settle()
+                scene.click("Change sound pair")
+                scene.settle()
+                val cards = scene.nodes().filter {
+                    it.config.getOrNull(SemanticsProperties.Selected) != null && it.text()?.contains(" / ") == true
+                }
+                assertTrue(cards.size >= 2)
+                assertEquals(cards[0].boundsInRoot.top, cards[1].boundsInRoot.top)
+                assertTrue(cards[1].boundsInRoot.left > cards[0].boundsInRoot.right)
+                assertTrue(cards.all { it.boundsInRoot.left >= 0 && it.boundsInRoot.right <= width && it.size.height >= 84 })
+                val layouts = mutableListOf<TextLayoutResult>()
+                scene.nodes().forEach { it.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts) }
+                for (layout in layouts) for (line in 0 until layout.lineCount) {
+                    val message = "$width / $scale / ${layout.layoutInput.text}"
+                    assertTrue(!layout.isLineEllipsized(line), message)
+                    assertTrue(layout.getLineBottom(line) <= layout.size.height + 1f, message)
+                    assertTrue(layout.getLineRight(line) <= layout.size.width + 1f, message)
+                }
+                val output = File("build/reports/articulator/word-cards-$width-$scale-$dark.png")
+                output.parentFile.mkdirs()
+                scene.render(nextFrame()).use { output.writeBytes(it.encodeToData()!!.bytes) }
+                val last = ListeningContrastsCatalog.defaultContrasts.last()
+                scene.scrollToContrast(last.id)
+                val pair = last.pairs.first()
+                val label = "${pair.word1} / ${pair.word2}"
+                val lastCard = scene.nodes().first { it.matches(label) && it.config.getOrNull(SemanticsActions.OnClick) != null }
+                assertTrue(lastCard.boundsInRoot.top >= 0 && lastCard.boundsInRoot.bottom <= height)
+                scene.click(label)
+                scene.settle()
+                assertEquals(last.id, component.state.value.contrast.id)
+                scene.click("Change sound pair")
+                scene.settle()
+                assertTrue(scene.nodes().any {
+                    it.matches(label) && it.config.getOrNull(SemanticsProperties.Selected) == true &&
+                        it.boundsInRoot.top >= 0 && it.boundsInRoot.bottom <= height
+                }, "Reopening must bring the selected card into view")
+            }
         }
     }
 
@@ -293,6 +379,20 @@ class ArticulatorSelectionUiTest {
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun flatten(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::flatten)
         return semanticsOwners.flatMap { flatten(it.rootSemanticsNode) }
+    }
+    private var frameTime = System.nanoTime()
+    private fun nextFrame(): Long {
+        frameTime += 16_666_667L
+        return frameTime
+    }
+    private fun ImageComposeScene.settle() {
+        repeat(40) { render(nextFrame()).close() }
+    }
+    private fun ImageComposeScene.scrollToContrast(id: String) {
+        val index = ListeningContrastsCatalog.defaultContrasts.indexOfFirst { it.id == id }
+        val grid = nodes().first { it.config.getOrNull(SemanticsActions.ScrollToIndex) != null }
+        assertTrue(grid.config[SemanticsActions.ScrollToIndex].action!!.invoke(index))
+        settle()
     }
     private fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text }
     private fun SemanticsNode.matches(label: String) =

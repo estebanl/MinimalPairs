@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,8 +67,6 @@ import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.theme.PracticeTheme
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.ui.reference.ConsonantPracticeReferences
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Box
 
 @Composable
@@ -86,6 +85,10 @@ fun ArticulatorLabScreen(
     val isRecording = state.recorderState == AudioRecorderState.RECORDING
     val showPlayback = state.hasRecording && !isRecording
     val canSelectTarget = !isRecording && !state.isBusy
+    var soundPairPickerOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(canSelectTarget) {
+        if (!canSelectTarget) soundPairPickerOpen = false
+    }
     val targetPhoneme = if (state.isTargetPhoneme1) state.contrast.phoneme1 else state.contrast.phoneme2
     var visualMode by rememberSaveable { mutableStateOf(0) }
     val activeVisualMode = if (!isVowel && visualMode != 3) 1 else visualMode
@@ -209,13 +212,12 @@ fun ArticulatorLabScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                var contrastMenuOpen by remember { mutableStateOf(false) }
                 Text("Sound pair", style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
                 Box(Modifier.fillMaxWidth()) {
-                    Surface(onClick = { contrastMenuOpen = true }, enabled = canSelectTarget,
+                    Surface(onClick = { soundPairPickerOpen = true }, enabled = canSelectTarget,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Change sound pair" },
-                        shape = RoundedCornerShape(16.dp), color = scheme.background,
+                        shape = RoundedCornerShape(16.dp), color = scheme.surface,
                         border = BorderStroke(1.dp, scheme.outlineVariant)) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
@@ -225,30 +227,15 @@ fun ArticulatorLabScreen(
                                 Text("/${state.contrast.phoneme1}/ and /${state.contrast.phoneme2}/",
                                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                             }
-                            Text("Change", modifier = Modifier.padding(start = 8.dp))
-                        }
-                    }
-                    DropdownMenu(expanded = contrastMenuOpen && canSelectTarget,
-                        onDismissRequest = { contrastMenuOpen = false }) {
-                        Text("Choose a sound pair", modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.labelLarge)
-                        ListeningContrastsCatalog.defaultContrasts.forEach { contrast ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text("${contrast.pairs.first().word1} / ${contrast.pairs.first().word2}")
-                                        Text("/${contrast.phoneme1}/ and /${contrast.phoneme2}/",
-                                            style = MaterialTheme.typography.bodySmall)
-                                    }
-                                },
-                                trailingIcon = {
-                                    if (contrast.id == state.contrast.id) LabIcon(LabIcon.Selected)
-                                },
-                                onClick = {
-                                    contrastMenuOpen = false
-                                    component.selectContrast(contrast.id)
-                                }
-                            )
+                            Surface(
+                                modifier = Modifier.padding(start = 12.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (canSelectTarget) scheme.primary else scheme.surfaceVariant,
+                                contentColor = if (canSelectTarget) scheme.onPrimary else scheme.onSurfaceVariant
+                            ) {
+                                Text("Change", style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
+                            }
                         }
                     }
                 }
@@ -346,6 +333,17 @@ fun ArticulatorLabScreen(
                 Spacer(Modifier.height(12.dp))
             }
         }
+    }
+    if (soundPairPickerOpen && canSelectTarget) {
+        SoundPairPickerSheet(
+            contrasts = ListeningContrastsCatalog.defaultContrasts,
+            selectedContrastId = state.contrast.id,
+            onSelect = { contrastId ->
+                soundPairPickerOpen = false
+                component.selectContrast(contrastId)
+            },
+            onDismiss = { soundPairPickerOpen = false }
+        )
     }
 }
 

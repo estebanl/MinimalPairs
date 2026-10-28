@@ -15,6 +15,18 @@ Feature: Articulator Lab guided speaking practice
     And recording scores and saves that word, phoneme, and contrast
     And an old recording and score are cleared when the selection changes
 
+  Scenario: Choose a sound pair from word cards
+    Given the Speak screen is idle
+    When I choose Change beside the current sound pair
+    Then a modal bottom sheet shows a scrollable two-column grid of word cards
+    And each card shows the reference words and phonetic labels
+    And the current pair has a highlighted card, stronger border, and check mark
+    And the current pair is visible when the sheet opens
+    When I tap a word card
+    Then that contrast is selected and the sheet closes immediately
+    When I reopen the sheet and close it without selecting
+    Then the current contrast remains unchanged
+
   Scenario: Preserve a target during an operation
     Given recording, scoring, or playback is in progress
     Then contrast, word pair, and target selection cannot change
@@ -123,7 +135,7 @@ Feature: Articulator Lab guided speaking practice
 
   Scenario: Practise the curriculum's cat and cut vowel contrast
     Given the Speak screen is idle
-    When I choose cat / cut from the sound pair menu
+    When I choose cat / cut from the sound pair grid
     Then I can practise /æ/ and /ʌ/ with their matching audio and mouth references
     And acoustic guidance uses the existing bounds for each vowel
     And the catalog includes cat / cut, hat / hut, match / much, and ankle / uncle
@@ -131,8 +143,8 @@ Feature: Articulator Lab guided speaking practice
 
   Scenario: Speak offers every sound pair available in Listen
     Given the Speak screen is idle
-    When I open the sound pair menu
-    Then all 20 Listen contrasts appear in the same order with the same reference words
+    When I open the sound pair grid
+    Then all 20 Listen contrasts are available by scrolling in the same order with the same reference words
     And either target can be selected for every pair
 
   Scenario: Practise consonants in words
