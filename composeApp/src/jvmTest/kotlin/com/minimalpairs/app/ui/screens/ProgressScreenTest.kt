@@ -53,7 +53,11 @@ class ProgressScreenTest {
                     fun settle() { repeat(40) { scene.render(++frame * 16_666_667L).close() } }
                     fun descendants(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::descendants)
                     fun nodes() = scene.semanticsOwners.flatMap { descendants(it.rootSemanticsNode) }
-                    fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
+                    fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
+                        ?: config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
+                    fun hasTextStarting(prefix: String) = nodes().any { node ->
+                        node.config.getOrNull(SemanticsProperties.Text)?.any { it.text.startsWith(prefix) } == true
+                    }
                     fun click(label: String) {
                         nodes().first { it.text() == label && it.config.contains(SemanticsActions.OnClick) }
                             .config[SemanticsActions.OnClick].action!!.invoke()
@@ -74,7 +78,7 @@ class ProgressScreenTest {
                     assertEquals(1, reloads)
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
                     assertFalse(nodes().any { it.text() == "Show speaking progress" })
-                    assertFalse(nodes().any { it.text().startsWith("0 scored recordings") })
+                    assertFalse(hasTextStarting("0 scored recordings"))
                     component.state.value = component.state.value.copy(isRefreshing = true)
                     settle()
                     assertTrue(nodes().any { it.text() == "Refreshing progress…" })
@@ -83,7 +87,7 @@ class ProgressScreenTest {
                     settle()
                     assertTrue(nodes().any { it.text() == "Your progress starts here" })
                     assertTrue(nodes().any { it.text() == "Show speaking progress" })
-                    assertTrue(nodes().any { it.text().startsWith("0 scored recordings") })
+                    assertTrue(hasTextStarting("0 scored recordings"))
                     click("Show speaking progress")
                     click("Start speaking")
                     assertEquals(1, speakingStarts)
@@ -97,6 +101,7 @@ class ProgressScreenTest {
                     assertTrue(nodes().any { it.text() == "0% accuracy" })
                     assertFalse(nodes().any { it.text() == "0-day streak" })
                     assertFalse(nodes().any { it.text() == "Recent accuracy" })
+                    click("Show more listening details")
                     click("Show daily activity")
                     assertTrue(nodes().any { it.text() == "0-day streak" })
                     assertTrue(nodes().any { it.text() == "Longest streak: 1 day" })
@@ -107,7 +112,7 @@ class ProgressScreenTest {
                     })
                     assertTrue(nodes().any { it.text() == "Mastery estimate · 47%" })
                     assertTrue(nodes().any { it.text() == "Review due" })
-                    assertTrue(nodes().any { it.text() == "1 contrast is ready to review." })
+                    assertTrue(nodes().any { it.text() == "1 due" })
                     nodes().first { it.config.contains(SemanticsActions.OnClick) && it.text() == "Review sheep / ship" }
                         .config[SemanticsActions.OnClick].action!!.invoke()
                     assertEquals("i_vs_I", selected)
@@ -117,6 +122,7 @@ class ProgressScreenTest {
                     assertEquals("i_vs_I", selected)
                     click("Hide daily activity")
                     assertFalse(nodes().any { it.text() == "0-day streak" })
+                    click("Hide more listening details")
                     val directory = File("build/reports/progress").apply { mkdirs() }
                     scene.render(++frame * 16_666_667L).use { image ->
                         image.encodeToData()!!.use { data -> File(directory, "progress.png").writeBytes(data.bytes) }
@@ -128,6 +134,7 @@ class ProgressScreenTest {
                         )
                     }, emptyList())
                     settle()
+                    click("Show more listening details")
                     click("Show accuracy trends")
                     click("Show practice history")
                     assertTrue(nodes().any { it.text() == "Unchanged from the previous 20 answers." })
@@ -232,6 +239,7 @@ class ProgressScreenTest {
                     settle()
                     assertTrue(nodes().any { it.text() == "No listening answers yet." })
                     assertFalse(nodes().any { it.text() == "Your progress starts here" })
+                    click("Show stories & rhythm")
                     click("Show stories progress")
                     click("Practice Story practice")
                     assertEquals("sheep_vs_ship", selectedStory)

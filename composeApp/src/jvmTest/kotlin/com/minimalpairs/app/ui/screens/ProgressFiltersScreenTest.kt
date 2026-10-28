@@ -49,20 +49,28 @@ class ProgressFiltersScreenTest {
                     fun settle() { repeat(40) { scene.render(++frame * 16_666_667L).close() } }
                     fun descendants(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::descendants)
                     fun nodes() = scene.semanticsOwners.flatMap { descendants(it.rootSemanticsNode) }
-                    fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
-                    fun has(text: String) = nodes().any { it.text() == text }
+                    fun SemanticsNode.text() = config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
+                        ?: config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }.orEmpty()
+                    fun has(text: String) = nodes().any { node ->
+                        node.text() == text || node.config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true
+                    }
                     fun click(text: String) {
                         nodes().first { it.text() == text && it.config.contains(SemanticsActions.OnClick) }
                             .config[SemanticsActions.OnClick].action!!.invoke()
                         settle()
                     }
                     settle()
+                    assertFalse(has("Last 7 days"))
+                    click("Show filters")
                     click("Last 7 days")
                     assertEquals(ProgressDateRange.LAST_7_DAYS, filters.dateRange)
-                    assertTrue(has("Showing: Last 7 days · All contrasts"))
+                    assertTrue(has("Last 7 days · All contrasts"))
                     click("Contrast: All contrasts")
                     click("pear / bear")
                     assertEquals("p_vs_b", filters.contrastId)
+                    click("Hide filters")
+                    assertTrue(has("Last 7 days · pear / bear"))
+                    assertFalse(has("Last 7 days"))
                     assertTrue(has("No listening answers match these filters."))
                     assertFalse(has("Your progress starts here"))
                     assertTrue(has("All listening practice"))

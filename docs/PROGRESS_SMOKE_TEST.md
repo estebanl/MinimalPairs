@@ -12,7 +12,8 @@ the simulator interface is available in **Xcode → Open Developer Tool → Devi
 
 1. Open **Progress**. Expect the content to begin with “Every practice counts.”,
    with no top app bar or back button. The bottom navigation remains available.
-   Expect “Your progress starts here” and zero scored recordings.
+   Expect “Your progress starts here” and a collapsed **Speaking** row with zero
+   scored recordings. Filters begin collapsed, showing **All time · All contrasts**.
 2. Select **Start listening**. Expect the listening home screen.
 3. Select **Start listening** again to open the Sheep / Ship exercise.
 4. Play the word, wait for playback to finish, and select an answer.
@@ -23,6 +24,24 @@ the simulator interface is available in **Xcode → Open Developer Tool → Devi
 7. Terminate the app process and relaunch it without uninstalling it or clearing data.
 8. Open **Progress** again. Verify the answer count, accuracy, streak, and review
    schedule match the values before termination (allow for elapsed review time).
+
+## Compact overview checks
+
+- Verify accuracy, answer count, and current streak share one compact summary card.
+  Due contrasts appear under **Ready to review** with a **Review** action for each
+  sound pair. When none are due, **Practice next** shows up to three contrasts.
+- Expand the filter summary to change dates or contrasts, then collapse it. The
+  current selection stays visible. A no-match result offers **Clear filters**
+  directly, and global streaks and reviews remain labeled as all listening practice.
+- Expand **Speaking** to find sound summaries, history, and practice actions.
+  Its collapsed score is labeled **Latest**, not an average across different sounds.
+- Expand **Stories & Rhythm** to find each module's results and practice actions.
+- Expand **More listening details** for mastery estimates, activity, trends,
+  sound patterns, and listening history. Expand history to a 20-answer page,
+  collapse the containing section, and reopen it; the expanded history stays open.
+- Expand **Manage progress** to find export, import, and reset controls.
+- Repeat on a narrow screen and with enlarged text. Verify text wraps and all
+  practice actions remain readable and reachable by scrolling.
 
 ## Recorded result
 

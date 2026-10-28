@@ -104,11 +104,19 @@ Feature: Persistent listening and speaking progress
 
   Scenario: Detailed progress is optional
     Given saved practice results
-    Then the overview shows the current streak, reviews, and three lowest-accuracy contrasts
-    And the full contrast list can be expanded
+    Then the compact overview shows listening accuracy, answer count, and current streak in one card
+    And due reviews appear as compact rows with actions for their exact contrasts
+    And when no reviews are due the overview shows three lowest-accuracy contrasts
+    And speaking shows a recording count and the latest score without pooling scores across sounds
+    And Stories and Rhythm share a collapsed summary row
+    And filters, more listening details, and progress management are collapsed initially
+    When the learner expands more listening details
+    Then the full contrast list and mastery estimates remain available
     And daily activity, trends, sound patterns, and history expand independently
     When a detail section is collapsed and reopened
     Then its selected sound and expanded history choices are retained
+    Including when its containing section is collapsed and reopened
+    And enlarged text reflows the summary without hiding practice actions
 
   Scenario: Browse older practice results
     Given more than forty listening answers and scored speaking recordings

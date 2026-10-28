@@ -19,8 +19,7 @@ internal fun ProgressFilterControls(
     var choosingContrast by remember { mutableStateOf(false) }
     val selected = ListeningContrastsCatalog.getContrastById(filters.contrastId.orEmpty())?.pairs?.firstOrNull()
     val contrastLabel = selected?.let { "${it.word1} / ${it.word2}" } ?: "All contrasts"
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Text("Filter results", style = MaterialTheme.typography.titleMedium)
+    CompactProgressSection("Filters", label = "${filters.dateRange.label} · $contrastLabel", divider = false, muted = true) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ProgressDateRange.entries.forEach { range ->
                 FilterChip(selected = filters.dateRange == range, onClick = { onDateRange(range) },
@@ -46,7 +45,6 @@ internal fun ProgressFilterControls(
                 }
             }
         }
-        Text("Showing: ${filters.dateRange.label} · $contrastLabel", style = MaterialTheme.typography.bodyMedium)
         Text("Dates use your current time zone and include today. Streaks, daily activity, mastery estimates, and reviews use all listening practice.",
             style = MaterialTheme.typography.bodySmall)
         if (filters.isActive) {
