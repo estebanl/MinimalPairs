@@ -1,0 +1,835 @@
+{
+  "FJ1254": {
+    "names": [
+      "left lower first secondary molar tooth",
+      "lower first secondary molar tooth",
+      "lower secondary molar tooth",
+      "molar tooth",
+      "secondary molar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1254.obj",
+    "sha256": "7ac5ee013326492b1d51795eb292a7e5bba0647b74c30b09dc715f9a1dc28754",
+    "vertices": 885,
+    "faces": 1762
+  },
+  "FJ1255": {
+    "names": [
+      "left lower first secondary premolar tooth",
+      "lower first secondary premolar tooth",
+      "lower secondary premolar tooth",
+      "premolar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1255.obj",
+    "sha256": "6cbac9debf9b9cd9825f096c5ac84911f91020a36ec6f95fdfc49f10a679822b",
+    "vertices": 592,
+    "faces": 1176
+  },
+  "FJ1256": {
+    "names": [
+      "left lower second secondary molar tooth",
+      "lower second secondary molar tooth",
+      "lower secondary molar tooth",
+      "molar tooth",
+      "secondary molar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1256.obj",
+    "sha256": "a5dfb507dc76447d6ca09e4a5e11b8750571227d13b582cfffac1d2f35cd1bec",
+    "vertices": 823,
+    "faces": 1616
+  },
+  "FJ1257": {
+    "names": [
+      "left lower second secondary premolar tooth",
+      "lower second secondary premolar tooth",
+      "lower secondary premolar tooth",
+      "premolar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1257.obj",
+    "sha256": "b4e2d2cb7d5e7d41d82bc6e48b3de5cb628a0786ae0d82abadd39250f6dff3a7",
+    "vertices": 566,
+    "faces": 1122
+  },
+  "FJ1258": {
+    "names": [
+      "incisor tooth",
+      "left lower central secondary incisor tooth",
+      "lower central secondary incisor tooth",
+      "lower secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1258.obj",
+    "sha256": "56fe0ccb8277f4ae0c945d3f2b3cf0a3a816ec2edf31eae4ab46a91954bde7aa",
+    "vertices": 461,
+    "faces": 918
+  },
+  "FJ1259": {
+    "names": [
+      "incisor tooth",
+      "left lower lateral secondary incisor tooth",
+      "lower lateral secondary incisor tooth",
+      "lower secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1259.obj",
+    "sha256": "f2a5c7fb06457bf61d55f8cab4048983651418f01b3bad013e9a2dea7a383b62",
+    "vertices": 483,
+    "faces": 960
+  },
+  "FJ1260": {
+    "names": [
+      "canine tooth",
+      "left lower secondary canine tooth",
+      "lower secondary canine tooth",
+      "secondary canine tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1260.obj",
+    "sha256": "4dd682c058f3949b30077712296603c1c508423a58998ad909baeec5bfa56b72",
+    "vertices": 592,
+    "faces": 1180
+  },
+  "FJ1261": {
+    "names": [
+      "left upper first secondary molar tooth",
+      "molar tooth",
+      "secondary molar tooth",
+      "tooth",
+      "upper first secondary molar tooth",
+      "upper secondary molar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1261.obj",
+    "sha256": "529061a7fdb28af07855e7350f788f93ef6c97e3bfead2e28bb9efe0256b0728",
+    "vertices": 1084,
+    "faces": 2156
+  },
+  "FJ1262": {
+    "names": [
+      "left upper first secondary premolar tooth",
+      "premolar tooth",
+      "tooth",
+      "upper first secondary premolar tooth",
+      "upper secondary premolar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1262.obj",
+    "sha256": "5f45ec1015edb7c7539a3ef7a7577d4a0a723beb4dbfb18e36eca77663431c18",
+    "vertices": 818,
+    "faces": 1610
+  },
+  "FJ1263": {
+    "names": [
+      "left upper second secondary molar tooth",
+      "molar tooth",
+      "secondary molar tooth",
+      "tooth",
+      "upper second secondary molar tooth",
+      "upper secondary molar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1263.obj",
+    "sha256": "5811bdc8cfed255f8aa9e10fa8dd4815b5d0924c2a23f1d7e373c8521be6c65a",
+    "vertices": 949,
+    "faces": 1848
+  },
+  "FJ1264": {
+    "names": [
+      "left upper second secondary premolar tooth",
+      "premolar tooth",
+      "tooth",
+      "upper second secondary premolar tooth",
+      "upper secondary premolar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1264.obj",
+    "sha256": "e882218931e8f197490f16ba8058a87502edccc5e8e1f2d50fbd715a0386d33b",
+    "vertices": 748,
+    "faces": 1466
+  },
+  "FJ1265": {
+    "names": [
+      "incisor tooth",
+      "left upper central secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth",
+      "upper central secondary incisor tooth",
+      "upper secondary incisor tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1265.obj",
+    "sha256": "bd094c59fb378809a534467b70b5b24ae0b147bc31f42c004e7ddadf8f0b7328",
+    "vertices": 646,
+    "faces": 1288
+  },
+  "FJ1266": {
+    "names": [
+      "incisor tooth",
+      "left upper lateral secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth",
+      "upper lateral secondary incisor tooth",
+      "upper secondary incisor tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1266.obj",
+    "sha256": "4df1ab640352a074623d02e755e7632de180da9dc957503f887c791a533d5ea5",
+    "vertices": 691,
+    "faces": 1378
+  },
+  "FJ1267": {
+    "names": [
+      "canine tooth",
+      "left upper secondary canine tooth",
+      "secondary canine tooth",
+      "tooth",
+      "upper secondary canine tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1267.obj",
+    "sha256": "44f5accf76e8b0a1ac2aefb55d031508fedad0bacda03b598aef71f88ca2462d",
+    "vertices": 698,
+    "faces": 1392
+  },
+  "FJ1268": {
+    "names": [
+      "lower first secondary molar tooth",
+      "lower secondary molar tooth",
+      "molar tooth",
+      "right lower first secondary molar tooth",
+      "secondary molar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1268.obj",
+    "sha256": "692c5313517c8b049fac739a068710f8bdbd1f3e201a1b88819aff6f8f1a6eda",
+    "vertices": 889,
+    "faces": 1762
+  },
+  "FJ1269": {
+    "names": [
+      "lower first secondary premolar tooth",
+      "lower secondary premolar tooth",
+      "premolar tooth",
+      "right lower first secondary premolar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1269.obj",
+    "sha256": "7b3067782910e38d45b03901ba998fcf35088b9f85c523b3cc890cf11adbf17f",
+    "vertices": 592,
+    "faces": 1180
+  },
+  "FJ1270": {
+    "names": [
+      "lower second secondary molar tooth",
+      "lower secondary molar tooth",
+      "molar tooth",
+      "right lower second secondary molar tooth",
+      "secondary molar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1270.obj",
+    "sha256": "722d80bd11c7e814c3c1c2b20fe2621ed8327319028ad67c6e4dce24d7ee4458",
+    "vertices": 818,
+    "faces": 1620
+  },
+  "FJ1271": {
+    "names": [
+      "lower second secondary premolar tooth",
+      "lower secondary premolar tooth",
+      "premolar tooth",
+      "right lower second secondary premolar tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1271.obj",
+    "sha256": "220723db70ad6e5edd497977f656be1df7d407804d5ca31302bca598a3d81c41",
+    "vertices": 567,
+    "faces": 1124
+  },
+  "FJ1272": {
+    "names": [
+      "incisor tooth",
+      "lower central secondary incisor tooth",
+      "lower secondary incisor tooth",
+      "right lower central secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1272.obj",
+    "sha256": "17927707d17fa7a78f9743f90b4150d6e7b4eaa4fe5c8ad29a961b4ea795272b",
+    "vertices": 463,
+    "faces": 920
+  },
+  "FJ1273": {
+    "names": [
+      "incisor tooth",
+      "lower lateral secondary incisor tooth",
+      "lower secondary incisor tooth",
+      "right lower lateral secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1273.obj",
+    "sha256": "43ca036b3bf66dad24be63b0f95a2a8ecf839b61d2d83981659e03b4a357f869",
+    "vertices": 486,
+    "faces": 958
+  },
+  "FJ1274": {
+    "names": [
+      "canine tooth",
+      "lower secondary canine tooth",
+      "right lower secondary canine tooth",
+      "secondary canine tooth",
+      "tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1274.obj",
+    "sha256": "a7ded2520e6c1e41154d89a389b4ded0daf733f23d47e4a02fb97230c07b4907",
+    "vertices": 591,
+    "faces": 1178
+  },
+  "FJ1275": {
+    "names": [
+      "molar tooth",
+      "right upper second secondary molar tooth",
+      "secondary molar tooth",
+      "tooth",
+      "upper second secondary molar tooth",
+      "upper secondary molar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1275.obj",
+    "sha256": "457c1d089e24d7e120abf97c2af844ff609a58c3292446e4b1814137d3691416",
+    "vertices": 961,
+    "faces": 1850
+  },
+  "FJ1276": {
+    "names": [
+      "molar tooth",
+      "right upper first secondary molar tooth",
+      "secondary molar tooth",
+      "tooth",
+      "upper first secondary molar tooth",
+      "upper secondary molar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1276.obj",
+    "sha256": "95ba31eb43e4975d8f36be7595e383baf31b21b68c829a5e6c419a0125682ef6",
+    "vertices": 1099,
+    "faces": 2156
+  },
+  "FJ1277": {
+    "names": [
+      "premolar tooth",
+      "right upper first secondary premolar tooth",
+      "tooth",
+      "upper first secondary premolar tooth",
+      "upper secondary premolar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1277.obj",
+    "sha256": "46d0a4b9528553387811d65040836ccfe7dc971fec56254e01c9eabdc16156a0",
+    "vertices": 816,
+    "faces": 1610
+  },
+  "FJ1278": {
+    "names": [
+      "premolar tooth",
+      "right upper second secondary premolar tooth",
+      "tooth",
+      "upper second secondary premolar tooth",
+      "upper secondary premolar tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1278.obj",
+    "sha256": "32f4db913923278b7cbfcaf8e64d1073604951dd58493e3310da30bec1ff3829",
+    "vertices": 748,
+    "faces": 1466
+  },
+  "FJ1279": {
+    "names": [
+      "incisor tooth",
+      "right upper central secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth",
+      "upper central secondary incisor tooth",
+      "upper secondary incisor tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1279.obj",
+    "sha256": "e8b9c01f57a8a723f9ea0497dfbe2df5f95e23786d0663f196a3608f995d6b22",
+    "vertices": 647,
+    "faces": 1288
+  },
+  "FJ1280": {
+    "names": [
+      "incisor tooth",
+      "right upper lateral secondary incisor tooth",
+      "secondary incisor tooth",
+      "tooth",
+      "upper lateral secondary incisor tooth",
+      "upper secondary incisor tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1280.obj",
+    "sha256": "5c06c01ee01c337523fc9cf641c31c65856a52c74237d9d86989d93dd6847c0e",
+    "vertices": 686,
+    "faces": 1368
+  },
+  "FJ1281": {
+    "names": [
+      "canine tooth",
+      "right upper secondary canine tooth",
+      "secondary canine tooth",
+      "tooth",
+      "upper secondary canine tooth"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ1281.obj",
+    "sha256": "2d8f105ee772e727e3b4ccbb6370a893a213174c0f90155054dac20bc053512c",
+    "vertices": 698,
+    "faces": 1392
+  },
+  "FJ2440": {
+    "names": [
+      "cricoid cartilage",
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2440.obj",
+    "sha256": "ae1e2bab875a75035aaebdc79212fd859c2c193881462245de3252853721361d",
+    "vertices": 937,
+    "faces": 1702
+  },
+  "FJ2557": {
+    "names": [
+      "nasal septum"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2557.obj",
+    "sha256": "bfc5f7835227408656650af0e7d15f3dfa6bc7151da0485ae76527b03c6ba5c9",
+    "vertices": 301,
+    "faces": 414
+  },
+  "FJ2738": {
+    "names": [
+      "genioglossus",
+      "left genioglossus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2738.obj",
+    "sha256": "01720dc4715ab927b4878ab787f6b9f99e70466417a3aa7525f35dae3d44abb2",
+    "vertices": 4685,
+    "faces": 8214
+  },
+  "FJ2739": {
+    "names": [
+      "hyoglossus",
+      "left hyoglossus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2739.obj",
+    "sha256": "3bdb38f42551b391c855b23593bd14ca02d7f7aa54f874fff52396db07dee2c0",
+    "vertices": 1709,
+    "faces": 2888
+  },
+  "FJ2740": {
+    "names": [
+      "inferior pharyngeal constrictor",
+      "left inferior pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2740.obj",
+    "sha256": "345877a821866cb8f0fa6c6ca353f28385b5a4a35e0c9e9bd5601a08211a1097",
+    "vertices": 4424,
+    "faces": 7422
+  },
+  "FJ2741": {
+    "names": [
+      "left levator veli palatini",
+      "levator veli palatini",
+      "soft palate"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2741.obj",
+    "sha256": "37c612f11729f532df2fccf48e2283aba4d4419a595cf13a8925ff5988486054",
+    "vertices": 6821,
+    "faces": 12318
+  },
+  "FJ2742": {
+    "names": [
+      "middle pharyngeal constrictor",
+      "right middle pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2742.obj",
+    "sha256": "b242673d67bc4abc71432268d4fb03df4bb6e707ccdf890829b7544d14d87d26",
+    "vertices": 3497,
+    "faces": 5904
+  },
+  "FJ2743": {
+    "names": [
+      "left palatopharyngeus",
+      "palatopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2743.obj",
+    "sha256": "e2a82119db68aa8db6022c78ce9bb7efef468ac6c776f5493ec8b6a1596ae015",
+    "vertices": 20760,
+    "faces": 41400
+  },
+  "FJ2745": {
+    "names": [
+      "left salpingopharyngeus",
+      "salpingopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2745.obj",
+    "sha256": "81c70a6f8ab2de5d20a715cdf5339d756ca7171c473adc645231929b2732bf31",
+    "vertices": 4846,
+    "faces": 9152
+  },
+  "FJ2746": {
+    "names": [
+      "left stylopharyngeus",
+      "stylopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2746.obj",
+    "sha256": "8cea3d6b0e2d0e864be7d11d919ee63d73aee5532db36cd3943a305fedd03751",
+    "vertices": 1985,
+    "faces": 3268
+  },
+  "FJ2747": {
+    "names": [
+      "left superior pharyngeal constrictor",
+      "superior pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2747.obj",
+    "sha256": "3282d0f49da840abfea2e8ac276e4d780c71041cba4fbe4a2853ebc1c8bb1f22",
+    "vertices": 6380,
+    "faces": 10702
+  },
+  "FJ2748": {
+    "names": [
+      "left tensor veli palatini",
+      "soft palate",
+      "tensor veli palatini"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2748.obj",
+    "sha256": "1830ed67886b299e793238f6dec88887f700dd61b492c997457210f7d3720888",
+    "vertices": 7523,
+    "faces": 13872
+  },
+  "FJ2749": {
+    "names": [
+      "pharyngeal raphe"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2749.obj",
+    "sha256": "62957c500f1d400e6d88ac869b03434e3d6fc1abe2fddb6ed2909f99a2999a9c",
+    "vertices": 12514,
+    "faces": 12968
+  },
+  "FJ2750": {
+    "names": [
+      "genioglossus",
+      "right genioglossus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2750.obj",
+    "sha256": "68a3eb51f3fc48813b643b4b9d449730c55842291091cc573f3c0e0a3eb9bd07",
+    "vertices": 4261,
+    "faces": 7594
+  },
+  "FJ2751": {
+    "names": [
+      "hyoglossus",
+      "right hyoglossus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2751.obj",
+    "sha256": "40ddd17c29df45a42b11f75fc6a89e1d85c10ca7850f9094c2b264da9385b998",
+    "vertices": 1653,
+    "faces": 2874
+  },
+  "FJ2752": {
+    "names": [
+      "inferior pharyngeal constrictor",
+      "right inferior pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2752.obj",
+    "sha256": "3fb68e999835bcbe32995db8a0b8a2a4cd592441583f89c07f8897fdd20e4ec4",
+    "vertices": 4406,
+    "faces": 7448
+  },
+  "FJ2753": {
+    "names": [
+      "levator veli palatini",
+      "right levator veli palatini",
+      "soft palate"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2753.obj",
+    "sha256": "fe9588e64aa4450043b98931514b10daf697ab80b9a2c162e1f7795b2e66be34",
+    "vertices": 6835,
+    "faces": 12312
+  },
+  "FJ2754": {
+    "names": [
+      "left middle pharyngeal constrictor",
+      "middle pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2754.obj",
+    "sha256": "9583ea54a06a4d8d52aa9f3578a0f97931634c86db01aa2f37059f9974fdab39",
+    "vertices": 3454,
+    "faces": 5912
+  },
+  "FJ2755": {
+    "names": [
+      "palatopharyngeus",
+      "right palatopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2755.obj",
+    "sha256": "c3fbea74a7567588f83c9856be8305cc4b8cffe9f7157a9e41b8c53c5bd989be",
+    "vertices": 20746,
+    "faces": 41400
+  },
+  "FJ2757": {
+    "names": [
+      "right salpingopharyngeus",
+      "salpingopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2757.obj",
+    "sha256": "b10e40d550d6208c907df65d844403071233d8088a109b2be5f925cd5d9e6c36",
+    "vertices": 4853,
+    "faces": 9152
+  },
+  "FJ2758": {
+    "names": [
+      "right stylopharyngeus",
+      "stylopharyngeus"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2758.obj",
+    "sha256": "dcea7bd8d13fff1ca83eea7605fbb399b0ab34983ddd8632613690a1be70c377",
+    "vertices": 13352,
+    "faces": 25752
+  },
+  "FJ2759": {
+    "names": [
+      "right superior pharyngeal constrictor",
+      "superior pharyngeal constrictor"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2759.obj",
+    "sha256": "85d82b26595b6e782fe3bdc9dc2b99bb2127ea84da709e01a6e31672179cdf60",
+    "vertices": 6403,
+    "faces": 10702
+  },
+  "FJ2760": {
+    "names": [
+      "right tensor veli palatini",
+      "soft palate",
+      "tensor veli palatini"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2760.obj",
+    "sha256": "eccc5865549c4481cd3e0806af02ec3060ebb4ea64d44e2da56b6f36941a55c6",
+    "vertices": 7464,
+    "faces": 13872
+  },
+  "FJ2761": {
+    "names": [
+      "tongue"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2761.obj",
+    "sha256": "3fc57baf4e987abd5eb764d8b87ef320c0cc2fcfbd6f0bcf934a09f03565436c",
+    "vertices": 276,
+    "faces": 524
+  },
+  "FJ2762": {
+    "names": [
+      "soft palate",
+      "uvula"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2762.obj",
+    "sha256": "f69d49b71dfa523f43e0a6420eb811e82e023aba21a1a0c3642db99fa99d6ce3",
+    "vertices": 894,
+    "faces": 1632
+  },
+  "FJ2769": {
+    "names": [
+      "cricoid cartilage",
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2769.obj",
+    "sha256": "5f75fb4d2969fd1de51898787bb8810c441d5d2bd6eb0c5482b7cacd3c9bc3be",
+    "vertices": 937,
+    "faces": 1702
+  },
+  "FJ2770": {
+    "names": [
+      "epiglottis",
+      "subdivision of laryngopharynx"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2770.obj",
+    "sha256": "05ae56007f7aa017fb458bdef643ea97e51ed3bd275b13da30086fa02b606054",
+    "vertices": 2992,
+    "faces": 3602
+  },
+  "FJ2772": {
+    "names": [
+      "hyoid bone"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2772.obj",
+    "sha256": "429d56a742a23c27c3423519191c89ae29c34faa027ee0037ad86fbcf5eda11f",
+    "vertices": 687,
+    "faces": 1196
+  },
+  "FJ2773": {
+    "names": [
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2773.obj",
+    "sha256": "33f5b140ab7a37e450e130ed8f9bf579ef9f11856dcd3587b5f634bd6a83d0e0",
+    "vertices": 91,
+    "faces": 174
+  },
+  "FJ2775": {
+    "names": [
+      "arytenoid cartilage",
+      "laryngeal cartilage",
+      "left arytenoid cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2775.obj",
+    "sha256": "1e2c0bf8eab8a3a1814b5d56ba721031f3bd87473ea739e540781117bbfb32c9",
+    "vertices": 284,
+    "faces": 536
+  },
+  "FJ2776": {
+    "names": [
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2776.obj",
+    "sha256": "282ec50dc80214ead94da19cab975e6be2a6cba093c9765b3260c98af2300ca3",
+    "vertices": 110,
+    "faces": 136
+  },
+  "FJ2792": {
+    "names": [
+      "arytenoid cartilage",
+      "laryngeal cartilage",
+      "right arytenoid cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2792.obj",
+    "sha256": "6766f404ea88ffb33f5430ee4704a416aab95813da19a84998f67fbdcc556eaa",
+    "vertices": 282,
+    "faces": 540
+  },
+  "FJ2793": {
+    "names": [
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2793.obj",
+    "sha256": "055590405743b1adb114f2b9480122827e7dac69d964fa43409bd57bfb6ada4d",
+    "vertices": 108,
+    "faces": 172
+  },
+  "FJ2795": {
+    "names": [
+      "laryngeal cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2795.obj",
+    "sha256": "9745a416c9f85f106aabdedb8645811c8cfbf85025364310e06a04072d766f0b",
+    "vertices": 88,
+    "faces": 170
+  },
+  "FJ2808": {
+    "names": [
+      "laryngeal cartilage",
+      "thyroid cartilage"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2808.obj",
+    "sha256": "48cd41bcd4044c7013ba10c971e212766afc970408f51875f9ef8e8c407c0687",
+    "vertices": 1360,
+    "faces": 2610
+  },
+  "FJ3199": {
+    "names": [
+      "ethmoid"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3199.obj",
+    "sha256": "6c0fceb9f44fe469d4db0e41594e8c5ed28a576950de7c43df488628d81105ea",
+    "vertices": 12484,
+    "faces": 22276
+  },
+  "FJ3201": {
+    "names": [
+      "hyoid bone"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3201.obj",
+    "sha256": "27e9e3f1146ff10c489c683b89f78c60c187eed578f52ec1bfdd1694d0684b44",
+    "vertices": 687,
+    "faces": 1196
+  },
+  "FJ3263": {
+    "names": [
+      "inferior nasal concha",
+      "left inferior nasal concha"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3263.obj",
+    "sha256": "c6477a98607e712a2bdefd4c2732ce22a990b8cd8783b7b7a6453192443961cd",
+    "vertices": 482,
+    "faces": 738
+  },
+  "FJ3269": {
+    "names": [
+      "left maxilla",
+      "maxilla"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3269.obj",
+    "sha256": "a56eeb3723f4b3cd1d96b113eaba8f253ed49ff76220ba48ac0d1d086b80ff60",
+    "vertices": 3577,
+    "faces": 5198
+  },
+  "FJ3273": {
+    "names": [
+      "left palatine bone",
+      "palatine bone"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3273.obj",
+    "sha256": "dacf96918a971758cbf25e3884b15e6c2b0a112a863b773332fb916431676368",
+    "vertices": 1164,
+    "faces": 1938
+  },
+  "FJ3289": {
+    "names": [
+      "mandible"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3289.obj",
+    "sha256": "6ae0d7fde4221302f1c74d9e9933e2e05c36efef273bb27a78326d108d140ce8",
+    "vertices": 2845,
+    "faces": 5576
+  },
+  "FJ3369": {
+    "names": [
+      "inferior nasal concha",
+      "right inferior nasal concha"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3369.obj",
+    "sha256": "681194f0df836eb03818110633c22976f9e4cb9e4e77bb194cec3f61cdf2a80b",
+    "vertices": 572,
+    "faces": 714
+  },
+  "FJ3375": {
+    "names": [
+      "maxilla",
+      "right maxilla"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3375.obj",
+    "sha256": "a1be9480b632355859507e590be68146a591d343ad671ca85c43d7be50d8b43c",
+    "vertices": 3513,
+    "faces": 5324
+  },
+  "FJ3379": {
+    "names": [
+      "palatine bone",
+      "right palatine bone"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3379.obj",
+    "sha256": "629876377eca1ae98eefc496121e950367c49bf215febf17cf58a7f9687845dd",
+    "vertices": 1132,
+    "faces": 1736
+  },
+  "FJ3395": {
+    "names": [
+      "nasal septum"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ3395.obj",
+    "sha256": "fcbfac8ca1992059a3026b445fbf55c5b5fa5a54786ed468a6ee8259230101d4",
+    "vertices": 3660,
+    "faces": 7218
+  },
+  "FJ2810": {
+    "names": [
+      "skin (whole-body; crop head/neck)"
+    ],
+    "path": "/workspace/shared/bodyparts3d-research/head-obj/FJ2810.obj",
+    "sha256": "682f402206f15592acdeaae8ffb6b34c3e5c3267fa4685e63d2e4920ef2a80e0",
+    "vertices": 102467,
+    "faces": 203382
+  }
+}

@@ -64,11 +64,8 @@ class ConsonantModelUiTest {
             scene.save("rhotic-tip-up-front")
             scene.click("Side")
             scene.render().close()
-            scene.click("Tongue section")
-            scene.render().close()
-            assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.StateDescription)?.contains("Surface only") == true })
-            scene.click("Tongue section")
-            scene.render().close()
+            assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.StateDescription)?.contains("Complete tongue surface retained") == true })
+            assertFalse(scene.nodes().any { it.text() == "Tongue section" })
             repeat(4) {
                 scene.click("Bunched"); scene.click("Tip-up")
                 scene.awaitModel("r", "Tip-up")
@@ -93,6 +90,15 @@ class ConsonantModelUiTest {
     private fun ImageComposeScene.save(name: String) {
         val file = File("build/reports/consonant-models/$name.png")
         file.parentFile.mkdirs()
+        val deadline = System.nanoTime() + 5_000_000_000L
+        while (description() != null && System.nanoTime() < deadline) {
+            render().close()
+            if (nodes().any { it.config.getOrNull(SemanticsProperties.StateDescription)?.endsWith(" Rendered.") == true }) break
+            Thread.sleep(10)
+        }
+        if (description() != null) assertTrue(nodes().any {
+            it.config.getOrNull(SemanticsProperties.StateDescription)?.endsWith(" Rendered.") == true
+        }, "Raster did not complete for $name")
         render().use { file.writeBytes(it.encodeToData()!!.bytes) }
     }
     private fun ImageComposeScene.description(): String? = nodes().flatMap {

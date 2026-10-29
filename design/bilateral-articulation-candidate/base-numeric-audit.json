@@ -1,0 +1,13 @@
+[
+  {
+    "sha256": "374f745f6a18f1c7934ecd718be76b2e4e992d0ba1b1204a49c3439f9dd9b626",
+    "path": "design/bilateral-articulation-candidate/bilateral-base.vtlm",
+    "bytes": 563532,
+    "triangles": 10259,
+    "surfaces": 8,
+    "minimumCrossAreaSquared": 2.0051111378899256e-12,
+    "invalidTriangles": [],
+    "passesNumericalGuard": true,
+    "anatomicallyValidated": false
+  }
+]

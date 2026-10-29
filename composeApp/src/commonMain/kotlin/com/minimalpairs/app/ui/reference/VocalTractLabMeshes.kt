@@ -75,7 +75,7 @@ object VocalTractLabMeshes {
             repeat(triangleCount) {
                 val indices = List(3) { int().also { require(it in points.indices) } }
                 faces += OralTriangle(points[indices[0]], points[indices[1]], points[indices[2]], part, normal(), normal(), normal(),
-                    sourceSurface = if (count == 11) surfaceIndex else -1)
+                    sourceSurface = if (count >= 11 && surfaceIndex < 11) surfaceIndex else -1)
             }
         }
         require(offset == bytes.size) { "Unexpected trailing mesh data" }

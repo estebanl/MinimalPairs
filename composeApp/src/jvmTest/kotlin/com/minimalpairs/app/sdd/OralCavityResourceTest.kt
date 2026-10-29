@@ -47,7 +47,7 @@ class OralCavityResourceTest {
         assertEquals(10, loaded.toSet().size, "Each original or derived pose must be distinct")
         for (mesh in loaded) {
             assertEquals(2804, mesh.size)
-            assertEquals(OralPart.entries.toSet(), mesh.map { it.part }.toSet())
+            assertEquals(OralPart.entries.take(5).toSet(), mesh.map { it.part }.toSet())
             for (left in listOf(false, true)) {
                 val cut = OralCavityModel.cutaway(mesh, true, left)
                 assertTrue(cut.isNotEmpty())
@@ -77,7 +77,7 @@ class OralCavityResourceTest {
             for (index in reference.phases.indices) {
                 val mesh = VocalTractLabMeshes.loadConsonant(sound, index)!!
                 assertEquals(2804, mesh.size, "$sound phase $index")
-                assertEquals(OralPart.entries.toSet(), mesh.map { it.part }.toSet())
+                assertEquals(OralPart.entries.take(5).toSet(), mesh.map { it.part }.toSet())
                 assertTrue(mesh.flatMap { listOf(it.a, it.b, it.c) }.all {
                     it.x.isFinite() && it.y.isFinite() && it.z.isFinite()
                 })
@@ -141,31 +141,18 @@ class OralCavityResourceTest {
     }
 
     @Test
-    fun sectionFillRetainsSourceContoursAndFailsSafelyForUnknownAnatomy() = runTest {
+    fun cutawayPreservesTongueAndNeverAddsInventedSections() = runTest {
         val assets = VocalTractLabMeshes.sourceShapes.keys.map { VocalTractLabMeshes.load(it)!! } +
             ConsonantModelReferences.byPhoneme.flatMap { (sound, reference) ->
                 reference.phases.indices.map { VocalTractLabMeshes.loadConsonant(sound, it)!! }
             }
-        for (mesh in assets.toSet()) {
-            val original = mesh.toList()
-            val left = OralSection.tongueFill(mesh, true)
-            val right = OralSection.tongueFill(mesh, false)
-            assertTrue(left.isNotEmpty(), "Pinned geometry should have a connected tongue/floor section")
-            assertTrue(left.size < 200, "Section fill should add only a small bounded mesh")
-            assertEquals(left.size, right.size)
-            assertEquals(original, mesh, "Display fill must not move source anatomy")
-            left.forEach { face ->
-                assertTrue(face.isSection && face.part == OralPart.TONGUE)
-                assertTrue(listOf(face.a, face.b, face.c).all { it.x == 0f && it.y.isFinite() && it.z.isFinite() })
-            }
-            assertTrue(left.all { it.na.x == -1f } && right.all { it.na.x == 1f })
+        for (mesh in assets.toSet()) for (left in listOf(false, true)) {
+            val cut = OralCavityModel.cutaway(mesh, true, left)
+            assertEquals(mesh.filter { it.part == OralPart.TONGUE }, cut.filter { it.part == OralPart.TONGUE })
+            assertTrue(cut.none { it.isSection })
+            assertTrue(cut.filter { it.part != OralPart.TONGUE }.flatMap { listOf(it.a, it.b, it.c) }
+                .all { if (left) it.x >= 0f else it.x <= 0f })
         }
-        assertTrue(OralSection.tongueFill(emptyList()).isEmpty())
-        val known = assets.first()
-        assertTrue(OralSection.tongueFill(known.map { it.copy(sourceSurface = -1) }).isEmpty())
-        val started = System.nanoTime()
-        repeat(20) { OralSection.tongueFill(known) }
-        println("Sagittal fill: ${(System.nanoTime() - started) / 20_000_000.0} ms mean, JVM host only")
     }
 
     @Test

@@ -1,0 +1,783 @@
+{
+  "basisSHA256": "3a7956f066786c3d8d3f9503250d4a55f8735ab7c420282e3c357252a0586bc1",
+  "controlsSHA256": "3acf772491330e93e6debea3bbf5ea3e6b712c349a2278a6a88fd6f801193645",
+  "controls": {
+    "oral-neutral": {},
+    "fleece": {
+      "jaw": -3,
+      "body": 1.0,
+      "body_x": 0.4,
+      "body_width": 1.4
+    },
+    "kit": {
+      "jaw": -1.5,
+      "body": 0.65,
+      "body_x": 0.3,
+      "body_width": 1.5
+    },
+    "dress": {
+      "jaw": 1,
+      "body": 0.35,
+      "body_x": 0.4,
+      "body_width": 1.6
+    },
+    "trap": {
+      "jaw": 5,
+      "body": -0.35,
+      "body_x": 0.3,
+      "body_width": 2
+    },
+    "palm": {
+      "jaw": 7,
+      "body": -0.65,
+      "body_x": -1.5,
+      "body_width": 2,
+      "back": 0.3
+    },
+    "strut": {
+      "jaw": 3,
+      "body": -0.3,
+      "body_x": -0.7,
+      "body_width": 2
+    },
+    "foot": {
+      "jaw": -1,
+      "body": 0.85,
+      "body_x": -2.4,
+      "body_width": 1.6,
+      "round": 0.3
+    },
+    "goose": {
+      "jaw": -2,
+      "body": 1.25,
+      "body_x": -2.6,
+      "body_width": 1.4,
+      "round": 0.55
+    },
+    "lot": {
+      "jaw": 6,
+      "body": -0.45,
+      "body_x": -1.8,
+      "body_width": 2,
+      "round": 0.35
+    },
+    "thought": {
+      "jaw": 2,
+      "body": 0.2,
+      "body_x": -2.0,
+      "body_width": 1.7,
+      "round": 0.4
+    },
+    "bilabial-closure": {
+      "close": 1.0,
+      "jaw": -1
+    },
+    "alveolar-closure": {
+      "tip": 0.4,
+      "tip_retract": 0,
+      "jaw": -1,
+      "contact": "alveolar"
+    },
+    "velar-closure": {
+      "body": 2.1,
+      "body_x": -3.4,
+      "body_width": 1.1,
+      "jaw": -1,
+      "contact": "velar"
+    },
+    "labiodental-fricative": {
+      "labiodental": 1,
+      "jaw": -0.5
+    },
+    "dental-fricative": {
+      "protrude": 0.65,
+      "thin": 0.9,
+      "jaw": -0.5
+    },
+    "alveolar-fricative": {
+      "tip": 2.25,
+      "tip_retract": 0.35,
+      "jaw": -1,
+      "groove": 0.12
+    },
+    "postalveolar-fricative": {
+      "tip": 1.5,
+      "tip_retract": 0.35,
+      "body": 0.8,
+      "body_x": 0.3,
+      "body_width": 1.4,
+      "round": 0.15
+    },
+    "postalveolar-closure": {
+      "tip": 1.2,
+      "tip_retract": 0.3,
+      "body": 1.5,
+      "body_x": 0.75,
+      "body_width": 1.0,
+      "contact": "postalveolar"
+    },
+    "alveolar-lateral": {
+      "tip": 2.6,
+      "tip_retract": 0.35,
+      "lateral": 0.5,
+      "jaw": -1
+    },
+    "rhotic-bunched": {
+      "body": 0.85,
+      "body_x": -1.2,
+      "body_width": 1.0,
+      "back": 0.3,
+      "round": 0.12
+    },
+    "rhotic-tip-up": {
+      "tip": 0.9,
+      "tip_retract": 0.4,
+      "back": 0.3,
+      "round": 0.12
+    },
+    "w-onset": {
+      "body": 1.1,
+      "body_x": -2.6,
+      "body_width": 1.4,
+      "round": 0.6,
+      "jaw": -2
+    }
+  },
+  "velumScreen": [
+    {
+      "key": "oral-neutral",
+      "sampleCount": 168,
+      "minimumGap": {
+        "x": -3.55,
+        "y": 0,
+        "gapCm": 2.1226098750510625,
+        "tongueTopZ": -1.7860334758519236,
+        "velumUndersideZ": 0.3365763991991389
+      },
+      "perLateralSlice": [
+        {
+          "y": 0,
+          "minimumGap": {
+            "x": -3.55,
+            "y": 0,
+            "gapCm": 2.1226098750510625,
+            "tongueTopZ": -1.7860334758519236,
+            "velumUndersideZ": 0.3365763991991389
+          }
+        },
+        {
+          "y": -0.4,
+          "minimumGap": {
+            "x": -3.55,
+            "y": -0.4,
+            "gapCm": 2.1612020607199027,
+            "tongueTopZ": -1.8244873836820767,
+            "velumUndersideZ": 0.33671467703782604
+          }
+        },
+        {
+          "y": 0.4,
+          "minimumGap": {
+            "x": -3.55,
+            "y": 0.4,
+            "gapCm": 2.1609255098281275,
+            "tongueTopZ": -1.8244873884676756,
+            "velumUndersideZ": 0.3364381213604518
+          }
+        },
+        {
+          "y": -0.8,
+          "minimumGap": {
+            "x": -3.55,
+            "y": -0.8,
+            "gapCm": 2.199794246388743,
+            "tongueTopZ": -1.8629412915122299,
+            "velumUndersideZ": 0.3368529548765131
+          }
+        },
+        {
+          "y": 0.8,
+          "minimumGap": {
+            "x": -3.55,
+            "y": 0.8,
+            "gapCm": 2.199241144605192,
+            "tongueTopZ": -1.8629413010834273,
+            "velumUndersideZ": 0.3362998435217647
+          }
+        },
+        {
+          "y": -1.2,
+          "minimumGap": {
+            "x": -3.55,
+            "y": -1.2,
+            "gapCm": 2.2384157324283795,
+            "tongueTopZ": -1.9013951993423834,
+            "velumUndersideZ": 0.33702053308599617
+          }
+        },
+        {
+          "y": 1.2,
+          "minimumGap": {
+            "x": -3.55,
+            "y": 1.2,
+            "gapCm": 2.2375567793822566,
+            "tongueTopZ": -1.9013952136991792,
+            "velumUndersideZ": 0.33616156568307753
+          }
+        }
+      ],
+      "penetrationSamples": [],
+      "nearContactSamples": []
+    },
+    {
+      "key": "velar-closure",
+      "sampleCount": 161,
+      "minimumGap": {
+        "x": -3.75,
+        "y": 1.2,
+        "gapCm": -0.0072104553063737364,
+        "tongueTopZ": 0.2537984597628488,
+        "velumUndersideZ": 0.24658800445647508
+      },
+      "perLateralSlice": [
+        {
+          "y": 0,
+          "minimumGap": {
+            "x": -3.65,
+            "y": 0,
+            "gapCm": -0.0012138504016062646,
+            "tongueTopZ": 0.26681610854072985,
+            "velumUndersideZ": 0.2656022581391236
+          }
+        },
+        {
+          "y": -0.4,
+          "minimumGap": {
+            "x": -3.65,
+            "y": -0.4,
+            "gapCm": -0.001983887633807968,
+            "tongueTopZ": 0.2679118363115057,
+            "velumUndersideZ": 0.26592794867769776
+          }
+        },
+        {
+          "y": 0.4,
+          "minimumGap": {
+            "x": -3.65,
+            "y": 0.4,
+            "gapCm": -0.002627603633563569,
+            "tongueTopZ": 0.267904171234113,
+            "velumUndersideZ": 0.2652765676005494
+          }
+        },
+        {
+          "y": -0.8,
+          "minimumGap": {
+            "x": -3.65,
+            "y": -0.8,
+            "gapCm": -0.002753924866009616,
+            "tongueTopZ": 0.2690075640822816,
+            "velumUndersideZ": 0.266253639216272
+          }
+        },
+        {
+          "y": 0.8,
+          "minimumGap": {
+            "x": -3.65,
+            "y": 0.8,
+            "gapCm": -0.004041356865520873,
+            "tongueTopZ": 0.2689922339274961,
+            "velumUndersideZ": 0.26495087706197523
+          }
+        },
+        {
+          "y": -1.2,
+          "minimumGap": {
+            "x": -3.75,
+            "y": -1.2,
+            "gapCm": -0.006042614305955041,
+            "tongueTopZ": 0.2538224974657396,
+            "velumUndersideZ": 0.24777988315978455
+          }
+        },
+        {
+          "y": 1.2,
+          "minimumGap": {
+            "x": -3.75,
+            "y": 1.2,
+            "gapCm": -0.0072104553063737364,
+            "tongueTopZ": 0.2537984597628488,
+            "velumUndersideZ": 0.24658800445647508
+          }
+        }
+      ],
+      "penetrationSamples": [],
+      "nearContactSamples": [
+        {
+          "x": -3.75,
+          "y": -0.8,
+          "gapCm": 0.004782745055727566,
+          "tongueTopZ": 0.24271234469108569,
+          "velumUndersideZ": 0.24749508974681325
+        },
+        {
+          "x": -3.75,
+          "y": 0.8,
+          "gapCm": 0.0040730497963079315,
+          "tongueTopZ": 0.2426963717182348,
+          "velumUndersideZ": 0.24676942151454273
+        },
+        {
+          "x": -3.725,
+          "y": -1.2,
+          "gapCm": -0.0022870518634425796,
+          "tongueTopZ": 0.25476679667199253,
+          "velumUndersideZ": 0.25247974480854996
+        },
+        {
+          "x": -3.725,
+          "y": 1.2,
+          "gapCm": -0.0036637262750889854,
+          "tongueTopZ": 0.25474310233522934,
+          "velumUndersideZ": 0.25107937606014036
+        },
+        {
+          "x": -3.7,
+          "y": -1.2,
+          "gapCm": 0.001468510579069937,
+          "tongueTopZ": 0.2557110958782455,
+          "velumUndersideZ": 0.2571796064573154
+        },
+        {
+          "x": -3.7,
+          "y": 1.2,
+          "gapCm": -0.00011699724380420662,
+          "tongueTopZ": 0.2556877449076098,
+          "velumUndersideZ": 0.2555707476638056
+        },
+        {
+          "x": -3.675,
+          "y": 0,
+          "gapCm": 0.00457935559267747,
+          "tongueTopZ": 0.2563230408976807,
+          "velumUndersideZ": 0.2609023964903582
+        },
+        {
+          "x": -3.675,
+          "y": -0.4,
+          "gapCm": 0.0038093183604757663,
+          "tongueTopZ": 0.25741876866845664,
+          "velumUndersideZ": 0.2612280870289324
+        },
+        {
+          "x": -3.675,
+          "y": 0.4,
+          "gapCm": 0.0031656023607201655,
+          "tongueTopZ": 0.25741110359106384,
+          "velumUndersideZ": 0.260576705951784
+        },
+        {
+          "x": -3.675,
+          "y": -0.8,
+          "gapCm": 0.003039281128274063,
+          "tongueTopZ": 0.2585144964392325,
+          "velumUndersideZ": 0.2615537775675066
+        },
+        {
+          "x": -3.675,
+          "y": 0.8,
+          "gapCm": 0.0017518491287628613,
+          "tongueTopZ": 0.25849916628444697,
+          "velumUndersideZ": 0.26025101541320983
+        },
+        {
+          "x": -3.675,
+          "y": -1.2,
+          "gapCm": 0.0022692438960723593,
+          "tongueTopZ": 0.2596102242100084,
+          "velumUndersideZ": 0.26187946810608076
+        },
+        {
+          "x": -3.675,
+          "y": 1.2,
+          "gapCm": 0.0004748902896408169,
+          "tongueTopZ": 0.2595872289778301,
+          "velumUndersideZ": 0.2600621192674709
+        },
+        {
+          "x": -3.65,
+          "y": 0,
+          "gapCm": -0.0012138504016062646,
+          "tongueTopZ": 0.26681610854072985,
+          "velumUndersideZ": 0.2656022581391236
+        },
+        {
+          "x": -3.65,
+          "y": -0.4,
+          "gapCm": -0.001983887633807968,
+          "tongueTopZ": 0.2679118363115057,
+          "velumUndersideZ": 0.26592794867769776
+        },
+        {
+          "x": -3.65,
+          "y": 0.4,
+          "gapCm": -0.002627603633563569,
+          "tongueTopZ": 0.267904171234113,
+          "velumUndersideZ": 0.2652765676005494
+        },
+        {
+          "x": -3.65,
+          "y": -0.8,
+          "gapCm": -0.002753924866009616,
+          "tongueTopZ": 0.2690075640822816,
+          "velumUndersideZ": 0.266253639216272
+        },
+        {
+          "x": -3.65,
+          "y": 0.8,
+          "gapCm": -0.004041356865520873,
+          "tongueTopZ": 0.2689922339274961,
+          "velumUndersideZ": 0.26495087706197523
+        },
+        {
+          "x": -3.65,
+          "y": -1.2,
+          "gapCm": -0.0035239620982113196,
+          "tongueTopZ": 0.2701032918530575,
+          "velumUndersideZ": 0.26657932975484616
+        }
+      ]
+    },
+    {
+      "key": "goose",
+      "sampleCount": 154,
+      "minimumGap": {
+        "x": -3.5,
+        "y": 0,
+        "gapCm": 1.325522253765267,
+        "tongueTopZ": -0.9175460641258176,
+        "velumUndersideZ": 0.40797618963944937
+      },
+      "perLateralSlice": [
+        {
+          "y": 0,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0,
+            "gapCm": 1.325522253765267,
+            "tongueTopZ": -0.9175460641258176,
+            "velumUndersideZ": 0.40797618963944937
+          }
+        },
+        {
+          "y": -0.4,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -0.4,
+            "gapCm": 1.3651161610389977,
+            "tongueTopZ": -0.9569076939050509,
+            "velumUndersideZ": 0.4082084671339468
+          }
+        },
+        {
+          "y": 0.4,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0.4,
+            "gapCm": 1.3646516111432492,
+            "tongueTopZ": -0.9569076989982971,
+            "velumUndersideZ": 0.407743912144952
+          }
+        },
+        {
+          "y": -0.8,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -0.8,
+            "gapCm": 1.4047100683127283,
+            "tongueTopZ": -0.9962693236842841,
+            "velumUndersideZ": 0.40844074462844415
+          }
+        },
+        {
+          "y": 0.8,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0.8,
+            "gapCm": 1.403780968521231,
+            "tongueTopZ": -0.9962693338707764,
+            "velumUndersideZ": 0.40751163465045465
+          }
+        },
+        {
+          "y": -1.2,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -1.2,
+            "gapCm": 1.444303975586459,
+            "tongueTopZ": -1.0356309534635175,
+            "velumUndersideZ": 0.40867302212294154
+          }
+        },
+        {
+          "y": 1.2,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 1.2,
+            "gapCm": 1.44292113901693,
+            "tongueTopZ": -1.035630968743256,
+            "velumUndersideZ": 0.407290170273674
+          }
+        }
+      ],
+      "penetrationSamples": [],
+      "nearContactSamples": []
+    },
+    {
+      "key": "w-onset",
+      "sampleCount": 154,
+      "minimumGap": {
+        "x": -3.5,
+        "y": 0,
+        "gapCm": 1.4232474715397199,
+        "tongueTopZ": -1.0152712819002705,
+        "velumUndersideZ": 0.40797618963944937
+      },
+      "perLateralSlice": [
+        {
+          "y": 0,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0,
+            "gapCm": 1.4232474715397199,
+            "tongueTopZ": -1.0152712819002705,
+            "velumUndersideZ": 0.40797618963944937
+          }
+        },
+        {
+          "y": -0.4,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -0.4,
+            "gapCm": 1.4627979620804363,
+            "tongueTopZ": -1.0545894949464896,
+            "velumUndersideZ": 0.4082084671339468
+          }
+        },
+        {
+          "y": 0.4,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0.4,
+            "gapCm": 1.4623334121559226,
+            "tongueTopZ": -1.0545895000109706,
+            "velumUndersideZ": 0.407743912144952
+          }
+        },
+        {
+          "y": -0.8,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -0.8,
+            "gapCm": 1.5023484526211526,
+            "tongueTopZ": -1.0939077079927084,
+            "velumUndersideZ": 0.40844074462844415
+          }
+        },
+        {
+          "y": 0.8,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 0.8,
+            "gapCm": 1.5014193527721256,
+            "tongueTopZ": -1.093907718121671,
+            "velumUndersideZ": 0.40751163465045465
+          }
+        },
+        {
+          "y": -1.2,
+          "minimumGap": {
+            "x": -3.5,
+            "y": -1.2,
+            "gapCm": 1.5418989431618688,
+            "tongueTopZ": -1.1332259210389273,
+            "velumUndersideZ": 0.40867302212294154
+          }
+        },
+        {
+          "y": 1.2,
+          "minimumGap": {
+            "x": -3.5,
+            "y": 1.2,
+            "gapCm": 1.540516106506045,
+            "tongueTopZ": -1.1332259362323711,
+            "velumUndersideZ": 0.407290170273674
+          }
+        }
+      ],
+      "penetrationSamples": [],
+      "nearContactSamples": []
+    }
+  ],
+  "lipScreen": [
+    {
+      "key": "oral-neutral",
+      "y": 0,
+      "openRayCount": 278,
+      "openZRangeCm": [
+        -2.340000000000014,
+        -0.9550000000000436
+      ],
+      "openSampledHeightCm": 1.3900000000000001
+    },
+    {
+      "key": "oral-neutral",
+      "y": -0.4,
+      "openRayCount": 272,
+      "openZRangeCm": [
+        -2.3250000000000144,
+        -0.9700000000000433
+      ],
+      "openSampledHeightCm": 1.36
+    },
+    {
+      "key": "oral-neutral",
+      "y": 0.4,
+      "openRayCount": 274,
+      "openZRangeCm": [
+        -2.335000000000014,
+        -0.9700000000000433
+      ],
+      "openSampledHeightCm": 1.37
+    },
+    {
+      "key": "oral-neutral",
+      "y": -0.8,
+      "openRayCount": 257,
+      "openZRangeCm": [
+        -2.2800000000000153,
+        -1.0000000000000426
+      ],
+      "openSampledHeightCm": 1.285
+    },
+    {
+      "key": "oral-neutral",
+      "y": 0.8,
+      "openRayCount": 260,
+      "openZRangeCm": [
+        -2.300000000000015,
+        -1.0050000000000425
+      ],
+      "openSampledHeightCm": 1.3
+    },
+    {
+      "key": "oral-neutral",
+      "y": -1.2,
+      "openRayCount": 237,
+      "openZRangeCm": [
+        -2.240000000000016,
+        -1.0600000000000414
+      ],
+      "openSampledHeightCm": 1.185
+    },
+    {
+      "key": "oral-neutral",
+      "y": 1.2,
+      "openRayCount": 239,
+      "openZRangeCm": [
+        -2.245000000000016,
+        -1.0550000000000415
+      ],
+      "openSampledHeightCm": 1.195
+    },
+    {
+      "key": "oral-neutral",
+      "y": -1.6,
+      "openRayCount": 202,
+      "openZRangeCm": [
+        -2.150000000000018,
+        -1.1450000000000395
+      ],
+      "openSampledHeightCm": 1.01
+    },
+    {
+      "key": "oral-neutral",
+      "y": 1.6,
+      "openRayCount": 201,
+      "openZRangeCm": [
+        -2.160000000000018,
+        -1.1600000000000392
+      ],
+      "openSampledHeightCm": 1.0050000000000001
+    },
+    {
+      "key": "bilabial-closure",
+      "y": 0,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": -0.4,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": 0.4,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": -0.8,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": 0.8,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": -1.2,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": 1.2,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": -1.6,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    },
+    {
+      "key": "bilabial-closure",
+      "y": 1.6,
+      "openRayCount": 0,
+      "openZRangeCm": null,
+      "openSampledHeightCm": 0.0
+    }
+  ],
+  "limitations": [
+    "Sparse triangle-ray sampling does not establish a continuous seal or airflow.",
+    "Velum gap uses actual deformed velum underside, not bone or gingiva.",
+    "Front skin ray closure may reflect overlapping lips and is not a tissue collision/manifold test.",
+    "Only listed lateral samples evaluated; no clinical validation."
+  ]
+}

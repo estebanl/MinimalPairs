@@ -1,0 +1,1376 @@
+{
+  "controls_source_sha256": "3acf772491330e93e6debea3bbf5ea3e6b712c349a2278a6a88fd6f801193645",
+  "basis_sha256": "3a7956f066786c3d8d3f9503250d4a55f8735ab7c420282e3c357252a0586bc1",
+  "controls_used": {
+    "oral-neutral": {},
+    "fleece": {
+      "jaw": -3,
+      "body": 1.0,
+      "body_x": 0.4,
+      "body_width": 1.4
+    },
+    "kit": {
+      "jaw": -1.5,
+      "body": 0.65,
+      "body_x": 0.3,
+      "body_width": 1.5
+    },
+    "dress": {
+      "jaw": 1,
+      "body": 0.35,
+      "body_x": 0.4,
+      "body_width": 1.6
+    },
+    "trap": {
+      "jaw": 5,
+      "body": -0.35,
+      "body_x": 0.3,
+      "body_width": 2
+    },
+    "palm": {
+      "jaw": 7,
+      "body": -0.65,
+      "body_x": -1.5,
+      "body_width": 2,
+      "back": 0.3
+    },
+    "strut": {
+      "jaw": 3,
+      "body": -0.3,
+      "body_x": -0.7,
+      "body_width": 2
+    },
+    "foot": {
+      "jaw": -1,
+      "body": 0.85,
+      "body_x": -2.4,
+      "body_width": 1.6,
+      "round": 0.3
+    },
+    "goose": {
+      "jaw": -2,
+      "body": 1.25,
+      "body_x": -2.6,
+      "body_width": 1.4,
+      "round": 0.55
+    },
+    "lot": {
+      "jaw": 6,
+      "body": -0.45,
+      "body_x": -1.8,
+      "body_width": 2,
+      "round": 0.35
+    },
+    "thought": {
+      "jaw": 2,
+      "body": 0.2,
+      "body_x": -2.0,
+      "body_width": 1.7,
+      "round": 0.4
+    },
+    "bilabial-closure": {
+      "close": 1.0,
+      "jaw": -1
+    },
+    "alveolar-closure": {
+      "tip": 0.4,
+      "tip_retract": 0,
+      "jaw": -1,
+      "contact": "alveolar"
+    },
+    "velar-closure": {
+      "body": 2.1,
+      "body_x": -3.4,
+      "body_width": 1.1,
+      "jaw": -1,
+      "contact": "velar"
+    },
+    "labiodental-fricative": {
+      "labiodental": 1,
+      "jaw": -0.5
+    },
+    "dental-fricative": {
+      "protrude": 0.65,
+      "thin": 0.9,
+      "jaw": -0.5
+    },
+    "alveolar-fricative": {
+      "tip": 2.25,
+      "tip_retract": 0.35,
+      "jaw": -1,
+      "groove": 0.12
+    },
+    "postalveolar-fricative": {
+      "tip": 1.5,
+      "tip_retract": 0.35,
+      "body": 0.8,
+      "body_x": 0.3,
+      "body_width": 1.4,
+      "round": 0.15
+    },
+    "postalveolar-closure": {
+      "tip": 1.2,
+      "tip_retract": 0.3,
+      "body": 1.5,
+      "body_x": 0.75,
+      "body_width": 1.0,
+      "contact": "postalveolar"
+    },
+    "alveolar-lateral": {
+      "tip": 2.6,
+      "tip_retract": 0.35,
+      "lateral": 0.5,
+      "jaw": -1
+    },
+    "rhotic-bunched": {
+      "body": 0.85,
+      "body_x": -1.2,
+      "body_width": 1.0,
+      "back": 0.3,
+      "round": 0.12
+    },
+    "rhotic-tip-up": {
+      "tip": 0.9,
+      "tip_retract": 0.4,
+      "back": 0.3,
+      "round": 0.12
+    },
+    "w-onset": {
+      "body": 1.1,
+      "body_x": -2.6,
+      "body_width": 1.4,
+      "round": 0.6,
+      "jaw": -2
+    }
+  },
+  "method": "Vertical triangle intersections at x -3.8..2.5 cm, y 0,+/-.4 cm. Roof candidates hard palate, upper alveolar tissue, velum; lower roof filter z>-.7. Screening excludes display sections. Negative gaps imply overlap in sampled columns; positive gaps do not prove continuous airway. Not clinical validation.",
+  "records": [
+    {
+      "key": "oral-neutral",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.227421936367883,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.4054939445146046,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -1.002535082286496,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.2167697538195843,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.7,
+        "y": 0,
+        "tongueTopZ": -0.9134042095837039,
+        "roofZ": 0.21351112598381908,
+        "gapCm": 1.126915335567523,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 178
+    },
+    {
+      "key": "fleece",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -0.5216363186229472,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 0.6997083267696689,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.8997984187957914,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.1140330903288795,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.7,
+        "y": 0,
+        "tongueTopZ": -0.42061643629518375,
+        "roofZ": 0.21351112598381908,
+        "gapCm": 0.6341275622790028,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "kit",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -0.6473324202425736,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 0.8254044283892953,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9152709559446408,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.129505627477729,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.4,
+        "y": 0,
+        "tongueTopZ": -0.4354588107605739,
+        "roofZ": 0.20890468265208503,
+        "gapCm": 0.644363493412659,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "dress",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -0.9621311308281111,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.1402031389748326,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9813879897027278,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.195622661235816,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.1,
+        "y": 0,
+        "tongueTopZ": -0.6706463266925392,
+        "roofZ": 0.20433507685303978,
+        "gapCm": 0.874981403545579,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 178
+    },
+    {
+      "key": "trap",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.7211598337556056,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.8992318419023273,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -1.1822427326077818,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 1.3953818761472268,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -1.1822427326077818,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 1.3953818761472268,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 178
+    },
+    {
+      "key": "palm",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.7063553899637656,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.8844273981104873,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.8,
+        "y": 0,
+        "tongueTopZ": -1.7125524068392435,
+        "roofZ": 0.2062190361782038,
+        "gapCm": 1.9187714430174472,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 0.1,
+        "y": 0,
+        "tongueTopZ": -1.539354672530174,
+        "roofZ": 0.20130279058488243,
+        "gapCm": 1.7406574631150566,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 169
+    },
+    {
+      "key": "strut",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.4836205575618313,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.6616925657085528,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -1.2507940961466004,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 1.4639332396860454,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -1.2507940961466004,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 1.4639332396860454,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 178
+    },
+    {
+      "key": "foot",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.1805872803620996,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.3586592885088211,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -0.18367987897471286,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 0.3968190225141579,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -2.1,
+        "y": 0,
+        "tongueTopZ": -0.18367987897471286,
+        "roofZ": 0.21313914353944502,
+        "gapCm": 0.3968190225141579,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "goose",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.1513184681010478,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.3293904762477693,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.3,
+        "y": 0,
+        "tongueTopZ": 0.16897899815780887,
+        "roofZ": 0.21115020194387216,
+        "gapCm": 0.04217120378606329,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -2.3,
+        "y": 0,
+        "tongueTopZ": 0.16897899815780887,
+        "roofZ": 0.21115020194387216,
+        "gapCm": 0.04217120378606329,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "lot",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.5141979535632566,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.6922699617099783,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -1.5474023306730535,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.7616370022061418,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 0.1,
+        "y": 0,
+        "tongueTopZ": -1.3519719288241159,
+        "roofZ": 0.20130279058488243,
+        "gapCm": 1.5532747194089982,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 177
+    },
+    {
+      "key": "thought",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.2933476632651235,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.4714196714118453,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.8366275181521088,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.050862189685197,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -1.5,
+        "y": 0,
+        "tongueTopZ": -0.8033718409901096,
+        "roofZ": 0.2197123115013046,
+        "gapCm": 1.0230841524914143,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 178
+    },
+    {
+      "key": "bilabial-closure",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.1902157317134106,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.3682877398601323,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9859276296718191,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.2001623012049074,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.7,
+        "y": 0,
+        "tongueTopZ": -0.8882524845954548,
+        "roofZ": 0.21351112598381908,
+        "gapCm": 1.1017636105792739,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "alveolar-closure",
+      "anteriorMinimum": {
+        "x": 1.3,
+        "y": 0,
+        "tongueTopZ": -0.5262027485323557,
+        "roofZ": 0.16475097149170603,
+        "gapCm": 0.6909537200240617,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9859276296718128,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.200162301204901,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 1.3,
+        "y": 0,
+        "tongueTopZ": -0.5262027485323557,
+        "roofZ": 0.16475097149170603,
+        "gapCm": 0.6909537200240617,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "velar-closure",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.1902154506709628,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.3682874588176843,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -3.5,
+        "y": 0,
+        "tongueTopZ": 0.24038436027037546,
+        "roofZ": 0.24019195310339791,
+        "gapCm": -0.00019240716697754845,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -3.5,
+        "y": 0,
+        "tongueTopZ": 0.24038436027037546,
+        "roofZ": 0.24019195310339791,
+        "gapCm": -0.00019240716697754845,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 9,
+      "sampleCount": 180
+    },
+    {
+      "key": "labiodental-fricative",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.2088043623209577,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.3868763704676792,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9942302679418806,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.208464939474969,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.7,
+        "y": 0,
+        "tongueTopZ": -0.9008253416883976,
+        "roofZ": 0.21351112598381908,
+        "gapCm": 1.1143364676722167,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    },
+    {
+      "key": "dental-fricative",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.2470369331390954,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.425108941285817,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9942302679418957,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.208464939474984,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.7,
+        "y": 0,
+        "tongueTopZ": -0.9008256499392844,
+        "roofZ": 0.21351112598381908,
+        "gapCm": 1.1143367759231035,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 192
+    },
+    {
+      "key": "alveolar-fricative",
+      "anteriorMinimum": {
+        "x": 1.5,
+        "y": 0.4,
+        "tongueTopZ": -0.6429037387039718,
+        "roofZ": 0.15269545944293123,
+        "gapCm": 0.795599198146903,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -1.1059276296717837,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.320162301204872,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 1.5,
+        "y": 0.4,
+        "tongueTopZ": -0.6429037387039718,
+        "roofZ": 0.15269545944293123,
+        "gapCm": 0.795599198146903,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 169
+    },
+    {
+      "key": "postalveolar-fricative",
+      "anteriorMinimum": {
+        "x": 1.5,
+        "y": 0,
+        "tongueTopZ": -0.5362288012250828,
+        "roofZ": 0.15285291163742482,
+        "gapCm": 0.6890817128625075,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9472726234724961,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.1615072950055843,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.4,
+        "y": 0,
+        "tongueTopZ": -0.43547549857614315,
+        "roofZ": 0.20890468265208503,
+        "gapCm": 0.6443801812282282,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 169
+    },
+    {
+      "key": "postalveolar-closure",
+      "anteriorMinimum": {
+        "x": 1.6,
+        "y": 0,
+        "tongueTopZ": -0.5329035228894917,
+        "roofZ": 0.1467517933444678,
+        "gapCm": 0.6796553162339596,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -1.001598070042093,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.2158327415751813,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -0.1,
+        "y": 0,
+        "tongueTopZ": -0.44965977223181375,
+        "roofZ": 0.20433507685303978,
+        "gapCm": 0.6539948490848535,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 171
+    },
+    {
+      "key": "alveolar-lateral",
+      "anteriorMinimum": {
+        "x": 1.5,
+        "y": 0,
+        "tongueTopZ": -0.5381371644100242,
+        "roofZ": 0.15285291163742482,
+        "gapCm": 0.690990076047449,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9859276296717787,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.200162301204867,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 1.5,
+        "y": 0,
+        "tongueTopZ": -0.5381371644100242,
+        "roofZ": 0.15285291163742482,
+        "gapCm": 0.690990076047449,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 169
+    },
+    {
+      "key": "rhotic-bunched",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.337336340034238,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.5154083481809595,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.32181482668742584,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 0.5360494982205141,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -1.8,
+        "y": 0,
+        "tongueTopZ": -0.24646066868797656,
+        "roofZ": 0.21642572752037478,
+        "gapCm": 0.46288639620835137,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 172
+    },
+    {
+      "key": "rhotic-tip-up",
+      "anteriorMinimum": {
+        "x": 1.2,
+        "y": 0,
+        "tongueTopZ": -0.7652406648085444,
+        "roofZ": 0.1691913170433779,
+        "gapCm": 0.9344319818519222,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.0,
+        "y": 0,
+        "tongueTopZ": -0.9656056001312228,
+        "roofZ": 0.21423467153308826,
+        "gapCm": 1.179840271664311,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": 1.2,
+        "y": 0,
+        "tongueTopZ": -0.7652406648085444,
+        "roofZ": 0.1691913170433779,
+        "gapCm": 0.9344319818519222,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 160
+    },
+    {
+      "key": "w-onset",
+      "anteriorMinimum": {
+        "x": 1.0,
+        "y": 0,
+        "tongueTopZ": -1.1515350767036845,
+        "roofZ": 0.17807200814672164,
+        "gapCm": 1.329607084850406,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "posteriorMinimum": {
+        "x": -2.3,
+        "y": 0,
+        "tongueTopZ": 0.025476536538422512,
+        "roofZ": 0.21115020194387216,
+        "gapCm": 0.18567366540544963,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "globalMinimum": {
+        "x": -2.3,
+        "y": 0,
+        "tongueTopZ": 0.025476536538422512,
+        "roofZ": 0.21115020194387216,
+        "gapCm": 0.18567366540544963,
+        "roof": "Upper lip and alveolar tissue"
+      },
+      "penetrationSamples": [],
+      "nearContactSamples": 0,
+      "sampleCount": 180
+    }
+  ],
+  "lipMidlineRayScreen": [
+    {
+      "key": "oral-neutral",
+      "openMidlineRayCount": 139,
+      "openMidlineZRange": [
+        -2.34,
+        -0.96
+      ],
+      "sampleSpacingCm": 0.01
+    },
+    {
+      "key": "bilabial-closure",
+      "openMidlineRayCount": 0,
+      "openMidlineZRange": null,
+      "sampleSpacingCm": 0.01
+    },
+    {
+      "key": "labiodental-fricative",
+      "openMidlineRayCount": 73,
+      "openMidlineZRange": [
+        -1.68,
+        -0.96
+      ],
+      "sampleSpacingCm": 0.01
+    },
+    {
+      "key": "w-onset",
+      "openMidlineRayCount": 123,
+      "openMidlineZRange": [
+        -2.18,
+        -0.96
+      ],
+      "sampleSpacingCm": 0.01
+    }
+  ],
+  "gingivaAndTeethIntervalScreen": [
+    {
+      "key": "oral-neutral",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.7208736251055013
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.6170461256174267
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.5,
+        "y": 0,
+        "gapCm": 0.5053094023964209
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "fleece",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.2,
+        "y": 0,
+        "gapCm": 0.015019917676877936
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.39974382836586503
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.2,
+        "y": 0.8,
+        "gapCm": 0.009234723732162498
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "kit",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.1407841089801919
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.4331413853145037
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 0.5,
+        "y": 0,
+        "gapCm": 0.014972055000079643
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "dress",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.4555828195657293
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.550389318940093
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.1,
+        "y": 0,
+        "gapCm": 0.23428602878658222
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "trap",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 1.214611522493224
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.8751987256176359
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -1.3,
+        "y": 0,
+        "gapCm": 0.8617985617553721
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "palm",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 1.199807078701384
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 1.379157131098622
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 0.1,
+        "y": 0,
+        "gapCm": 1.0910976368266325
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "strut",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.9770722462994496
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.9328916117362525
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.4,
+        "y": 0,
+        "gapCm": 0.8800205718447898
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "foot",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.6740389690997178
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.7,
+        "y": 0,
+        "gapCm": 0.006240404634043517
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -1.7,
+        "y": 0,
+        "gapCm": 0.006240404634043517
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "goose",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.644770156838666
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -2.0,
+        "y": 0,
+        "gapCm": -0.005226488672771715
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -2.0,
+        "y": -0.4,
+        "gapCm": 0.0019673183828981256
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "lot",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 1.007649642300875
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 1.1736700248439662
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 0.1,
+        "y": 0,
+        "gapCm": 0.9037148931205743
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "thought",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.7867993520027418
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.47444782861827134
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -1.0,
+        "y": 0,
+        "gapCm": 0.4326303786106258
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "bilabial-closure",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.6836674204510288
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.5971614871956441
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.4,
+        "y": 0,
+        "gapCm": 0.4789331201156805
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "alveolar-closure",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.4,
+        "y": 0,
+        "gapCm": 0.0002802536744239692
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.5971614871844884
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 1.4,
+        "y": 0,
+        "gapCm": 0.0002802536744239692
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "velar-closure",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.683667139408581
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -2.0,
+        "y": 0,
+        "gapCm": 0.44770819741156853
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -2.0,
+        "y": 0,
+        "gapCm": 0.44770819741156853
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "labiodental-fricative",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.7022560510585759
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.6071025590653827
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.5,
+        "y": 0,
+        "gapCm": 0.4921188668328817
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "dental-fricative",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.7404886218767136
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.6071025590935988
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -0.5,
+        "y": 0,
+        "gapCm": 0.49212132771838774
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "alveolar-fricative",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.5,
+        "y": 0.4,
+        "gapCm": 0.08496423059371727
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.7171614871320471
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 1.5,
+        "y": 0.4,
+        "gapCm": 0.08496423059371727
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "postalveolar-fricative",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.5,
+        "y": 0,
+        "gapCm": -0.004361547701848156
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.46190289092516174
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 1.6,
+        "y": 0,
+        "gapCm": 0.00010138514769530982
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "postalveolar-closure",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.6,
+        "y": 0,
+        "gapCm": -0.01535150959760978
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.6063892264805661
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 0.7,
+        "y": -0.4,
+        "gapCm": 0.00017988271085428442
+      },
+      "overlapSampleCount": 1,
+      "maxOverlap": {
+        "object": "Upper gingival envelope",
+        "x": 1.6,
+        "y": 0,
+        "overlapCm": 0.01535150959760978
+      },
+      "samples": [
+        {
+          "object": "Upper gingival envelope",
+          "x": 1.6,
+          "y": 0,
+          "overlapCm": 0.01535150959760978
+        }
+      ]
+    },
+    {
+      "key": "alveolar-lateral",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.5,
+        "y": 0,
+        "gapCm": -0.0024531845169066813
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.5971614871222859
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 1.4,
+        "y": 0,
+        "gapCm": 0.015079229388327176
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "rhotic-bunched",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.8307880287718562
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.7,
+        "y": -0.4,
+        "gapCm": 0.006326866003625864
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -1.7,
+        "y": -0.4,
+        "gapCm": 0.006326866003625864
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "rhotic-tip-up",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.2,
+        "y": 0,
+        "gapCm": 0.24601051294338128
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -1.5,
+        "y": 0,
+        "gapCm": 0.5956102369462954
+      },
+      "gingivaClosestPositiveGap": {
+        "x": 1.2,
+        "y": 0,
+        "gapCm": 0.24601051294338128
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    },
+    {
+      "key": "w-onset",
+      "gingivaAnteriorMinimumGap": {
+        "x": 1.0,
+        "y": 0,
+        "gapCm": 0.6449867654413027
+      },
+      "gingivaPosteriorMinimumGap": {
+        "x": -2.0,
+        "y": 0,
+        "gapCm": -0.005226488672771687
+      },
+      "gingivaClosestPositiveGap": {
+        "x": -1.7,
+        "y": 0,
+        "gapCm": 0.006240375823115096
+      },
+      "overlapSampleCount": 0,
+      "maxOverlap": null,
+      "samples": []
+    }
+  ],
+  "limitations": [
+    "Roof candidates are reported separately from gingiva/teeth overlap; no assumption that bone is mucosal contact target.",
+    "Sparse ray sampling cannot prove manifold watertightness or continuous airway.",
+    "Multiple disconnected intervals can cause conservative false positives; inspect reported overlap regions visually."
+  ]
+}
