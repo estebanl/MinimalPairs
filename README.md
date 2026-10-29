@@ -16,6 +16,10 @@ illustrated settings and distinct illustrated endings; additional stories use an
 accessible conversation illustration. A practice suggestion uses saved listening
 and Stories mistakes across all dates, while manual story selection stays available.
 Reference-audio failures show retry guidance without replacing scored reply feedback.
+After stopping a recording, **Replay your reply** plays the latest captured audio
+once scoring finishes, including uncertain or failed evaluations. Starting another
+recording, changing stories, or resetting discards that reply. Audio stays in memory
+and is never included in progress history or backups; replay does not change scores.
 Backend 2.3.1 supports the British pot/port realization groups and resolves all
 seven bundled reference phrases without lowering the scoring thresholds. It also
 rejects unsupported surrounding phrase context before choosing an ending.

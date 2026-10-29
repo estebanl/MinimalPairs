@@ -29,6 +29,28 @@ Feature: Stories reply feedback and pronunciation branching
     And existing reply feedback, scores, and practice records are preserved
     And cancelling playback or leaving the story does not show a playback failure
 
+  Scenario: Replay the latest recorded reply
+    Given the learner has stopped recording a nonempty reply
+    When scoring succeeds, remains uncertain, or fails
+    Then Replay your reply plays the captured audio unchanged
+    And replay does not evaluate the recording again or change scores, progress, or confusion counts
+    And replay is disabled during recording, scoring, or any audio playback
+    And starting a recording stops any pending or active playback before microphone capture
+
+  Scenario: Keep recorded replies temporary
+    Given a completed reply is available for replay
+    When the learner starts another recording, changes stories, or resets the story
+    Then the previous reply is discarded and cannot be replayed
+    And only a newly completed nonempty recording makes replay available again
+    And recordings are held in memory only and are not added to progress history or backups
+    And example endings never create or replace a recorded reply
+
+  Scenario: Recover from reply replay failure
+    Given a completed reply is available
+    When replay fails
+    Then the screen offers guidance to retry Replay your reply
+    And the captured reply and existing scoring feedback remain available
+
   Scenario: Show recording and evaluation state
     Given the learner opens a story
     When the learner records a reply

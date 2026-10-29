@@ -4,12 +4,42 @@ import com.minimalpairs.app.core.hal.AudioPlayer
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModulePlaybackSessionTest {
+    @Test
+    fun stoppingPlaybackReleasesNativeOutputBeforeWaitingForItsCoroutine() = runTest {
+        val released = CompletableDeferred<Unit>()
+        var playing = false
+        val player = object : AudioPlayer {
+            override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+                // Simulate a native write that cannot finish until its output closes.
+                withContext(NonCancellable) { released.await() }
+            }
+            override suspend fun stop() { released.complete(Unit) }
+            override fun isPlaying() = playing
+        }
+        val playback = ModulePlaybackSession(this, player) { playing = it }
+        playback.play({ true }) { shortArrayOf(1) }
+        runCurrent()
+        assertTrue(playing)
+        val stopping = launch { playback.stop() }
+        try {
+            runCurrent()
+            assertTrue(stopping.isCompleted, "Stopping must close the native output before joining playback")
+            assertFalse(playing)
+        } finally {
+            released.complete(Unit)
+            runCurrent()
+        }
+    }
+
     @Test
     fun stoppingPendingLoadPreventsLateReferenceAudioDuringCapture() = runTest {
         val gate = CompletableDeferred<Unit>()

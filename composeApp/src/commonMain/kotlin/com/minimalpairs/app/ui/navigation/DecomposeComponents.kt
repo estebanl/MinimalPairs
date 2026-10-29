@@ -943,7 +943,8 @@ data class MeaningTrapUiState(
     val feedbackIsError: Boolean = false,
     val isSimulated: Boolean = false,
     val playbackError: String? = null,
-    val recommendation: StoryRecommendation? = null
+    val recommendation: StoryRecommendation? = null,
+    val hasRecording: Boolean = false
 )
 
 interface MeaningTrapComponent {
@@ -953,6 +954,7 @@ interface MeaningTrapComponent {
     fun playPromptAudio()
     fun playTargetPhraseAudio()
     fun playOutcomeAudio()
+    fun playRecording()
     fun toggleRecording()
     fun triggerSimulatedOutcome(isCorrect: Boolean)
     fun resetCurrentStory()
@@ -983,6 +985,8 @@ class DefaultMeaningTrapComponent(
     )
     override val state: StateFlow<MeaningTrapUiState> = _state.asStateFlow()
 
+    // Only the latest completed reply is retained in memory, never in progress or backups.
+    private var recordedReply = ShortArray(0)
     private val playback = ModulePlaybackSession(scope, audioPlayer) { playing ->
         _state.value = _state.value.copy(isPlayingAudio = playing)
     }
@@ -1001,7 +1005,12 @@ class DefaultMeaningTrapComponent(
             }
         }
         lifecycle.doOnStop { cancelReply() }
-        lifecycle.doOnDestroy { cancelReply(); scope.cancel() }
+        lifecycle.doOnDestroy {
+            recordedReply = ShortArray(0)
+            _state.value = _state.value.copy(hasRecording = false)
+            cancelReply()
+            scope.cancel()
+        }
     }
 
     private fun cancelReply() {
@@ -1016,6 +1025,7 @@ class DefaultMeaningTrapComponent(
     override fun selectStory(storyId: String) {
         val story = availableStories.firstOrNull { it.id == storyId } ?: return
         recording.cancel()
+        recordedReply = ShortArray(0)
         _state.value = MeaningTrapUiState(activeStory = story, recommendation = _state.value.recommendation)
         playPromptAudio()
     }
@@ -1058,15 +1068,34 @@ class DefaultMeaningTrapComponent(
         playStoryAudio(if (isSuccess) StoryAudioClip.INTENDED else StoryAudioClip.TRAP)
     }
 
+    override fun playRecording() {
+        if (_state.value.isRecording || _state.value.isScoring || recording.busy || recordedReply.isEmpty()) return
+        _state.value = _state.value.copy(playbackError = null)
+        playback.play(
+            canPlay = { !_state.value.isRecording && !_state.value.isScoring && !recording.busy && recordedReply.isNotEmpty() },
+            onFailure = {
+                _state.value = _state.value.copy(
+                    playbackError = "Couldn't replay your reply. Check your audio output, then tap Replay your reply to retry."
+                )
+            },
+            load = { recordedReply }
+        )
+    }
+
     override fun toggleRecording() {
         if (recording.busy) return
         val story = _state.value.activeStory
-        if (!_state.value.isRecording) _state.value = _state.value.copy(
-            branch = MeaningTrapBranch.PENDING, playbackError = null,
-            gopScore = null, alternateScore = null, feedbackIsError = false, isSimulated = false,
-            feedbackText = "Listening… Speak the full phrase, then stop to review.")
+        if (!_state.value.isRecording) {
+            recordedReply = ShortArray(0)
+            _state.value = _state.value.copy(
+                branch = MeaningTrapBranch.PENDING, playbackError = null, hasRecording = false,
+                gopScore = null, alternateScore = null, feedbackIsError = false, isSimulated = false,
+                feedbackText = "Listening… Speak the full phrase, then stop to review.")
+        }
         recording.toggle { samples ->
-            _state.value = _state.value.copy(isScoring = true, feedbackText = "Checking the sounds in your reply…")
+            recordedReply = samples.copyOf()
+            _state.value = _state.value.copy(hasRecording = samples.isNotEmpty(),
+                isScoring = true, feedbackText = "Checking the sounds in your reply…")
             try {
                 val durationMs = samples.size * 1000 / recorder.sampleRate
                 val voiced = withContext(analysisDispatcher) {
@@ -1120,6 +1149,7 @@ class DefaultMeaningTrapComponent(
 
     override fun resetCurrentStory() {
         recording.cancel()
+        recordedReply = ShortArray(0)
         _state.value = MeaningTrapUiState(activeStory = _state.value.activeStory, recommendation = _state.value.recommendation)
     }
 

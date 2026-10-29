@@ -114,8 +114,15 @@ class LiveStoriesScoringTest {
                         assertEquals(storyId, saved.targetId)
                         assertEquals(success, saved.succeeded)
                         assertEquals(intended, saved.score)
+                        assertTrue(state.hasRecording)
+                        scene.click("Replay your reply")
+                        eventually { player.played.lastOrNull()?.contentEquals(samples) == true }
+                        assertEquals(state.feedbackText, component.state.value.feedbackText)
+                        assertEquals(intended, component.state.value.gopScore)
+                        assertEquals(alternate, component.state.value.alternateScore)
+                        assertEquals(expectedRecords, repository.state.value.modules.size)
                         scene.capture(output, label)
-                        println("STORIES_LIVE $label intended=$intended alternate=$alternate saved=true outcome_audio=true")
+                        println("STORIES_LIVE $label intended=$intended alternate=$alternate saved=true outcome_audio=true reply_replay=true")
                     }
                     for (story in MeaningTrapCatalog.stories) {
                         verify(story.id, assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(story.id)), true)
@@ -137,12 +144,19 @@ class LiveStoriesScoringTest {
                             scene.click("${story.intendedWord} vs ${story.trapWord}")
                             eventually { !component.state.value.isPlayingAudio }
                             val confusionsBefore = tracker.getAllConfusions()
-                            record(WavCodec.decodeWavToPcm(File(controls, path).readBytes()))
+                            val rejectedAudio = WavCodec.decodeWavToPcm(File(controls, path).readBytes())
+                            record(rejectedAudio)
                             assertEquals(MeaningTrapBranch.PENDING, component.state.value.branch)
                             assertTrue(component.state.value.feedbackIsError)
                             assertNull(component.state.value.gopScore)
                             assertEquals(expectedRecords, repository.state.value.modules.size)
                             assertEquals(confusionsBefore, tracker.getAllConfusions())
+                            val feedback = component.state.value.feedbackText
+                            assertTrue(component.state.value.hasRecording)
+                            scene.click("Replay your reply")
+                            eventually { player.played.lastOrNull()?.contentEquals(rejectedAudio) == true }
+                            assertEquals(feedback, component.state.value.feedbackText)
+                            assertEquals(expectedRecords, repository.state.value.modules.size)
                             rejectedReplies += buildJsonObject {
                                 put("story_id", storyId)
                                 put("control", path)
@@ -169,6 +183,7 @@ class LiveStoriesScoringTest {
                     assertEquals(weights, tracker.getAllWeights())
                 }
                 lifecycle.destroy()
+                assertFalse(component.state.value.hasRecording)
                 progressScope.coroutineContext[Job]!!.cancelAndJoin()
                 database.close()
                 database = open()

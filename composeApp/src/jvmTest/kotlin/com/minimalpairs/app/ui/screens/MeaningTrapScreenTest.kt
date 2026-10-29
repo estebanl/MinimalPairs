@@ -40,18 +40,21 @@ class MeaningTrapScreenTest {
                     }
                     render()
                     assertFalse(button("Record your reply").config.contains(SemanticsProperties.Disabled))
+                    assertTrue(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
                     component.state.value = component.state.value.copy(isRecording = true, feedbackText = "Listening… Speak the full phrase, then stop to review.")
                     render()
                     assertTrue(button("Hear phrase").config.contains(SemanticsProperties.Disabled))
+                    assertTrue(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
                     assertFalse(button("Stop and review").config.contains(SemanticsProperties.Disabled))
 
-                    component.state.value = component.state.value.copy(isRecording = false, isScoring = true,
+                    component.state.value = component.state.value.copy(isRecording = false, isScoring = true, hasRecording = true,
                         feedbackText = "Checking the sounds in your reply…")
                     render()
                     assertTrue(nodes().any { it.text() == "Checking your reply" })
                     assertTrue(nodes().any { it.text() == "Checking the sounds in your reply…" })
                     assertTrue(button("Checking your reply…").config.contains(SemanticsProperties.Disabled))
                     assertTrue(button("Hear phrase").config.contains(SemanticsProperties.Disabled))
+                    assertTrue(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
                     screenshot("scoring")
 
                     component.state.value = component.state.value.copy(isScoring = false, feedbackIsError = true,
@@ -60,6 +63,9 @@ class MeaningTrapScreenTest {
                     assertTrue(nodes().any { it.text().startsWith("No clear voice detected") })
                     assertTrue(nodes().any { it.config.getOrNull(SemanticsProperties.LiveRegion) == LiveRegionMode.Polite })
                     assertFalse(button("Record your reply").config.contains(SemanticsProperties.Disabled))
+                    assertFalse(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
+                    button("Replay your reply").config[SemanticsActions.OnClick].action!!.invoke()
+                    assertEquals(1, component.replays)
                     screenshot("recording-error")
 
                     component.state.value = component.state.value.copy(branch = MeaningTrapBranch.INTENDED_SUCCESS,
@@ -71,6 +77,11 @@ class MeaningTrapScreenTest {
                     assertTrue(nodes().any { it.text().contains("not pronunciation accuracy") })
                     assertFalse(nodes().any { it.text().contains("Perfect /iː/") })
                     screenshot("scored-reply")
+                    screenshot("recorded-reply-replay")
+                    component.state.value = component.state.value.copy(isPlayingAudio = true)
+                    render()
+                    assertTrue(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
+                    component.state.value = component.state.value.copy(isPlayingAudio = false)
 
                     component.state.value = component.state.value.copy(
                         playbackError = "Couldn't play the story ending audio. Tap Listen to retry."
@@ -81,6 +92,14 @@ class MeaningTrapScreenTest {
                     assertTrue(nodes().any { it.text() == "Sound confidence · sheep: 88/100" })
                     assertFalse(button("Hear phrase").config.contains(SemanticsProperties.Disabled))
                     screenshot("playback-error")
+
+                    component.state.value = component.state.value.copy(
+                        playbackError = "Couldn't replay your reply. Check your audio output, then tap Replay your reply to retry."
+                    )
+                    render()
+                    assertTrue(nodes().any { it.text().contains("tap Replay your reply to retry") })
+                    assertFalse(button("Replay your reply").config.contains(SemanticsProperties.Disabled))
+                    assertTrue(nodes().any { it.text() == "Sound confidence · sheep: 88/100" })
 
                     component.state.value = component.state.value.copy(isSimulated = true, gopScore = null, alternateScore = null,
                         feedbackText = "Example ending — no recording was evaluated and your progress was not changed.")
@@ -96,10 +115,12 @@ class MeaningTrapScreenTest {
     private class Component : MeaningTrapComponent {
         override val availableStories = MeaningTrapCatalog.stories
         override val state = MutableStateFlow(MeaningTrapUiState(availableStories.first()))
+        var replays = 0
         override fun selectStory(storyId: String) {}
         override fun playPromptAudio() {}
         override fun playTargetPhraseAudio() {}
         override fun playOutcomeAudio() {}
+        override fun playRecording() { replays++ }
         override fun toggleRecording() {}
         override fun triggerSimulatedOutcome(isCorrect: Boolean) {}
         override fun resetCurrentStory() {}

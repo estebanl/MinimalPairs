@@ -76,7 +76,13 @@ internal class ModulePlaybackSession(
         generation++
         val pending = operation
         operation = null
-        pending?.cancelAndJoin()
-        try { player.stop() } finally { onPlaying(false) }
+        pending?.cancel()
+        // Close the output before joining: a native write/drain can block until
+        // the player is stopped, even after its coroutine has been cancelled.
+        try {
+            player.stop()
+        } finally {
+            try { pending?.join() } finally { onPlaying(false) }
+        }
     }
 }

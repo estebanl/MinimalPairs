@@ -77,6 +77,8 @@ and retained microphone WAVs are excluded. Reports and screenshots are in
 Stories verification drives the real Stories composable and component against
 Azure HTTPS scoring, checking all seven catalog reference replies, selected-vowel scores,
 outcome playback, and saved progress after reopening an isolated Room database.
+It also replays each completed reply and checks that the player's PCM matches the
+recording exactly, including after rejected scoring, without adding progress.
 When `build/reports/stories/controlled/` contains the generated controls, it also
 checks alternate endings for every story and rejects out-of-pair vowels and
 unrelated pot/port speech without adding a result. Controls must cover all seven

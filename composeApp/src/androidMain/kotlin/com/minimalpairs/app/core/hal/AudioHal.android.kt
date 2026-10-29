@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class AndroidAudioRecorder : AudioRecorder {
     private val _state = MutableStateFlow(AudioRecorderState.UNINITIALIZED)
@@ -110,6 +114,7 @@ class AndroidAudioRecorder : AudioRecorder {
 }
 
 class AndroidAudioPlayer : AudioPlayer {
+    private val outputMutex = Mutex()
     private var audioTrack: AudioTrack? = null
     private var playing = false
 
@@ -125,40 +130,34 @@ class AndroidAudioPlayer : AudioPlayer {
         stop()
         try {
             val sampleRate = 16000
-            val minBufSize = AudioTrack.getMinBufferSize(
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT
-            )
-            val track = AudioTrack(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build(),
-                AudioFormat.Builder()
-                    .setSampleRate(sampleRate)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .build(),
-                samples.size * 2,
-                AudioTrack.MODE_STATIC,
-                AudioManager.AUDIO_SESSION_ID_GENERATE
-            )
-            audioTrack = track
-            playing = true
-
-            check(track.state == AudioTrack.STATE_INITIALIZED)
-            check(track.write(samples, 0, samples.size) == samples.size)
-            track.play()
+            outputMutex.withLock {
+                currentCoroutineContext().ensureActive()
+                val track = AudioTrack(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                    AudioFormat.Builder()
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .build(),
+                    samples.size * 2,
+                    AudioTrack.MODE_STATIC,
+                    AudioManager.AUDIO_SESSION_ID_GENERATE
+                )
+                audioTrack = track
+                check(track.state == AudioTrack.STATE_INITIALIZED)
+                check(track.write(samples, 0, samples.size) == samples.size)
+                track.play()
+                playing = true
+            }
 
             // Wait for duration
             val durationMs = (samples.size * 1000L) / sampleRate
             kotlinx.coroutines.delay(durationMs + 50)
 
-            track.stop()
-            track.release()
-            audioTrack = null
-            playing = false
+            stop()
             withContext(Dispatchers.Default) {
                 onComplete()
             }
@@ -175,10 +174,12 @@ class AndroidAudioPlayer : AudioPlayer {
     }
 
     override suspend fun stop(): Unit = withContext(Dispatchers.IO) {
-        playing = false
-        val track = audioTrack
-        audioTrack = null
-        try { track?.stop() } finally { track?.release() }
+        outputMutex.withLock {
+            playing = false
+            val track = audioTrack
+            audioTrack = null
+            try { track?.stop() } finally { track?.release() }
+        }
     }
 
     override fun isPlaying(): Boolean = playing

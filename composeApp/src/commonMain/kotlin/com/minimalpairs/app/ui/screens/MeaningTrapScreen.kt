@@ -221,7 +221,6 @@ fun MeaningTrapScreen(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Audio unavailable", style = MaterialTheme.typography.titleSmall)
                         Text(error, style = MaterialTheme.typography.bodyMedium)
-                        Text("Tap Listen or Hear phrase to try the audio again.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -270,6 +269,18 @@ fun MeaningTrapScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = component::playRecording,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
+                enabled = state.hasRecording && !state.isRecording && !state.isScoring && !state.isPlayingAudio,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            ) {
+                Text("Replay your reply")
             }
 
             Spacer(Modifier.height(8.dp))

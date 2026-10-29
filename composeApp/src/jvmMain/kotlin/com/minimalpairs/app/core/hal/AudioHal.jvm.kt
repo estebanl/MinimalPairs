@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
@@ -121,6 +125,7 @@ class JvmAudioRecorder(private val inputDeviceName: String? = null) : AudioRecor
 }
 
 class JvmAudioPlayer : AudioPlayer {
+    private val outputMutex = Mutex()
     private var sourceLine: SourceDataLine? = null
     private var playing = false
 
@@ -137,12 +142,17 @@ class JvmAudioPlayer : AudioPlayer {
     ) = withContext(Dispatchers.IO) {
         stop()
         try {
-            val info = DataLine.Info(SourceDataLine::class.java, audioFormat)
-            val line = AudioSystem.getLine(info) as SourceDataLine
-            sourceLine = line
-            line.open(audioFormat)
-            line.start()
-            playing = true
+            val line = outputMutex.withLock {
+                currentCoroutineContext().ensureActive()
+                val info = DataLine.Info(SourceDataLine::class.java, audioFormat)
+                val output = AudioSystem.getLine(info) as SourceDataLine
+                sourceLine = output
+                output.open(audioFormat)
+                output.start()
+                playing = true
+                output
+            }
+            currentCoroutineContext().ensureActive()
 
             val byteBuffer = ByteArray(samples.size * 2)
             for (i in samples.indices) {
@@ -153,10 +163,7 @@ class JvmAudioPlayer : AudioPlayer {
 
             check(line.write(byteBuffer, 0, byteBuffer.size) == byteBuffer.size)
             line.drain()
-            line.stop()
-            line.close()
-            sourceLine = null
-            playing = false
+            stop()
             withContext(Dispatchers.Default) {
                 onComplete()
             }
@@ -173,13 +180,16 @@ class JvmAudioPlayer : AudioPlayer {
     }
 
     override suspend fun stop(): Unit = withContext(Dispatchers.IO) {
-        playing = false
-        val line = sourceLine
-        sourceLine = null
-        try {
-            line?.stop()
-            line?.flush()
-        } finally { line?.close() }
+        // Serialize opening and closing; cancellation must not reopen a stopped output.
+        outputMutex.withLock {
+            playing = false
+            val line = sourceLine
+            sourceLine = null
+            try {
+                line?.stop()
+                line?.flush()
+            } finally { line?.close() }
+        }
     }
 
     override fun isPlaying(): Boolean = playing
