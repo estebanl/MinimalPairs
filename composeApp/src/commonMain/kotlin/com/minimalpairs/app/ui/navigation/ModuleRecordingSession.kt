@@ -19,6 +19,12 @@ internal class ModuleRecordingSession(
     private var generation = 0L
     val busy: Boolean get() = operation?.isActive == true || cleanup?.isActive == true
 
+    /** Let a following interaction wait for capture/evaluation teardown instead of dropping its action. */
+    suspend fun awaitIdle() {
+        cleanup?.join()
+        operation?.join()
+    }
+
     fun toggle(evaluate: suspend (ShortArray) -> Unit) {
         if (busy) return
         operation = scope.launch {

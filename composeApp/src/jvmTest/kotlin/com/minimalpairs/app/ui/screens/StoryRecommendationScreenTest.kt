@@ -60,6 +60,7 @@ class StoryRecommendationScreenTest {
         override fun playTargetPhraseAudio() {}
         override fun playOutcomeAudio() {}
         override fun playRecording() {}
+        override fun continueConversation() {}
         override fun toggleRecording() {}
         override fun triggerSimulatedOutcome(isCorrect: Boolean) {}
         override fun resetCurrentStory() {}

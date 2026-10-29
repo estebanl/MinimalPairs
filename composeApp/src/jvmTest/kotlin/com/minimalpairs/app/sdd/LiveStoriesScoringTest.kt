@@ -13,6 +13,7 @@ import com.minimalpairs.app.core.model.MeaningTrapBranch
 import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
 import com.minimalpairs.app.data.catalog.MeaningTrapCatalog
 import com.minimalpairs.app.data.local.AppDatabase
+import com.minimalpairs.app.data.local.ModulePracticeRecordEntity
 import com.minimalpairs.app.data.local.createDatabase
 import com.minimalpairs.app.data.progress.*
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
@@ -38,6 +39,124 @@ import kotlin.test.*
  */
 @OptIn(ExperimentalComposeUiApi::class)
 class LiveStoriesScoringTest {
+    @Test
+    fun threeTurnConversationsRetainLiveScoringSafeguardsAndExampleIsolation() = runBlocking {
+        assumeTrue("Set MINIMAL_PAIRS_LIVE_STORIES=1 to run live Stories verification",
+            System.getenv("MINIMAL_PAIRS_LIVE_STORIES") == "1")
+        val controls = System.getenv("MINIMAL_PAIRS_STORY_CONTROLS_DIR")?.let(::File)
+        assumeTrue("Generated alternate controls are required for live conversation verification", controls?.isDirectory == true)
+        withContext(Dispatchers.Main) {
+            val output = File(System.getenv("MINIMAL_PAIRS_LIVE_STORIES_REPORT_DIR") ?: "build/reports/stories-live",
+                "conversations").apply { mkdirs() }
+            val lifecycle = LifecycleRegistry().apply { resume() }
+            val recorder = ControlledRecorder()
+            val player = ControlledPlayer()
+            val tracker = PhonemeConfusionTracker()
+            val saved = mutableListOf<ModulePracticeRecordEntity>()
+            val results = mutableListOf<JsonObject>()
+            val component = DefaultMeaningTrapComponent(DefaultComponentContext(lifecycle), tracker,
+                PhonemeScorerClient(), {}, recorder, player, onScored = saved::add)
+            try {
+                ImageComposeScene(430, 1600) { MinimalPairsTheme { MeaningTrapScreen(component) } }.use { scene ->
+                    suspend fun record(samples: ShortArray) {
+                        scene.click("Record your reply")
+                        eventually { component.state.value.isRecording }
+                        recorder.emit(samples)
+                        delay(50)
+                        scene.click("Stop and review")
+                        eventually { !component.state.value.isScoring &&
+                            (component.state.value.gopScore != null || component.state.value.feedbackIsError) }
+                    }
+                    for (base in MeaningTrapCatalog.stories) {
+                        scene.click("${base.intendedWord} vs ${base.trapWord}")
+                        eventually { component.state.value.activeStory.id == base.id && !component.state.value.isPlayingAudio }
+                        val reference = assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(base.id))
+                        for (turn in 1..3) {
+                            assertEquals(turn, component.state.value.turnNumber)
+                            val story = component.state.value.activeStory
+                            assertEquals(base.targetPhrase, story.targetPhrase)
+                            assertEquals(base.targetPhraseIpa, story.targetPhraseIpa)
+                            assertEquals(base.targetPhonemeIndex, story.targetPhonemeIndex)
+                            scene.click("Hear phrase")
+                            eventually { player.played.lastOrNull()?.contentEquals(reference) == true }
+                            if (base.id == "pot_vs_port" && turn == 2) {
+                                val before = tracker.getAllConfusions()
+                                val count = saved.size
+                                record(WavCodec.decodeWavToPcm(File(controls, "professor_smith/pot_vs_port_unrelated.wav").readBytes()))
+                                assertEquals(MeaningTrapBranch.PENDING, component.state.value.branch)
+                                assertTrue(component.state.value.feedbackIsError)
+                                component.continueConversation()
+                                assertEquals(2, component.state.value.turnNumber)
+                                assertFalse(component.state.value.isLoadingNextTurn)
+                                assertEquals(count, saved.size)
+                                assertEquals(before, tracker.getAllConfusions())
+                            }
+                            val intended = turn != 2
+                            val voice = if (base.id in setOf("pen_vs_pan", "pot_vs_port")) "professor_smith" else "tutor"
+                            val samples = if (intended) reference else
+                                WavCodec.decodeWavToPcm(File(controls, "$voice/${base.id}_trap.wav").readBytes())
+                            val count = saved.size
+                            record(samples)
+                            val state = component.state.value
+                            assertFalse(state.feedbackIsError, state.feedbackText)
+                            assertEquals(if (intended) MeaningTrapBranch.INTENDED_SUCCESS else MeaningTrapBranch.TRAP_TRIGGERED,
+                                state.branch, "${base.id} turn $turn: ${state.feedbackText}")
+                            assertEquals(count + 1, saved.size)
+                            scene.click("Replay your reply")
+                            eventually { player.played.lastOrNull()?.contentEquals(samples) == true }
+                            assertEquals(count + 1, saved.size)
+                            results += buildJsonObject {
+                                put("story_id", base.id); put("turn", turn); put("branch", state.branch.name)
+                                put("intended_score", state.gopScore); put("alternate_score", state.alternateScore)
+                                put("target_unchanged", true); put("reply_replay", true)
+                            }
+                            if (turn < 3) {
+                                scene.click("Continue story")
+                                eventually { !component.state.value.isLoadingNextTurn }
+                                assertNull(component.state.value.continuationError)
+                                assertEquals(turn + 1, component.state.value.turnNumber)
+                                assertEquals(if (intended) "intended" else "alternate", component.state.value.conversation.last().branch)
+                            }
+                        }
+                        scene.nodes().first { it.config.contains(SemanticsProperties.VerticalScrollAxisRange) }
+                            .config[SemanticsActions.ScrollBy].action!!.invoke(0f, 10_000f)
+                        repeat(10) { scene.render(System.nanoTime()).close(); delay(25) }
+                        scene.capture(output, "${base.id}-completed")
+                        component.continueConversation()
+                        assertEquals(3, component.state.value.turnNumber)
+                    }
+                    val count = saved.size
+                    val confusions = tracker.getAllConfusions()
+                    val weights = tracker.getAllWeights()
+                    for (base in MeaningTrapCatalog.stories) {
+                        component.selectStory(base.id)
+                        eventually { !component.state.value.isPlayingAudio }
+                        repeat(3) { turn ->
+                            component.triggerSimulatedOutcome(false)
+                            eventually { !component.state.value.isPlayingAudio }
+                            assertNull(component.state.value.gopScore)
+                            if (turn < 2) {
+                                component.continueConversation()
+                                eventually { !component.state.value.isLoadingNextTurn }
+                                assertTrue(component.state.value.isExampleConversation)
+                                assertNull(component.state.value.continuationError)
+                                component.toggleRecording()
+                                assertFalse(component.state.value.isRecording)
+                            }
+                        }
+                    }
+                    assertEquals(21, saved.size)
+                    assertEquals(count, saved.size)
+                    assertEquals(confusions, tracker.getAllConfusions())
+                    assertEquals(weights, tracker.getAllWeights())
+                    File(output, "evaluations.json").writeText(Json.encodeToString(results))
+                    File(output, "saved-results.json").writeText(Json.encodeToString(saved))
+                    println("STORIES_CONVERSATIONS_LIVE stories=7 real_turns=21 unchanged_targets=true reply_replays=21 unrelated_followup_rejected=true example_turns=21 example_saves=0")
+                }
+            } finally { lifecycle.destroy() }
+        }
+    }
+
     @Test
     fun allCatalogStoriesScoreRenderPlayAndPersistAgainstTheConfiguredService() = runBlocking {
         assumeTrue("Set MINIMAL_PAIRS_LIVE_STORIES=1 to run live Stories verification",

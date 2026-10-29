@@ -35,6 +35,11 @@ import com.minimalpairs.app.data.audio.StoryAudioSource
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.remote.PhonemeScorerApi
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
+import com.minimalpairs.app.data.dialogue.StoryDialogueSource
+import com.minimalpairs.app.data.dialogue.BundledStoryDialogueSource
+import com.minimalpairs.app.data.dialogue.StoryDialogueException
+import com.minimalpairs.app.data.dialogue.StoryDialogueHistoryTurn
+import com.minimalpairs.app.data.dialogue.MAX_STORY_TURNS
 import com.minimalpairs.app.domain.srs.DrillProgressionManager
 import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
@@ -944,8 +949,15 @@ data class MeaningTrapUiState(
     val isSimulated: Boolean = false,
     val playbackError: String? = null,
     val recommendation: StoryRecommendation? = null,
-    val hasRecording: Boolean = false
-)
+    val hasRecording: Boolean = false,
+    val conversation: List<StoryDialogueHistoryTurn> = emptyList(),
+    val isLoadingNextTurn: Boolean = false,
+    val continuationError: String? = null,
+    val dialogueContentVersion: String? = null,
+    val isExampleConversation: Boolean = false
+) {
+    val turnNumber: Int get() = conversation.size + 1
+}
 
 interface MeaningTrapComponent {
     val state: StateFlow<MeaningTrapUiState>
@@ -955,6 +967,7 @@ interface MeaningTrapComponent {
     fun playTargetPhraseAudio()
     fun playOutcomeAudio()
     fun playRecording()
+    fun continueConversation()
     fun toggleRecording()
     fun triggerSimulatedOutcome(isCorrect: Boolean)
     fun resetCurrentStory()
@@ -972,7 +985,8 @@ class DefaultMeaningTrapComponent(
     private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val progressRepository: ProgressRepository? = null,
     private val onScored: (ModulePracticeRecordEntity) -> Unit = { progressRepository?.recordModule(it) },
-    private val storyAudioSource: StoryAudioSource = BundledStoryAudioSource
+    private val storyAudioSource: StoryAudioSource = BundledStoryAudioSource,
+    private val dialogueSource: StoryDialogueSource = BundledStoryDialogueSource()
 ) : MeaningTrapComponent, ComponentContext by componentContext {
 
     override val availableStories: List<com.minimalpairs.app.core.model.ComicStory> =
@@ -987,6 +1001,8 @@ class DefaultMeaningTrapComponent(
 
     // Only the latest completed reply is retained in memory, never in progress or backups.
     private var recordedReply = ShortArray(0)
+    private var dialogueJob: Job? = null
+    private var dialogueGeneration = 0L
     private val playback = ModulePlaybackSession(scope, audioPlayer) { playing ->
         _state.value = _state.value.copy(isPlayingAudio = playing)
     }
@@ -1014,6 +1030,7 @@ class DefaultMeaningTrapComponent(
     }
 
     private fun cancelReply() {
+        cancelContinuation()
         val interrupted = _state.value.isRecording || _state.value.isScoring
         recording.cancel()
         if (interrupted) _state.value = _state.value.copy(
@@ -1024,6 +1041,7 @@ class DefaultMeaningTrapComponent(
 
     override fun selectStory(storyId: String) {
         val story = availableStories.firstOrNull { it.id == storyId } ?: return
+        cancelContinuation()
         recording.cancel()
         recordedReply = ShortArray(0)
         _state.value = MeaningTrapUiState(activeStory = story, recommendation = _state.value.recommendation)
@@ -1031,6 +1049,9 @@ class DefaultMeaningTrapComponent(
     }
 
     private fun playStoryAudio(clip: StoryAudioClip) {
+        // Generated narrative has no recorded voice. The unchanged phrase retains its reference.
+        if (_state.value.turnNumber > 1 && clip != StoryAudioClip.PHRASE) return
+        if (_state.value.isLoadingNextTurn) return
         val storyId = _state.value.activeStory.id
         val label = when (clip) {
             StoryAudioClip.PROMPT -> "story prompt"
@@ -1069,7 +1090,7 @@ class DefaultMeaningTrapComponent(
     }
 
     override fun playRecording() {
-        if (_state.value.isRecording || _state.value.isScoring || recording.busy || recordedReply.isEmpty()) return
+        if (_state.value.isLoadingNextTurn || _state.value.isRecording || _state.value.isScoring || recording.busy || recordedReply.isEmpty()) return
         _state.value = _state.value.copy(playbackError = null)
         playback.play(
             canPlay = { !_state.value.isRecording && !_state.value.isScoring && !recording.busy && recordedReply.isNotEmpty() },
@@ -1083,12 +1104,12 @@ class DefaultMeaningTrapComponent(
     }
 
     override fun toggleRecording() {
-        if (recording.busy) return
+        if (recording.busy || _state.value.isLoadingNextTurn || _state.value.isExampleConversation) return
         val story = _state.value.activeStory
         if (!_state.value.isRecording) {
             recordedReply = ShortArray(0)
             _state.value = _state.value.copy(
-                branch = MeaningTrapBranch.PENDING, playbackError = null, hasRecording = false,
+                branch = MeaningTrapBranch.PENDING, playbackError = null, hasRecording = false, continuationError = null,
                 gopScore = null, alternateScore = null, feedbackIsError = false, isSimulated = false,
                 feedbackText = "Listening… Speak the full phrase, then stop to review.")
         }
@@ -1138,19 +1159,69 @@ class DefaultMeaningTrapComponent(
     }
 
     override fun triggerSimulatedOutcome(isCorrect: Boolean) {
+        if (_state.value.isLoadingNextTurn) return
         recording.cancel()
         _state.value = _state.value.copy(
             branch = if (isCorrect) MeaningTrapBranch.INTENDED_SUCCESS else MeaningTrapBranch.TRAP_TRIGGERED,
             gopScore = null, alternateScore = null, isSimulated = true, feedbackIsError = false,
+            continuationError = null,
+            isExampleConversation = _state.value.isExampleConversation || _state.value.turnNumber > 1,
             feedbackText = "Example ending — no recording was evaluated and your progress was not changed."
         )
         playOutcomeAudio()
     }
 
     override fun resetCurrentStory() {
+        cancelContinuation()
         recording.cancel()
         recordedReply = ShortArray(0)
-        _state.value = MeaningTrapUiState(activeStory = _state.value.activeStory, recommendation = _state.value.recommendation)
+        val base = availableStories.single { it.id == _state.value.activeStory.id }
+        _state.value = MeaningTrapUiState(activeStory = base, recommendation = _state.value.recommendation)
+    }
+
+    private fun cancelContinuation() {
+        dialogueGeneration++
+        dialogueJob?.cancel()
+        dialogueJob = null
+        _state.value = _state.value.copy(isLoadingNextTurn = false)
+    }
+
+    override fun continueConversation() {
+        val current = _state.value
+        if (current.isLoadingNextTurn || current.isRecording || current.isScoring ||
+            current.branch == MeaningTrapBranch.PENDING || current.turnNumber >= MAX_STORY_TURNS) return
+        val intended = current.branch == MeaningTrapBranch.INTENDED_SUCCESS
+        val example = current.isExampleConversation || current.isSimulated
+        val history = current.conversation + StoryDialogueHistoryTurn(
+            prompt = current.activeStory.promptDialogue,
+            branch = if (intended) "intended" else "alternate",
+            consequence = if (intended) current.activeStory.intendedOutcome.dialogue else current.activeStory.trapOutcome.dialogue,
+            example = example
+        )
+        val token = ++dialogueGeneration
+        _state.value = current.copy(isLoadingNextTurn = true, continuationError = null)
+        dialogueJob = scope.launch {
+            try {
+                recording.awaitIdle()
+                playback.stop()
+                val response = dialogueSource.continueStory(current.activeStory.id, history)
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (token != dialogueGeneration) return@launch
+                val next = response.validatedStory(current.activeStory.id, current.turnNumber + 1)
+                recordedReply = ShortArray(0)
+                _state.value = MeaningTrapUiState(activeStory = next, recommendation = _state.value.recommendation,
+                    conversation = history, dialogueContentVersion = response.contentVersion, isExampleConversation = example,
+                    feedbackText = if (example) "Example conversation — explore the endings. Restart the story to record for personal feedback." else "")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (token == dialogueGeneration) _state.value = _state.value.copy(
+                    continuationError = if (error is StoryDialogueException) error.message else
+                        "Couldn't load the next turn. Retry or restart the story; your reply and progress are unchanged.")
+            } finally {
+                if (token == dialogueGeneration) _state.value = _state.value.copy(isLoadingNextTurn = false)
+            }
+        }
     }
 
     override fun onBack() { cancelReply(); onBackClicked() }

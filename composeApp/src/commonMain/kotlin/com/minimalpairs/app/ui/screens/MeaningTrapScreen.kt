@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minimalpairs.app.core.model.MeaningTrapBranch
+import com.minimalpairs.app.data.dialogue.MAX_STORY_TURNS
 import com.minimalpairs.app.ui.components.PracticeDetails
 import com.minimalpairs.app.ui.components.PracticeIcon
 import com.minimalpairs.app.ui.components.PracticeTopBar
@@ -64,6 +65,11 @@ fun MeaningTrapScreen(
     val scheme = MaterialTheme.colorScheme
     val state by component.state.collectAsState()
     val story = state.activeStory
+    val generated = state.turnNumber > 1
+    val idle = !state.isRecording && !state.isScoring && !state.isLoadingNextTurn
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(story.id, state.turnNumber) { scrollState.scrollTo(0) }
 
     LaunchedEffect(component) {
         component.playPromptAudio()
@@ -80,7 +86,7 @@ fun MeaningTrapScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Story Selector Chips
@@ -120,6 +126,29 @@ fun MeaningTrapScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            Text(
+                "Turn ${state.turnNumber} of $MAX_STORY_TURNS" + if (generated) " · Follow-up" else "",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            )
+            if (state.isExampleConversation) {
+                Text("Example conversation · no personal scores", style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
+            }
+            if (state.conversation.isNotEmpty()) {
+                PracticeDetails("Conversation so far") {
+                    state.conversation.forEachIndexed { index, turn ->
+                        Text("Turn ${index + 1}${if (turn.example) " · Example" else ""}", fontWeight = FontWeight.Bold)
+                        Text(turn.prompt, style = MaterialTheme.typography.bodyMedium)
+                        val reply = if (turn.branch == "intended") story.targetPhrase else
+                            Regex("\\b${Regex.escape(story.intendedWord)}\\b").replace(story.targetPhrase, story.trapWord)
+                        Text("${if (turn.example) "Example reply" else "Reply matched"}: $reply", style = MaterialTheme.typography.bodySmall)
+                        Text(turn.consequence, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+
             // Comic Panel 1: Setting & Prompt
             ComicPanelCard(
                 panelTitle = story.title,
@@ -127,10 +156,15 @@ fun MeaningTrapScreen(
                 speechBubbleText = story.promptDialogue,
                 subCaption = story.premise,
                 isPlayingAudio = state.isPlayingAudio,
-                canPlayAudio = !state.isRecording && !state.isScoring,
-                onListenClick = component::playPromptAudio,
-                illustration = { StoryIllustration(story) }
+                canPlayAudio = idle && !generated,
+                onListenClick = if (generated) null else component::playPromptAudio,
+                illustration = { StoryIllustration(if (generated) story.copy(id = "generated") else story) }
             )
+            if (generated) {
+                Text("Read the conversation, then listen to the phrase and reply.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            }
 
             Spacer(Modifier.height(14.dp))
 
@@ -157,7 +191,7 @@ fun MeaningTrapScreen(
                         OutlinedButton(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                             onClick = component::playTargetPhraseAudio,
-                            enabled = !state.isPlayingAudio && !state.isRecording && !state.isScoring,
+                            enabled = !state.isPlayingAudio && idle,
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(if (state.isPlayingAudio) "Playing..." else "Hear phrase", fontSize = 12.sp)
@@ -256,7 +290,7 @@ fun MeaningTrapScreen(
             val isRec = state.isRecording
             Button(
                 onClick = component::toggleRecording,
-                enabled = !state.isScoring,
+                enabled = !state.isScoring && !state.isLoadingNextTurn && !state.isExampleConversation,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRec) scheme.error else scheme.primary,
@@ -276,7 +310,7 @@ fun MeaningTrapScreen(
             OutlinedButton(
                 onClick = component::playRecording,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
-                enabled = state.hasRecording && !state.isRecording && !state.isScoring && !state.isPlayingAudio,
+                enabled = state.hasRecording && idle && !state.isPlayingAudio,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
             ) {
@@ -286,7 +320,9 @@ fun MeaningTrapScreen(
             Spacer(Modifier.height(8.dp))
 
             PracticeDetails("Explore example endings") {
-                    Text("These examples are simulated; record your voice for personal feedback.", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                Text(if (state.isExampleConversation) "Choose an example ending, then continue. Restart the story to record for personal feedback."
+                    else "These examples are simulated; record your voice for personal feedback.",
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                 // Test Simulation Buttons (for fast iteration and exploring both branches)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -295,7 +331,7 @@ fun MeaningTrapScreen(
                     OutlinedButton(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                         onClick = { component.triggerSimulatedOutcome(true) },
-                        enabled = !state.isRecording && !state.isScoring,
+                        enabled = idle,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -304,7 +340,7 @@ fun MeaningTrapScreen(
                     OutlinedButton(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                         onClick = { component.triggerSimulatedOutcome(false) },
-                        enabled = !state.isRecording && !state.isScoring,
+                        enabled = idle,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -350,7 +386,7 @@ fun MeaningTrapScreen(
                             )
                             Spacer(Modifier.height(8.dp))
 
-                            StoryIllustration(story, state.branch)
+                                StoryIllustration(if (generated) story.copy(id = "generated") else story, state.branch)
 
                             Spacer(Modifier.height(8.dp))
 
@@ -372,10 +408,10 @@ fun MeaningTrapScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold
                                         )
-                                        OutlinedButton(
+                                        if (!generated) OutlinedButton(
                                             colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accentInk),
                                             onClick = component::playOutcomeAudio,
-                                            enabled = !state.isPlayingAudio && !state.isRecording && !state.isScoring,
+                                            enabled = !state.isPlayingAudio && idle && !generated,
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(if (state.isPlayingAudio) "Playing..." else "Listen", fontSize = 12.sp)
@@ -425,18 +461,41 @@ fun MeaningTrapScreen(
                                 text = story.semanticTakeaway,
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            Spacer(Modifier.height(12.dp))
-                            Button(
-                                onClick = component::resetCurrentStory,
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Try the story again")
-                            }
+
                         }
                     }
                 }
             }
+
+            Card(modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Keep the conversation going", style = MaterialTheme.typography.titleSmall)
+                    Text("Each follow-up keeps the same reply and sound contrast. Your chosen ending shapes what happens next.",
+                        style = MaterialTheme.typography.bodySmall)
+                    state.continuationError?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium) }
+                    if (state.isLoadingNextTurn) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.width(20.dp).height(20.dp), strokeWidth = 2.dp)
+                            Text("Preparing the next turn…")
+                        }
+                    }
+                    if (state.turnNumber >= MAX_STORY_TURNS && state.branch != MeaningTrapBranch.PENDING) {
+                        Text("Conversation complete. Restart to practise again.")
+                    } else {
+                        Button(
+                            onClick = component::continueConversation,
+                            enabled = idle && state.branch != MeaningTrapBranch.PENDING && state.turnNumber < MAX_STORY_TURNS,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(if (state.continuationError != null) "Retry next turn" else "Continue story") }
+                    }
+                    if (generated || state.isLoadingNextTurn || state.continuationError != null || state.branch != MeaningTrapBranch.PENDING) {
+                        OutlinedButton(onClick = component::resetCurrentStory, modifier = Modifier.fillMaxWidth()) {
+                            Text("Restart story")
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
 
             Spacer(Modifier.height(30.dp))
         }

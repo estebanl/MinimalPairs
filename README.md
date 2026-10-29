@@ -20,6 +20,15 @@ After stopping a recording, **Replay your reply** plays the latest captured audi
 once scoring finishes, including uncertain or failed evaluations. Starting another
 recording, changing stories, or resetting discards that reply. Audio stays in memory
 and is never included in progress history or backups; replay does not change scores.
+**Continue story** follows the selected consequence into a three-turn conversation.
+All seven stories include original AI-authored follow-ups, bundled with the app at
+the user's request: no text-generation service or API key is needed. The 42
+follow-up scenes cover both outcomes of every preceding turn. Each turn preserves
+the same validated phrase, IPA, selected vowel, and reference reply audio.
+Conversation history stays in memory. Example conversations cannot record or save
+personal scores; restart the story to return to voice practice. Follow-up dialogue
+is displayed as text, with reference audio available for the unchanged reply.
+See [Stories conversations](docs/STORIES_CONVERSATIONS.md) for the content contract.
 Backend 2.3.1 supports the British pot/port realization groups and resolves all
 seven bundled reference phrases without lowering the scoring thresholds. It also
 rejects unsupported surrounding phrase context before choosing an ending.

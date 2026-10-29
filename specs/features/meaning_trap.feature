@@ -2,6 +2,40 @@ Feature: Stories reply feedback and pronunciation branching
   Stories use full-phrase alignment to compare the vowel that changes the meaning.
   Sound confidence is experimental model output, not pronunciation accuracy.
 
+  Scenario: Continue a pronunciation-dependent conversation
+    Given a reply has resolved to an intended or alternate ending
+    When the learner chooses Continue story
+    Then the next prompt continues from the selected consequence and preceding conversation
+    And every available story supports three turns and all preceding outcome paths
+    And follow-up dialogue is AI-authored and bundled with the app without a runtime generation service
+    And the target phrase, phrase IPA, vowel index, alternate vowel, and teaching takeaway stay unchanged
+    And each real recorded turn uses the same strict two-direction phrase scorer and ending thresholds
+    And conversation history shows previous prompts, matched meanings, and consequences
+    And the third resolved turn completes the conversation and offers restart
+
+  Scenario: Reject invalid follow-up content and recover from loading failure
+    Given the next turn cannot load or its target metadata or narrative is invalid
+    Then the current turn, completed recording, scores, and progress remain available
+    And Retry next turn retries the same branch path without duplicating history
+    And Restart story returns to the bundled opening prompt
+    And changing stories, resetting, leaving, or destroying the screen cancels pending continuation
+    And cancelled or late work cannot overwrite another story
+
+  Scenario: Explore example conversations without creating personal progress
+    Given the learner continues from a simulated ending
+    Then follow-up turns are labelled Example conversation with no personal scores
+    And example endings select conversational branches without calling the scorer
+    And recording is disabled until the conversation is restarted
+    And no personal result, confusion trial, or recommendation evidence is produced
+    And selecting an example during a follow-up also switches to example mode
+
+  Scenario: Preserve reply audio during conversations
+    Given a follow-up uses new dialogue with the same target phrase
+    Then Hear phrase plays the unchanged reference reply
+    And original prompt and ending recordings are not played for the new dialogue
+    And a completed real reply remains replayable until successful continuation or reset
+    And replay does not change conversation history or personal scores
+
   Scenario: Recommend practice from saved sound confusions
     Given the learner has saved listening answers or scored Stories replies
     Then an available story is recommended for a contrast with observed mistakes
@@ -73,7 +107,8 @@ Feature: Stories reply feedback and pronunciation branching
     And reversing the pair must return the same target region and evidence
     And the service permits internal phrase pauses and up to 30 seconds of recording
     When one candidate scores at least 80 out of 100 and exceeds the other by at least 15 points
-    Then the corresponding ending is shown and played
+    Then the corresponding ending is shown
+    And opening-scene endings play their matching bundled recording
     And both sound-confidence scores and their experimental meaning are visible
     And the intended-vowel score and chosen outcome are saved in Stories history
     And the differing vowel phonemes update the shared confusion tracker
