@@ -4,6 +4,41 @@
 protocol and evaluator were added. No human-speaker accuracy or calibration result
 is claimed. Generated reference/control recordings remain integration checks.
 
+## Recording pack
+
+Generate a shareable pack directly from the current runtime catalog:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/prepare_story_recording_pack.py \
+  --output build/reports/stories/recording-pack --order ABBA
+```
+
+PDF creation requires `reportlab` and an IPA-capable TrueType font. The generator
+detects common macOS/Linux/Windows fonts; `--font /path/to/font.ttf` overrides the
+choice. It refuses to overwrite an existing destination or ZIP, including filled
+forms. Use a new output path for another pack. `--order BAAB` counterbalances the
+four main readings; assign and log order before collection.
+
+The ZIP contains a 10-page participant guide with all seven phrase pairs and
+fillable speaker/microphone/session worksheets, a 5-page coordinator and blinded
+review guide with fillable study-plan and review forms, exact phrase/IPA/index
+metadata, a 42-clip session plan, and blank metadata, adjudication and evaluator
+manifest templates. The pack has no audio or completed participant records.
+
+Each speaker/microphone session plans two readings of each phrase version, one
+extra natural reading and one unrelated sentence per story. The extra take is a
+review candidate, not an assumed ambiguous pronunciation. A prompted word is not
+the final `expected` label. Keep that distinction through collection and blinded
+annotation. If natural recordings do not provide ambiguous coverage, report the
+gap and follow a predeclared supplemental-collection rule; never manufacture or
+relabel cases to fill a category.
+
+Use a private dataset folder outside the repository for actual audio, filled
+forms, identity maps and consent records. Before scoring, the study owner must
+complete the sample/coverage plan, speaker split, upload permission and endpoint,
+and acceptable rates/uncertainty method. The pack supplies no participant-count
+or calibration claim. The empty manifest deliberately fails evaluator validation.
+
 ## Collection and annotation protocol
 
 1. Freeze the app/catalog revision, backend version, checkpoint identity, protocol
