@@ -2,6 +2,7 @@ package com.minimalpairs.app.data.progress
 
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.local.*
+import com.minimalpairs.app.domain.StoryContrastEvidence
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
@@ -156,7 +157,15 @@ class ProgressRepository(
             else "Couldn't refresh progress. Showing the last loaded totals. Retry to get the latest progress."
             emit(LoadedSnapshot(lastSnapshot, canRetryLoad = true, error = message))
         }
-    }
+    }.flowOn(aggregationDispatcher).shareIn(scope, SharingStarted.Eagerly, replay = 1)
+    /** Lifetime saved evidence shares the existing database observer and ignores presentation filters. */
+    val storyRecommendationEvidence: StateFlow<Map<String, StoryContrastEvidence>> = snapshots
+        .map { it.snapshot }
+        .distinctUntilChanged { old, new -> old?.trials === new?.trials && old?.modules === new?.modules }
+        .map { snapshot -> snapshot?.let(::storyPracticeEvidence).orEmpty() }
+        .distinctUntilChanged()
+        .flowOn(aggregationDispatcher)
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
     private var lastAggregated: LoadedProgress? = null
     private val aggregator = ProgressAggregator()
     private val progress = combine(snapshots, calendar, filters) { loaded, day, selected ->

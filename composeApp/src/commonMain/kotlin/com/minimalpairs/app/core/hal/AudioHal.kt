@@ -1,6 +1,7 @@
 package com.minimalpairs.app.core.hal
 
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.CancellationException
 
 enum class AudioRecorderState {
     UNINITIALIZED,
@@ -25,6 +26,18 @@ interface AudioRecorder {
 
 interface AudioPlayer {
     suspend fun play(samples: ShortArray, onComplete: () -> Unit = {})
+
+    /** Reports device failures separately from completion; legacy players may throw from play. */
+    suspend fun playWithFeedback(samples: ShortArray, onComplete: () -> Unit, onFailure: () -> Unit) {
+        try {
+            play(samples, onComplete)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            onFailure()
+        }
+    }
+
     suspend fun stop()
     fun isPlaying(): Boolean
 }

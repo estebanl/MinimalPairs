@@ -11,6 +11,12 @@ from threading import Lock
 import numpy as np
 
 
+# Broad British teaching labels and their distinct traditional/raised realizations.
+# These groups apply only to the declared LOT/THOUGHT phrase contrast, never as
+# global token aliases. See docs/ARTICULATOR_SCORING.md for phonetic sources.
+BRITISH_BACK_VOWEL_GROUPS = {"ɒ": ("ɒ", "ɔ"), "ɔː": ("ɔː", "oː")}
+
+
 class ModelUnavailable(RuntimeError):
     pass
 
@@ -82,7 +88,7 @@ def prepare_word_audio(samples, *, allow_phrase=False):
 
 
 def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=False, selected_index=None,
-                     alternative_target=None, other_vowel_targets=()):
+                     alternative_target=None, other_vowel_targets=(), contrast_groups=None):
     """Return per-target posterior confidence and true CTC frame intervals.
 
     Expanded states alternate blank and target; repeated adjacent targets must
@@ -99,15 +105,30 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
     if not 0 <= blank_id < vocabulary or not np.isfinite(duration) or duration <= 0:
         raise ValueError("Invalid alignment metadata")
     contrast = alternative_target is not None
+    if contrast_groups is not None and not contrast:
+        raise InvalidTarget("Pronunciation groups require a declared contrast")
     if contrast:
         if (not segment_scores or selected_index is None or not 0 <= selected_index < len(targets)
                 or not 0 <= alternative_target < vocabulary or alternative_target == blank_id
                 or alternative_target == targets[selected_index]):
             raise InvalidTarget("Provide two distinct phonemes and a selected contrast position")
+        groups = ((targets[selected_index],), (alternative_target,))
+        if contrast_groups is not None:
+            try:
+                groups = tuple(tuple(group) for group in contrast_groups)
+            except TypeError as error:
+                raise InvalidTarget("Provide two disjoint pronunciation groups") from error
+            if (len(groups) != 2 or any(not group or len(set(group)) != len(group) for group in groups)
+                    or any(not isinstance(token, int) or token == blank_id or not 0 <= token < vocabulary
+                           for group in groups for token in group)
+                    or targets[selected_index] not in groups[0] or alternative_target not in groups[1]
+                    or set(groups[0]) & set(groups[1])):
+                raise InvalidTarget("Provide two disjoint pronunciation groups containing their declared phonemes")
+        joint_targets = set(groups[0]) | set(groups[1])
         # A shared state may emit either vowel. Adjacent repetitions would need a
         # larger CTC lattice; reject that unsupported context rather than merge them.
         neighbors = targets[max(0, selected_index - 1):selected_index] + targets[selected_index + 1:selected_index + 2]
-        if any(token in (targets[selected_index], alternative_target) for token in neighbors):
+        if any(token in joint_targets for token in neighbors):
             raise InvalidTarget("The selected contrast must be separated from adjacent matching phonemes")
     required_frames = len(targets) + sum(a == b for a, b in zip(targets, targets[1:]))
     if frames < required_frames:
@@ -121,7 +142,9 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
     if contrast:
         # The same joint alignment is used in either request direction. A weak
         # forced target cannot move its score to a different part of the phrase.
-        pair_logp = np.logaddexp(logp[:, targets[selected_index]], logp[:, alternative_target])
+        target_logp = np.logaddexp.reduce(logp[:, groups[0]], axis=1)
+        alternate_logp = np.logaddexp.reduce(logp[:, groups[1]], axis=1)
+        pair_logp = np.logaddexp(target_logp, alternate_logp)
         emissions[:, selected_index * 2 + 1] = pair_logp
     scores = np.full(len(states), -np.inf)
     scores[0] = emissions[0, 0]
@@ -185,7 +208,7 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
                 strongest = float(np.exp(logp[evidence].max(axis=1).mean()))
                 if support < .1 or support < strongest * .5:
                     raise RecordingQualityError("uncertain_alignment", "The selected vowel contrast is not supported reliably. Record the phrase again.")
-                confidence = float(np.exp((logp[evidence, target] - pair_logp[evidence]).mean()))
+                confidence = float(np.exp((target_logp[evidence] - pair_logp[evidence]).mean()))
             elif index == selected_index:
                 evidence = local[speech_frames[local]]
                 if not len(evidence) or float(np.exp(logp[evidence].max(axis=1)).max()) < .6:
@@ -197,6 +220,15 @@ def align_posteriors(logits, targets, blank_id, duration, *, segment_scores=Fals
         })
         if contrast and index == selected_index:
             results[-1]["contrast_evidence"] = support
+    if contrast:
+        # A valid local vowel cannot establish that the prompted phrase was said:
+        # unrelated speech can contain the same vowel. Require a majority of the
+        # surrounding phones to have the same 10% absolute posterior support used
+        # for contrast evidence. This is an alignment gate, never a multiplier or
+        # a phrase-average replacement for the selected vowel's score.
+        context = [score for index, score in enumerate(results) if index != selected_index]
+        if sum(score["gop_score"] >= 10 for score in context) * 2 <= len(context):
+            raise RecordingQualityError("uncertain_alignment", "The surrounding phrase is not supported reliably. Record the full phrase again.")
     return results
 
 
@@ -257,6 +289,7 @@ class LocalPhonemeModel:
         targets = [self.vocab[token] for token in model_tokens]
         alternative_target = None
         other_vowel_targets = ()
+        contrast_groups = None
         if alternative_phoneme is not None:
             if utterance_kind != "phrase" or target_phoneme_index is None:
                 raise InvalidTarget("Contrast scoring requires a selected phoneme in a phrase")
@@ -268,6 +301,15 @@ class LocalPhonemeModel:
                 raise InvalidTarget("The alternate phoneme must differ from the selected phoneme")
             vowels = {self.vocab[token] for token in ("iː", "ɪ", "æ", "ɛ", "ɑː", "ʌ", "ʊ", "uː", "ɒ", "ɔː") if token in self.vocab}
             pair = {targets[target_phoneme_index], alternative_target}
+            if {phonemes[target_phoneme_index], alternative_phoneme} == set(BRITISH_BACK_VOWEL_GROUPS):
+                contrast_groups = tuple(
+                    tuple(self.vocab[token] for token in BRITISH_BACK_VOWEL_GROUPS[label] if token in self.vocab)
+                    for label in (phonemes[target_phoneme_index], alternative_phoneme)
+                )
+                pair = set().union(*contrast_groups)
+                # Keep other narrow back vowels/diphthongs as explicit competitors.
+                # A broad-label realization must not absorb GOAT or PALM evidence.
+                vowels.update(self.vocab[token] for token in ("ɔ", "oː", "o", "oʊ", "əʊ", "ɑ") if token in self.vocab)
             if pair <= vowels:
                 other_vowel_targets = tuple(vowels - pair)
         duration = len(samples) / 16000
@@ -279,7 +321,8 @@ class LocalPhonemeModel:
                                    segment_scores=target_phoneme_index is not None,
                                    selected_index=target_phoneme_index,
                                    alternative_target=alternative_target,
-                                   other_vowel_targets=other_vowel_targets)
+                                   other_vowel_targets=other_vowel_targets,
+                                   contrast_groups=contrast_groups)
         for score in aligned:
             score["start_time"] = max(0., score["start_time"] + offset / 16000)
             score["end_time"] = min(duration, score["end_time"] + offset / 16000)

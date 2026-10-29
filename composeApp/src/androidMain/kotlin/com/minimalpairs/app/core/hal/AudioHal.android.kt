@@ -6,6 +6,8 @@ import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -111,7 +113,15 @@ class AndroidAudioPlayer : AudioPlayer {
     private var audioTrack: AudioTrack? = null
     private var playing = false
 
-    override suspend fun play(samples: ShortArray, onComplete: () -> Unit) = withContext(Dispatchers.IO) {
+    override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+        playWithFeedback(samples, onComplete, onFailure = onComplete)
+    }
+
+    override suspend fun playWithFeedback(
+        samples: ShortArray,
+        onComplete: () -> Unit,
+        onFailure: () -> Unit
+    ) = withContext(Dispatchers.IO) {
         stop()
         try {
             val sampleRate = 16000
@@ -137,7 +147,8 @@ class AndroidAudioPlayer : AudioPlayer {
             audioTrack = track
             playing = true
 
-            track.write(samples, 0, samples.size)
+            check(track.state == AudioTrack.STATE_INITIALIZED)
+            check(track.write(samples, 0, samples.size) == samples.size)
             track.play()
 
             // Wait for duration
@@ -151,19 +162,23 @@ class AndroidAudioPlayer : AudioPlayer {
             withContext(Dispatchers.Default) {
                 onComplete()
             }
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
             playing = false
             withContext(Dispatchers.Default) {
-                onComplete()
+                onFailure()
             }
+        } finally {
+            withContext(NonCancellable) { runCatching { stop() } }
         }
     }
 
-    override suspend fun stop() = withContext(Dispatchers.IO) {
+    override suspend fun stop(): Unit = withContext(Dispatchers.IO) {
         playing = false
-        audioTrack?.stop()
-        audioTrack?.release()
+        val track = audioTrack
         audioTrack = null
+        try { track?.stop() } finally { track?.release() }
     }
 
     override fun isPlaying(): Boolean = playing

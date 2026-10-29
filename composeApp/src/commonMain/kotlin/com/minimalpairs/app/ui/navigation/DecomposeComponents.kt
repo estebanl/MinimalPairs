@@ -29,6 +29,9 @@ import com.minimalpairs.app.core.model.ListeningContrast
 import com.minimalpairs.app.core.model.MinimalPairWord
 import com.minimalpairs.app.core.model.PlaybackSpeed
 import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.audio.BundledStoryAudioSource
+import com.minimalpairs.app.data.audio.StoryAudioClip
+import com.minimalpairs.app.data.audio.StoryAudioSource
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.remote.PhonemeScorerApi
 import com.minimalpairs.app.data.remote.PhonemeScorerClient
@@ -37,6 +40,8 @@ import com.minimalpairs.app.domain.srs.ModifiedSm2Engine
 import com.minimalpairs.app.domain.srs.PhonemeConfusionTracker
 import com.minimalpairs.app.domain.srs.Sm2State
 import com.minimalpairs.app.domain.MeaningTrapEvaluator
+import com.minimalpairs.app.domain.StoryRecommendation
+import com.minimalpairs.app.domain.recommendStory
 import com.minimalpairs.app.core.model.MeaningTrapBranch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
@@ -936,7 +941,9 @@ data class MeaningTrapUiState(
     val alternateScore: Float? = null,
     val feedbackText: String = "",
     val feedbackIsError: Boolean = false,
-    val isSimulated: Boolean = false
+    val isSimulated: Boolean = false,
+    val playbackError: String? = null,
+    val recommendation: StoryRecommendation? = null
 )
 
 interface MeaningTrapComponent {
@@ -962,7 +969,8 @@ class DefaultMeaningTrapComponent(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
     private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val progressRepository: ProgressRepository? = null,
-    private val onScored: (ModulePracticeRecordEntity) -> Unit = { progressRepository?.recordModule(it) }
+    private val onScored: (ModulePracticeRecordEntity) -> Unit = { progressRepository?.recordModule(it) },
+    private val storyAudioSource: StoryAudioSource = BundledStoryAudioSource
 ) : MeaningTrapComponent, ComponentContext by componentContext {
 
     override val availableStories: List<com.minimalpairs.app.core.model.ComicStory> =
@@ -971,7 +979,7 @@ class DefaultMeaningTrapComponent(
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val _state = MutableStateFlow(
-        MeaningTrapUiState(activeStory = availableStories.first())
+        MeaningTrapUiState(activeStory = availableStories.first(), recommendation = recommendStory(availableStories, emptyMap()))
     )
     override val state: StateFlow<MeaningTrapUiState> = _state.asStateFlow()
 
@@ -985,6 +993,13 @@ class DefaultMeaningTrapComponent(
         stopPlayback = playback::stop)
 
     init {
+        progressRepository?.let { repository ->
+            scope.launch {
+                repository.storyRecommendationEvidence.collect { evidence ->
+                    _state.value = _state.value.copy(recommendation = recommendStory(availableStories, evidence))
+                }
+            }
+        }
         lifecycle.doOnStop { cancelReply() }
         lifecycle.doOnDestroy { cancelReply(); scope.cancel() }
     }
@@ -1001,37 +1016,53 @@ class DefaultMeaningTrapComponent(
     override fun selectStory(storyId: String) {
         val story = availableStories.firstOrNull { it.id == storyId } ?: return
         recording.cancel()
-        _state.value = MeaningTrapUiState(activeStory = story)
+        _state.value = MeaningTrapUiState(activeStory = story, recommendation = _state.value.recommendation)
         playPromptAudio()
     }
 
-    private fun playStoryAudio(load: suspend () -> ShortArray?) {
-        playback.play({ !_state.value.isRecording && !recording.busy }, load)
+    private fun playStoryAudio(clip: StoryAudioClip) {
+        val storyId = _state.value.activeStory.id
+        val label = when (clip) {
+            StoryAudioClip.PROMPT -> "story prompt"
+            StoryAudioClip.PHRASE -> "example phrase"
+            StoryAudioClip.INTENDED, StoryAudioClip.TRAP -> "story ending"
+        }
+        _state.value = _state.value.copy(playbackError = null)
+        playback.play(
+            canPlay = { !_state.value.isRecording && !recording.busy },
+            onFailure = { failure ->
+                val action = if (clip == StoryAudioClip.PHRASE) "Hear phrase" else "Listen"
+                val message = when (failure) {
+                    ModulePlaybackSession.Failure.MISSING_AUDIO -> "The $label audio is unavailable. Tap $action to retry."
+                    ModulePlaybackSession.Failure.LOAD_FAILED -> "Couldn't load the $label audio. Tap $action to retry."
+                    ModulePlaybackSession.Failure.PLAYBACK_FAILED -> "Couldn't play the $label audio. Check your audio output, then tap $action to retry."
+                }
+                _state.value = _state.value.copy(playbackError = message)
+            },
+            load = { storyAudioSource.load(storyId, clip) }
+        )
     }
 
     override fun playPromptAudio() {
-        val storyId = _state.value.activeStory.id
-        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapPromptPcm(storyId) }
+        playStoryAudio(StoryAudioClip.PROMPT)
     }
 
     override fun playTargetPhraseAudio() {
-        val storyId = _state.value.activeStory.id
-        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId) }
+        playStoryAudio(StoryAudioClip.PHRASE)
     }
 
     override fun playOutcomeAudio() {
         val branch = _state.value.branch
         if (branch == com.minimalpairs.app.core.model.MeaningTrapBranch.PENDING) return
-        val storyId = _state.value.activeStory.id
         val isSuccess = branch == com.minimalpairs.app.core.model.MeaningTrapBranch.INTENDED_SUCCESS
-        playStoryAudio { ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, isSuccess) }
+        playStoryAudio(if (isSuccess) StoryAudioClip.INTENDED else StoryAudioClip.TRAP)
     }
 
     override fun toggleRecording() {
         if (recording.busy) return
         val story = _state.value.activeStory
         if (!_state.value.isRecording) _state.value = _state.value.copy(
-            branch = MeaningTrapBranch.PENDING,
+            branch = MeaningTrapBranch.PENDING, playbackError = null,
             gopScore = null, alternateScore = null, feedbackIsError = false, isSimulated = false,
             feedbackText = "Listening… Speak the full phrase, then stop to review.")
         recording.toggle { samples ->
@@ -1089,7 +1120,7 @@ class DefaultMeaningTrapComponent(
 
     override fun resetCurrentStory() {
         recording.cancel()
-        _state.value = MeaningTrapUiState(activeStory = _state.value.activeStory)
+        _state.value = MeaningTrapUiState(activeStory = _state.value.activeStory, recommendation = _state.value.recommendation)
     }
 
     override fun onBack() { cancelReply(); onBackClicked() }

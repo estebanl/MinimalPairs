@@ -8,7 +8,12 @@ import kotlinx.cinterop.pointed
 import kotlinx.cinterop.value
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,15 +24,18 @@ import platform.AVFAudio.AVAudioConverterInputStatus_NoDataNow
 import platform.AVFAudio.AVAudioConverterInputStatus_HaveData
 import platform.AVFAudio.AVAudioPCMFormatInt16
 import platform.AVFAudio.AVAudioPCMBuffer
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import platform.AVFAudio.AVAudioPlayer
+import platform.AVFAudio.AVAudioPlayerDelegateProtocol
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryOptionDefaultToSpeaker
 import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
 import platform.AVFAudio.setActive
 import platform.Foundation.NSData
+import platform.Foundation.NSError
+import platform.darwin.NSObject
 import platform.Foundation.create
+import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalForeignApi::class)
 class IosAudioRecorder : AudioRecorder {
@@ -155,44 +163,75 @@ class IosAudioRecorder : AudioRecorder {
 class IosAudioPlayer : AudioPlayer {
     private var playing = false
     private var activePlayer: AVAudioPlayer? = null
+    // AVAudioPlayer keeps a weak delegate; retain it until completion or cancellation.
+    private var activeDelegate: AVAudioPlayerDelegateProtocol? = null
 
     override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+        playWithFeedback(samples, onComplete, onFailure = onComplete)
+    }
+
+    override suspend fun playWithFeedback(
+        samples: ShortArray,
+        onComplete: () -> Unit,
+        onFailure: () -> Unit
+    ) {
+        stop()
         if (samples.isEmpty()) {
-            onComplete()
+            onFailure()
             return
         }
-        stop()
-        playing = true
-
         try {
             val session = AVAudioSession.sharedInstance()
-            session.setCategory(
+            check(session.setCategory(
                 AVAudioSessionCategoryPlayAndRecord,
                 withOptions = AVAudioSessionCategoryOptionDefaultToSpeaker,
                 error = null
-            )
-            session.setActive(true, error = null)
+            ))
+            check(session.setActive(true, error = null))
 
             val wavBytes = WavCodec.encodePcmToWav(samples)
             val nsData = wavBytes.usePinned { pinned ->
-                NSData.create(
-                    bytes = pinned.addressOf(0),
-                    length = wavBytes.size.toULong()
-                )
+                NSData.create(bytes = pinned.addressOf(0), length = wavBytes.size.toULong())
             }
             val player = AVAudioPlayer(data = nsData, error = null)
             activePlayer = player
-            player.prepareToPlay()
-            player.play()
-        } catch (_: Throwable) {
-            // Fall through to duration delay so tests/simulators without audio hardware still complete
-        }
+            check(player.prepareToPlay())
+            val durationMs = ((samples.size * 1000L) / 16000L).coerceAtLeast(50L)
+            withTimeout(durationMs + 2_000L) {
+                suspendCancellableCoroutine<Unit> { continuation ->
+                    val delegate = object : NSObject(), AVAudioPlayerDelegateProtocol {
+                        override fun audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully: Boolean) {
+                            if (!continuation.isActive) return
+                            if (successfully) continuation.resume(Unit)
+                            else continuation.resumeWithException(IllegalStateException("Playback interrupted"))
+                        }
 
-        val durationMs = ((samples.size * 1000L) / 16000L).coerceAtLeast(50L)
-        delay(durationMs)
-        playing = false
-        activePlayer = null
-        onComplete()
+                        override fun audioPlayerDecodeErrorDidOccur(player: AVAudioPlayer, error: NSError?) {
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(IllegalStateException("Audio decoding failed"))
+                            }
+                        }
+                    }
+                    activeDelegate = delegate
+                    player.delegate = delegate
+                    continuation.invokeOnCancellation { player.stop() }
+                    playing = true
+                    check(player.play())
+                }
+            }
+            playing = false
+            onComplete()
+        } catch (_: TimeoutCancellationException) {
+            playing = false
+            onFailure()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            playing = false
+            onFailure()
+        } finally {
+            withContext(NonCancellable) { runCatching { stop() } }
+        }
     }
 
     override suspend fun stop() {
@@ -201,6 +240,7 @@ class IosAudioPlayer : AudioPlayer {
         } catch (_: Throwable) {
         }
         activePlayer = null
+        activeDelegate = null
         playing = false
     }
 

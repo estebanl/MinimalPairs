@@ -14,7 +14,9 @@ class MeaningTrapStoriesSpecTest {
     @Test
     fun testStoriesCatalogCompleteness() {
         val stories = MeaningTrapCatalog.stories
-        assertEquals(4, stories.size, "Should contain 4 core minimal pair narrative scenarios")
+        assertEquals(stories.size, stories.map { it.id }.toSet().size, "Story IDs must be unique")
+        assertEquals(VowelContrastsCatalog.defaultContrasts.map { it.id }.toSet(),
+            stories.map { it.contrastId }.toSet(), "Every catalog vowel contrast needs a story")
 
         val ids = stories.map { it.id }.toSet()
         assertTrue(ids.contains("sheep_vs_ship"))
@@ -36,6 +38,21 @@ class MeaningTrapStoriesSpecTest {
             assertTrue(story.intendedOutcome.soundEffect.isNotBlank())
             assertTrue(story.trapOutcome.soundEffect.isNotBlank())
             assertTrue(story.semanticTakeaway.isNotBlank())
+            assertTrue(story.promptCharacter.isNotBlank())
+            assertTrue(story.promptDialogue.isNotBlank())
+            assertTrue(story.promptInstruction.isNotBlank())
+            assertTrue(story.targetPhrase.isNotBlank())
+            assertTrue(story.intendedOutcome.dialogue.isNotBlank())
+            assertTrue(story.trapOutcome.dialogue.isNotBlank())
+            val intended = story.intendedIpa.split(" ")
+            val alternate = story.trapIpa.split(" ")
+            assertEquals(intended.size, alternate.size)
+            val differing = intended.indices.filter { intended[it] != alternate[it] }.single()
+            assertEquals(setOf(contrast.phoneme1, contrast.phoneme2), setOf(intended[differing], alternate[differing]))
+            val phrase = story.targetPhraseIpa.split(" ")
+            assertEquals(intended[differing], phrase[story.targetPhonemeIndex])
+            assertEquals(intended, phrase.drop(story.targetPhonemeIndex - differing).take(intended.size))
+            assertEquals(1, Regex("\\b${Regex.escape(story.intendedWord)}\\b").findAll(story.targetPhrase).count())
         }
     }
 
@@ -56,7 +73,6 @@ class MeaningTrapStoriesSpecTest {
     @Test
     fun testMeaningTrapOutcomeFeedsSrsConfusionTracker() {
         val tracker = PhonemeConfusionTracker()
-        val initialShipWeight = tracker.getConfidenceWeight("ɪ")
 
         // 1. User mispronounces "sheep" as "ship" -> trap triggered
         tracker.recordTrial("iː", "ɪ", isCorrect = false)

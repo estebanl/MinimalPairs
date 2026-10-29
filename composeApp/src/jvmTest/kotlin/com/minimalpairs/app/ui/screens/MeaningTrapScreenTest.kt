@@ -72,6 +72,16 @@ class MeaningTrapScreenTest {
                     assertFalse(nodes().any { it.text().contains("Perfect /iː/") })
                     screenshot("scored-reply")
 
+                    component.state.value = component.state.value.copy(
+                        playbackError = "Couldn't play the story ending audio. Tap Listen to retry."
+                    )
+                    render()
+                    assertTrue(nodes().any { it.text() == "Audio unavailable" })
+                    assertTrue(nodes().any { it.text().contains("Couldn't play the story ending audio") })
+                    assertTrue(nodes().any { it.text() == "Sound confidence · sheep: 88/100" })
+                    assertFalse(button("Hear phrase").config.contains(SemanticsProperties.Disabled))
+                    screenshot("playback-error")
+
                     component.state.value = component.state.value.copy(isSimulated = true, gopScore = null, alternateScore = null,
                         feedbackText = "Example ending — no recording was evaluated and your progress was not changed.")
                     render()

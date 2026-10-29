@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "dataset_id": "replace-with-study-and-version",
+  "provenance": "Replace with collection dates, recruitment method, consent record location, and annotation protocol version. Do not include names or contact details.",
+  "recordings": [
+    {
+      "recording_id": "speaker-001-sheep-intended-take-01",
+      "speaker_id": "speaker-001",
+      "accent": "replace-with-self-described-accent-group",
+      "microphone": "replace-with-device-and-microphone",
+      "source_type": "human",
+      "consent_confirmed": false,
+      "story_id": "sheep_vs_ship",
+      "expected": "intended",
+      "annotation": "Replace with blinded reviewer IDs, agreed category, and disagreement resolution. This is a template, not collected data.",
+      "wav_path": "recordings/speaker-001-sheep-intended-take-01.wav"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package com.minimalpairs.app.data.audio
 
 import com.minimalpairs.app.core.dsp.WavCodec
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.withLock
 import minimalpairs.composeapp.generated.resources.Res
 
@@ -50,7 +51,9 @@ object ElevenLabsAudioRepository {
             } else {
                 null
             }
-        } catch (_: Throwable) {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
             null
         }
     }

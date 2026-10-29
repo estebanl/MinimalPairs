@@ -11,6 +11,20 @@ Minimal Pairs is a Kotlin Multiplatform (KMP) app designed to eliminate pronunci
 
 Stories display recording guidance, scoring state, errors, and experimental sound-confidence scores. Record the full prompted phrase: the phoneme service compares the intended and alternate vowels in a shared phrase alignment, checking support against the full vocabulary before returning contrast confidence. An ending requires one candidate to score at least 80/100 with a lead of at least 15 points. Otherwise, the story stays open for a retry and no result is saved. Phrase contrast scoring requires backend 2.3.0 or later; offline whole-recording acoustic estimates cannot choose an ending. Example endings do not create personal scores or change confusion tracking. See the [Stories behavior contract](specs/features/meaning_trap.feature) and [scoring setup and validation](docs/ARTICULATOR_SCORING.md#stories-phrase-scoring).
 
+Stories cover all seven catalog vowel contrasts. The original four scenarios have
+illustrated settings and distinct illustrated endings; additional stories use an
+accessible conversation illustration. A practice suggestion uses saved listening
+and Stories mistakes across all dates, while manual story selection stays available.
+Reference-audio failures show retry guidance without replacing scored reply feedback.
+Backend 2.3.1 supports the British pot/port realization groups and resolves all
+seven bundled reference phrases without lowering the scoring thresholds. It also
+rejects unsupported surrounding phrase context before choosing an ending.
+
+Independent human-speaker validation remains pending. The
+[human Stories evaluation protocol](docs/STORIES_HUMAN_VALIDATION.md) describes
+recording collection, provenance, evaluation, and reporting. Generated reference
+audio and automated checks do not establish pronunciation accuracy across speakers.
+
 ## Progress
 
 Progress stores listening attempts, mastery, review schedules, and scored speaking, Stories, and Rhythm results locally. It includes listening accuracy, daily streaks, recent trends, per-contrast confusion matrices, and separate module summaries. Practice buttons open the relevant exercise. Failed reads retain the last loaded totals.

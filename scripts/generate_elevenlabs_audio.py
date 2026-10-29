@@ -230,7 +230,7 @@ PROSODY_SENTENCES = [
     },
 ]
 
-# 4 Meaning Trap Stories x 4 audio clips each = 16 clips from MeaningTrapCatalog.kt
+# Four clips per Meaning Trap story: prompt, phrase, intended ending, alternate ending.
 MEANING_TRAP_CLIPS = [
     # 1. sheep_vs_ship (Old Farmer Giles)
     {
@@ -315,6 +315,66 @@ MEANING_TRAP_CLIPS = [
         "id": "fool_vs_full_trap",
         "text": "'You are completely FOOL'?! Did you just insult his Majesty's court jester?!",
         "voice": "emperors_butler",
+    },
+    {
+        "id": "pot_vs_port_prompt",
+        "text": "Welcome to the kitchen shop! What do you need for your soup?",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pot_vs_port_phrase",
+        "text": "Can I have a pot, please?",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pot_vs_port_intended",
+        "text": "One sturdy cooking pot! Your vegetable soup will be ready in no time.",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pot_vs_port_trap",
+        "text": "Port? Here is a bottle of sweet wine. That is a rather unusual soup ingredient!",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pen_vs_pin_prompt",
+        "text": "Your first fan is waiting for an autograph! What shall I pass you?",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pen_vs_pin_phrase",
+        "text": "Please pass me a pen.",
+        "voice": "tutor",
+    },
+    {
+        "id": "pen_vs_pin_intended",
+        "text": "Here is a marker pen. Now you can sign your masterpiece!",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "pen_vs_pin_trap",
+        "text": "A pin? I can hang the poster up, but I would not try writing with this!",
+        "voice": "professor_smith",
+    },
+    {
+        "id": "cat_vs_cut_prompt",
+        "text": "Hold still while I find my pencils. What is that on your arm?",
+        "voice": "cupids_florist",
+    },
+    {
+        "id": "cat_vs_cut_phrase",
+        "text": "Look at the cat on my arm.",
+        "voice": "tutor",
+    },
+    {
+        "id": "cat_vs_cut_intended",
+        "text": "What a lovely cat! I will draw those whiskers before our little model moves.",
+        "voice": "cupids_florist",
+    },
+    {
+        "id": "cat_vs_cut_trap",
+        "text": "A cut on your arm? Put the portrait on hold! I will fetch the first-aid kit.",
+        "voice": "cupids_florist",
     },
 ]
 
@@ -491,7 +551,7 @@ def main():
         generated += 1
         time.sleep(0.08)
 
-    # 3. Generate 16 Meaning Trap Clips
+    # 3. Generate the reference clips for every Meaning Trap story.
     print(f"\n--- Generating {len(MEANING_TRAP_CLIPS)} Meaning Trap Dialogue & Phrase Clips ---")
     for item in MEANING_TRAP_CLIPS:
         clip_id = item["id"]

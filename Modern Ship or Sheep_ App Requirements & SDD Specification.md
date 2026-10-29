@@ -50,6 +50,15 @@ Contextualizes pronunciation errors through generative narrative consequences.
 * **Comic Engine**: Multi-panel visual stories where mispronunciations trigger humorous semantic misunderstandings (e.g., requesting a "ship" instead of a "sheep").  
 * **Dialogue Agent**: LLM-guided conversational branching calibrated to target specific minimal pair vulnerabilities.
 
+Implementation status (October 2026): Stories contains seven fixed scenarios covering
+all catalog vowel contrasts, twelve original illustrated scenes for the four initial
+stories, and suggestions based on saved listening and Stories mistakes. Reference
+audio failures provide retry guidance. Dialogue generation and multi-turn conversation
+remain open. Phrase scoring is experimental: all seven bundled replies resolve
+with backend 2.3.1 and the current checkpoint, including the supported British
+LOT/THOUGHT realization groups. Independent human-speaker
+validation is pending; see the [collection and evaluation protocol](docs/STORIES_HUMAN_VALIDATION.md).
+
 ## **Module 4: Rhythm & Pitch Ribbon (Prosody & Connected Speech)**
 
 Extends focus beyond isolated sounds to sentence-level prosody and intonation.

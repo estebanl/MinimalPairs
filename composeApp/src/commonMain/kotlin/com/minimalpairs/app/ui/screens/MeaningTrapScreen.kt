@@ -97,6 +97,27 @@ fun MeaningTrapScreen(
                 }
             }
 
+            state.recommendation?.let { recommendation ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = scheme.surfaceVariant)
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            if (recommendation.basedOnConfusions) "Recommended practice" else "Story to try",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Text(recommendation.explanation, style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(
+                            onClick = { component.selectStory(recommendation.storyId) },
+                            enabled = !state.isRecording && !state.isScoring
+                        ) {
+                            Text("Practise ${recommendation.contrastLabel}")
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(8.dp))
 
             // Comic Panel 1: Setting & Prompt
@@ -107,7 +128,8 @@ fun MeaningTrapScreen(
                 subCaption = story.premise,
                 isPlayingAudio = state.isPlayingAudio,
                 canPlayAudio = !state.isRecording && !state.isScoring,
-                onListenClick = component::playPromptAudio
+                onListenClick = component::playPromptAudio,
+                illustration = { StoryIllustration(story) }
             )
 
             Spacer(Modifier.height(14.dp))
@@ -190,6 +212,20 @@ fun MeaningTrapScreen(
             }
 
             Spacer(Modifier.height(16.dp))
+
+            state.playbackError?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                    colors = CardDefaults.cardColors(containerColor = scheme.errorContainer)
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Audio unavailable", style = MaterialTheme.typography.titleSmall)
+                        Text(error, style = MaterialTheme.typography.bodyMedium)
+                        Text("Tap Listen or Hear phrase to try the audio again.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             if (state.feedbackText.isNotBlank()) {
                 Card(
@@ -303,12 +339,7 @@ fun MeaningTrapScreen(
                             )
                             Spacer(Modifier.height(8.dp))
 
-                            // Large Comic Glyph
-                            Text(
-                                text = outcome.illustrationEmoji,
-                                fontSize = 52.sp,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                            StoryIllustration(story, state.branch)
 
                             Spacer(Modifier.height(8.dp))
 
@@ -410,7 +441,8 @@ fun ComicPanelCard(
     isPlayingAudio: Boolean = false,
     canPlayAudio: Boolean = true,
     onListenClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    illustration: (@Composable () -> Unit)? = null
 ) {
     val colors = PracticeTheme.colors
     val scheme = MaterialTheme.colorScheme
@@ -460,6 +492,11 @@ fun ComicPanelCard(
             )
 
             Spacer(Modifier.height(12.dp))
+
+            illustration?.let {
+                it()
+                Spacer(Modifier.height(12.dp))
+            }
 
             // Speech Bubble
             Surface(

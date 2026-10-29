@@ -10,8 +10,18 @@ internal class ModulePlaybackSession(
     private val onPlaying: (Boolean) -> Unit
 ) {
     private var operation: Job? = null
+    private var generation = 0L
 
-    fun play(canPlay: () -> Boolean, load: suspend () -> ShortArray?) {
+    enum class Failure { MISSING_AUDIO, LOAD_FAILED, PLAYBACK_FAILED }
+
+    fun play(canPlay: () -> Boolean, load: suspend () -> ShortArray?) = play(canPlay, {}, load)
+
+    fun play(
+        canPlay: () -> Boolean,
+        onFailure: (Failure) -> Unit,
+        load: suspend () -> ShortArray?
+    ) {
+        val token = ++generation
         val previous = operation
         previous?.cancel()
         operation = scope.launch {
@@ -19,15 +29,51 @@ internal class ModulePlaybackSession(
             // An outcome requested at the end of evaluation starts after evaluation returns.
             yield()
             if (!canPlay()) return@launch
-            val samples = load() ?: return@launch
-            currentCoroutineContext().ensureActive()
-            if (!canPlay()) return@launch
-            onPlaying(true)
-            player.play(samples) { onPlaying(false) }
+            var finished = false
+            fun fail(reason: Failure) {
+                if (token != generation || finished) return
+                finished = true
+                onPlaying(false)
+                onFailure(reason)
+            }
+            try {
+                val samples = try {
+                    load()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    fail(Failure.LOAD_FAILED)
+                    return@launch
+                }
+                currentCoroutineContext().ensureActive()
+                if (!canPlay()) return@launch
+                if (samples == null || samples.isEmpty()) {
+                    fail(Failure.MISSING_AUDIO)
+                    return@launch
+                }
+                onPlaying(true)
+                player.playWithFeedback(samples,
+                    onComplete = {
+                        scope.launch {
+                            if (token == generation && !finished) {
+                                finished = true
+                                onPlaying(false)
+                            }
+                        }
+                    },
+                    onFailure = { scope.launch { fail(Failure.PLAYBACK_FAILED) } }
+                )
+            } catch (cancelled: CancellationException) {
+                if (token == generation) onPlaying(false)
+                throw cancelled
+            } catch (_: Exception) {
+                fail(Failure.PLAYBACK_FAILED)
+            }
         }
     }
 
     suspend fun stop() {
+        generation++
         val pending = operation
         operation = null
         pending?.cancelAndJoin()

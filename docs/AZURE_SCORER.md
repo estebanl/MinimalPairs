@@ -59,6 +59,7 @@ With Azure CLI signed in, launch the desktop app or run the rendered Speak test:
 build/phoneme-model-venv/bin/python scripts/azure_speak.py run
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --module stories
+build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --module stories --expected-backend-version 2.3.1
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --module all
 # Confirm zero replicas before Speak makes its first scoring request:
 build/phoneme-model-venv/bin/python scripts/azure_speak.py verify --cold-start
@@ -74,14 +75,21 @@ and retained microphone WAVs are excluded. Reports and screenshots are in
 `composeApp/build/reports/articulator-azure/`.
 
 Stories verification drives the real Stories composable and component against
-Azure HTTPS scoring, checking all four reference replies, selected-vowel scores,
+Azure HTTPS scoring, checking all seven catalog reference replies, selected-vowel scores,
 outcome playback, and saved progress after reopening an isolated Room database.
 When `build/reports/stories/controlled/` contains the generated controls, it also
-checks the four alternate endings and rejects an out-of-pair vowel without adding
-a result. Silence and example endings do not add personal scores or confusion
+checks alternate endings for every story and rejects out-of-pair vowels and
+unrelated pot/port speech without adding a result. Controls must cover all seven
+stories; pot/port and pen/pan use the `professor_smith` voice folder, and the
+other stories use `tutor`. Silence and example endings do not add personal scores or confusion
 trials. Screenshots and persisted test scores are written to
 `composeApp/build/reports/stories-azure/`. This uses injected reference PCM at the
 recorder boundary, not a physical microphone or the user's personal progress data.
+
+`--expected-backend-version` checks the authenticated OpenAPI version before
+launching the live tests. Deployment requires 2.3.1 and records its endpoint,
+ready revision, image digest, and unauthenticated HTTP status in
+`build/reports/azure/live-backend.json`, without credentials.
 
 The shared client sends `x-functions-key` only for HTTPS requests, disables
 redirects in its default HTTP client, and allows 120 seconds for cold-start
@@ -179,6 +187,44 @@ The deployment command uses the current Azure CLI Function-on-Container-Apps
 preview integration. See [Microsoft's hosting documentation](https://learn.microsoft.com/en-us/azure/azure-functions/functions-container-apps-hosting).
 
 ## Verification
+
+### Stories 2.3.1 rollout (2026-10-29)
+
+Backend 2.3.1 is published as
+`estebanlopez/minimalpairs-scorer:2.3.1-20261029T214029Z`, digest
+`sha256:354d847436c6eb5e0910e9b17648038c06f25c09c3f01ce591c003603b5d53f0`.
+Ready revision `minimalpairs-scorer--0000005` receives 100% of traffic.
+The authenticated OpenAPI endpoint reports 2.3.1; unauthenticated requests still
+return 401. Full-layer and offline secret audits passed before publication.
+The 0–1 replica range and 60-second cooldown are preserved.
+
+Both live UI tests passed without being skipped. Stories exercised all seven
+bundled intended replies and seven generated alternate replies through the real
+HTTPS client, checked the expected outcome audio and visible scores, then reopened
+the isolated Room database and verified fourteen saved results. The confidence
+for the winning vowel in each recording was:
+
+| Story | Intended reply | Alternate reply |
+| --- | ---: | ---: |
+| sheep / ship | 99.00 | 98.09 |
+| pen / pan | 95.29 | 96.31 |
+| heart / hut | 98.14 | 80.42 |
+| full / fool | 94.21 | 96.46 |
+| pot / port | 88.46 | 91.07 |
+| pen / pin | 98.27 | 99.38 |
+| cat / cut | 98.52 | 98.64 |
+
+All endings met the unchanged 80-point score and 15-point lead requirements.
+Heart/hut and pot/port third-vowel controls, and unrelated pot/port speech,
+requested retry without adding results or confusion counts. Silence and example
+endings also preserved the saved count. The Speak live regression passed too.
+
+Deployment, routing, image audits, both-direction scores and negative controls
+are recorded in `build/reports/azure/stories-2.3.1-deployment.json`.
+Detailed UI evidence is in `composeApp/build/reports/stories-azure/`, including
+`evaluations.json`, `negative-controls.json`, `saved-scores.json` and screenshots.
+These checks inject generated reference PCM at the recorder boundary; they are
+not physical microphone tests or independent human-speaker calibration.
 
 ### Stories rollout (2026-10-28)
 

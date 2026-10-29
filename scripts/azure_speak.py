@@ -19,9 +19,12 @@ parser.add_argument('--bundle-id', default='com.estebanl.minimalpairs',
 parser.add_argument('--console', action='store_true', help='Stream the iOS app console')
 parser.add_argument('--cold-start', action='store_true',
                     help='Wait for zero replicas before Speak sends its first scoring request')
+parser.add_argument('--expected-backend-version', help='Require this deployed backend version before verification')
 args = parser.parse_args()
 if args.cold_start and args.mode != 'verify':
     parser.error('--cold-start requires verify mode')
+if args.expected_backend_version and args.mode != 'verify':
+    parser.error('--expected-backend-version requires verify mode')
 if args.module != 'speak' and args.mode != 'verify':
     parser.error('--module requires verify mode')
 if args.cold_start and args.module != 'speak':
@@ -59,6 +62,19 @@ key = next(item['value'] for item in keys if item['name'] == 'default')
 response = httpx.get(base + '/health', headers={'x-functions-key': key}, timeout=180)
 response.raise_for_status()
 assert response.json()['status'] == 'ok'
+if args.expected_backend_version:
+    response = httpx.get(base + '/openapi.json', headers={'x-functions-key': key}, timeout=180)
+    response.raise_for_status()
+    version = response.json().get('info', {}).get('version')
+    if version != args.expected_backend_version:
+        sys.exit(f'Unexpected backend version: expected {args.expected_backend_version}, received {version}.')
+    report = root / 'build/reports/azure/live-backend.json'
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(json.dumps({'url': base, 'version': version,
+        'ready_revision': app['properties'].get('latestReadyRevisionName'),
+        'image': app['properties'].get('template', {}).get('containers', [{}])[0].get('image'),
+        'unauthenticated_status': 401}, indent=2) + '\n')
+    print(f'Confirmed backend {version} with Function-key protection.', flush=True)
 if args.cold_start:
     # Keep the key in memory and use management-plane reads only while waiting.
     # No health request may warm the host between zero replicas and the UI test.

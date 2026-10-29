@@ -108,6 +108,88 @@ confident endings in that controlled set.
 Generated speech is integration evidence, not independent human-speaker or accent
 validation. Unclear speech must remain eligible for retry.
 
+### Expanded Stories catalog (2026-10-29)
+
+Stories now cover all seven catalog vowel contrasts. The added scenarios are
+`pot_vs_port` (/ɒ/–/ɔː/), `pen_vs_pin` (/e/–/ɪ/), and `cat_vs_cut` (/æ/–/ʌ/).
+Each includes prompt, phrase, intended-ending, and alternate-ending reference
+clips in 16kHz 16-bit mono PCM. Their generated-speech provenance is bundled in
+`files/audio/meaning_trap/expanded_catalog_provenance.json`. The existing
+`scripts/generate_elevenlabs_audio.py` preserves existing clips unless `--force`
+is requested and includes all seven scenarios.
+
+Backend **2.3.1** resolves all seven unchanged reference recordings with the same
+pinned checkpoint. Pot/port now scores 88.5/11.5; pen/pin scores 98.3/1.7 and
+cat/cut 98.5/1.5. The original four results remain unchanged. The initial pot/port
+failure was a mismatch between broad British teaching labels and narrow model
+emissions: pot produced [ɔ] and port [oː]. These are documented contemporary
+Southern British realizations of LOT and THOUGHT, rather than evidence that the
+recordings require lower confidence thresholds. See
+[Geoff Lindsey's phonetic demonstrations](https://www.englishspeechservices.com/blog/morgen-a-suitable-case-for-treatment/)
+and the [acoustic study of RP LOT raising](https://doi.org/10.1017/S0025100312000345).
+
+For the declared /ɒ/–/ɔː/ phrase pair only, the service sums posterior mass within
+two disjoint realization groups: /ɒ/ uses {ɒ, ɔ}, and /ɔː/ uses {ɔː, oː}. Both
+directions share the same group-union CTC alignment and original-vocabulary
+evidence region. Public IPA labels stay unchanged. These are not global token
+aliases: other contrasts and word scoring retain their existing token mapping.
+Adjacent tokens matching any group member remain unsupported CTC contexts.
+
+The absolute evidence floor (0.1), evidence versus the strongest full-vocabulary
+competitor (at least half), and ending rules (80 points with a 15-point lead)
+are unchanged. GOAT/PALM and other out-of-pair vowels remain competitors. A new
+alignment gate additionally requires a majority of surrounding phrase phonemes
+to have at least 10/100 local posterior support. This prevents an isolated
+port-like vowel in unrelated speech from establishing the prompted phrase. It
+rejects unsupported context without multiplying the selected vowel score or
+choosing an ending from a phrase average.
+
+The 2026-10-29 regression run includes seven strict bundled references and forty
+extra generated controls. Both endings resolve for pot/port in two British
+voices. All twenty third-vowel/unrelated controls are rejected; three pre-existing
+ambiguous controls remain explicit retries. No incorrect confident ending was
+returned. These are generated-speech integration results, not human validation.
+No reference WAV, model weight, or catalog transcription was changed for this fix.
+
+Reproduce the strict reference check with:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 build/phoneme-model-venv/bin/python scripts/validate_story_scoring.py \
+  --report build/reports/stories/reference-seven.json
+```
+
+Generate the additional British controls explicitly (repeat with
+`--voice emperors_butler` for the second voice):
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 build/phoneme-model-venv/bin/python scripts/generate_story_controls.py \
+  --story pot_vs_port --natural-pronunciation --voice professor_smith \
+  --output build/reports/stories/back-vowel-controls
+```
+
+Natural pronunciation avoids imposing American CMU vowel tags on this British
+contrast. Existing control audio/provenance is preserved; changing generation
+mode requires a separate output folder or explicit `--force`.
+
+Run the expanded suite with repeated `--controls-dir` arguments:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 build/phoneme-model-venv/bin/python scripts/validate_story_scoring.py \
+  --controls-dir build/reports/stories/controlled \
+  --controls-dir build/reports/stories/back-vowel-controls --allow-uncertain-controls
+```
+
+The retry flag applies only to additional controls; every bundled reference must
+still resolve. The validator checks matching model IDs, target intervals, and
+evidence in both directions. Restart or redeploy the backend to use 2.3.1;
+the app and checkpoint do not need updating for this scoring fix.
+
+The [human Stories evaluation protocol](STORIES_HUMAN_VALIDATION.md) and
+`scripts/evaluate_human_stories.py` provide collection guidance, manifest checks,
+production-contract comparisons, and grouped false-ending/retry reports. No
+independent human recordings were available for this work, so the human study
+remains pending. Tool regression fixtures are not human validation evidence.
+
 ### Model behavior
 
 The backend now runs actual phoneme CTC inference using a locally provisioned

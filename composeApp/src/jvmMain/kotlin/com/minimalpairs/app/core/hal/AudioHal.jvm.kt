@@ -1,5 +1,7 @@
 package com.minimalpairs.app.core.hal
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -124,14 +126,22 @@ class JvmAudioPlayer : AudioPlayer {
 
     private val audioFormat = AudioFormat(16000.0f, 16, 1, true, false)
 
-    override suspend fun play(samples: ShortArray, onComplete: () -> Unit) = withContext(Dispatchers.IO) {
+    override suspend fun play(samples: ShortArray, onComplete: () -> Unit) {
+        playWithFeedback(samples, onComplete, onFailure = onComplete)
+    }
+
+    override suspend fun playWithFeedback(
+        samples: ShortArray,
+        onComplete: () -> Unit,
+        onFailure: () -> Unit
+    ) = withContext(Dispatchers.IO) {
         stop()
         try {
             val info = DataLine.Info(SourceDataLine::class.java, audioFormat)
             val line = AudioSystem.getLine(info) as SourceDataLine
+            sourceLine = line
             line.open(audioFormat)
             line.start()
-            sourceLine = line
             playing = true
 
             val byteBuffer = ByteArray(samples.size * 2)
@@ -141,7 +151,7 @@ class JvmAudioPlayer : AudioPlayer {
                 byteBuffer[i * 2 + 1] = ((s shr 8) and 0xff).toByte()
             }
 
-            line.write(byteBuffer, 0, byteBuffer.size)
+            check(line.write(byteBuffer, 0, byteBuffer.size) == byteBuffer.size)
             line.drain()
             line.stop()
             line.close()
@@ -150,20 +160,26 @@ class JvmAudioPlayer : AudioPlayer {
             withContext(Dispatchers.Default) {
                 onComplete()
             }
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
             playing = false
             withContext(Dispatchers.Default) {
-                onComplete()
+                onFailure()
             }
+        } finally {
+            withContext(NonCancellable) { runCatching { stop() } }
         }
     }
 
-    override suspend fun stop() = withContext(Dispatchers.IO) {
+    override suspend fun stop(): Unit = withContext(Dispatchers.IO) {
         playing = false
-        sourceLine?.stop()
-        sourceLine?.flush()
-        sourceLine?.close()
+        val line = sourceLine
         sourceLine = null
+        try {
+            line?.stop()
+            line?.flush()
+        } finally { line?.close() }
     }
 
     override fun isPlaying(): Boolean = playing

@@ -1,7 +1,7 @@
 """Check Stories phrase scoring using bundled speech and the local model.
 
 These generated references are integration diagnostics, not independent human
-pronunciation validation. All four bundled replies must choose their intended
+pronunciation validation. All bundled replies must choose their intended
 ending. Optional controls exercise both endings and out-of-pair speech.
 """
 import argparse
@@ -14,8 +14,9 @@ import sys
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--model", type=Path, default=root / "build/models/phoneme-ctc")
-parser.add_argument("--controls-dir", type=Path, help="Extra WAVs named <story-id>_<intended|trap|outside|unrelated>.wav, optionally in voice subfolders")
+parser.add_argument("--controls-dir", type=Path, action="append", help="Extra WAVs named <story-id>_<intended|trap|outside|unrelated>.wav, optionally in voice subfolders; repeat for multiple sets")
 parser.add_argument("--allow-uncertain-controls", action="store_true", help="Report unclear extra controls as retries; bundled references must still resolve")
+parser.add_argument("--report", type=Path, default=root / "build/reports/stories/reference-scoring.json")
 args = parser.parse_args()
 os.environ["PHONEME_MODEL_DIR"] = str(args.model.resolve())
 os.environ["HF_HUB_OFFLINE"] = "1"
@@ -65,6 +66,12 @@ def score_case(story, audio, label, expected, require_decision=True):
         responses.append({"status": response.status_code, "body": body})
     ending = "uncertain"
     if all(r["status"] == 200 for r in responses):
+        first, reverse = (r["body"] for r in responses)
+        first_region, reverse_region = first["phonemes"][index], reverse["phonemes"][index]
+        assert first["model_id"] == reverse["model_id"], "Contrast directions used different models"
+        assert abs(first_region["start_time"] - reverse_region["start_time"]) <= .001
+        assert abs(first_region["end_time"] - reverse_region["end_time"]) <= .001
+        assert abs(first["contrast_evidence"] - reverse["contrast_evidence"]) <= .001
         intended, trap = (r["body"]["overall_score"] for r in responses)
         if intended >= 80 and intended - trap >= 15:
             ending = "intended"
@@ -82,24 +89,29 @@ results = []
 for story in stories:
     audio = (root / f'composeApp/src/commonMain/composeResources/files/audio/meaning_trap/{story["id"]}_phrase.wav').read_bytes()
     results.append(score_case(story, audio, f'bundled/{story["id"]}', "intended"))
-if args.controls_dir:
-    for path in sorted(args.controls_dir.rglob("*.wav")):
+for controls_dir in args.controls_dir or []:
+    assert controls_dir.is_dir(), f"Control directory is missing: {controls_dir}"
+    controls = sorted(controls_dir.rglob("*.wav"))
+    assert controls, f"Control directory contains no WAV files: {controls_dir}"
+    for path in controls:
         for story in stories:
             prefix = story["id"] + "_"
             if path.stem.startswith(prefix):
                 kind = path.stem[len(prefix):]
                 assert kind in ("intended", "trap", "outside", "unrelated"), path
-                results.append(score_case(story, path.read_bytes(), str(path.relative_to(args.controls_dir)),
+                results.append(score_case(story, path.read_bytes(), f"{controls_dir.name}/{path.relative_to(controls_dir)}",
                                           kind if kind in ("intended", "trap") else "uncertain",
                                           require_decision=not args.allow_uncertain_controls))
                 break
         else:
             raise ValueError(f"Unknown control file: {path}")
 
-report = root / "build/reports/stories/reference-scoring.json"
+report = args.report
 report.parent.mkdir(parents=True, exist_ok=True)
-report.write_text(json.dumps({"note": __doc__, "results": results}, ensure_ascii=False, indent=2))
-assert len(stories) == 4, "Catalog parsing missed a story"
+report.write_text(json.dumps({"note": __doc__, "backend_version": app.version, "results": results}, ensure_ascii=False, indent=2))
+spec_ids = re.findall(r'^  - id: "([^"\n]+)"', (root / "specs/stories/meaning_trap_stories.yaml").read_text(), re.MULTILINE)
+assert stories and {s["id"] for s in stories} == set(spec_ids), "Catalog parsing disagrees with the story specification"
+assert len(stories) == len(set(spec_ids)) == len(spec_ids), "Duplicate story IDs in the catalog or specification"
 failures = [r["case"] for r in results if not r["passed"]]
 assert not failures, f"Unexpected story decisions: {failures}"
 if args.controls_dir:

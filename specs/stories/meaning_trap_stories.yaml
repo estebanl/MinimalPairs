@@ -116,3 +116,90 @@ stories:
           dialogue: "'You are completely FOOL'?! Did you just insult his Majesty's court jester?!"
           outcome_description: "Trap triggered! Tense close back /uː/ produced. Guards escort you to the dungeon."
     semantic_takeaway: "Tensing lips and raising tongue to /uː/ turns satiation ('full') into an insult ('fool')!"
+
+  - id: "pot_vs_port"
+    contrast_id: "o_vs_or"
+    title: "The Cooking Shop Mix-up"
+    premise: "You are buying a saucepan for a cooking class at a little kitchen shop."
+    intended_word: "pot"
+    intended_ipa: "p ɒ t"
+    trap_word: "port"
+    trap_ipa: "p ɔː t"
+    target_phrase: "Can I have a pot, please?"
+    target_phrase_ipa: "k ə n aɪ h æ v ə p ɒ t p l iː z"
+    target_phoneme_index: 9
+    panels:
+      - index: 1
+        character: "Chef Oliver"
+        dialogue: "Welcome to the kitchen shop! What do you need for your soup?"
+        prompt_instruction: "Ask for a pot: 'Can I have a pot, please?'"
+      - index: 2
+        intended:
+          illustration_emoji: "🍲 🥄 🧑‍🍳"
+          sound_effect: "CLINK!"
+          dialogue: "One sturdy cooking pot! Your vegetable soup will be ready in no time."
+          outcome_description: "The chef brings a cooking pot for your soup."
+        trap:
+          illustration_emoji: "🍷 🍾 😲"
+          sound_effect: "POP!"
+          dialogue: "Port? Here is a bottle of sweet wine. That is a rather unusual soup ingredient!"
+          outcome_description: "The chef brings port wine instead of a cooking pot."
+    semantic_takeaway: "In this British English contrast, pot has the open rounded vowel /ɒ/; port has the higher, longer /ɔː/. A small vowel change swaps cookware for wine."
+
+  - id: "pen_vs_pin"
+    contrast_id: "e_vs_I"
+    title: "The Prickly Autograph"
+    premise: "You are signing a poster at an art fair, but you have nothing to write with."
+    intended_word: "pen"
+    intended_ipa: "p e n"
+    trap_word: "pin"
+    trap_ipa: "p ɪ n"
+    target_phrase: "Please pass me a pen."
+    target_phrase_ipa: "p l iː z p ɑː s m iː ə p e n"
+    target_phoneme_index: 11
+    panels:
+      - index: 1
+        character: "The Art Fair Assistant"
+        dialogue: "Your first fan is waiting for an autograph! What shall I pass you?"
+        prompt_instruction: "Ask for a pen: 'Please pass me a pen.'"
+      - index: 2
+        intended:
+          illustration_emoji: "🖊️ 🎨 ⭐"
+          sound_effect: "SCRIBBLE!"
+          dialogue: "Here is a marker pen. Now you can sign your masterpiece!"
+          outcome_description: "The assistant hands you a pen and you sign the poster."
+        trap:
+          illustration_emoji: "📌 🖼️ 😬"
+          sound_effect: "PRICK!"
+          dialogue: "A pin? I can hang the poster up, but I would not try writing with this!"
+          outcome_description: "The assistant brings a sharp pin instead of a pen."
+    semantic_takeaway: "Pen uses the mid-front vowel /e/ and pin uses the higher /ɪ/. Keep your tongue a little lower for pen so your autograph does not turn into a pinhole."
+
+  - id: "cat_vs_cut"
+    contrast_id: "ae_vs_uh"
+    title: "The Portrait First-aid Kit"
+    premise: "At a pet portrait studio, your kitten has curled up on your sleeve."
+    intended_word: "cat"
+    intended_ipa: "k æ t"
+    trap_word: "cut"
+    trap_ipa: "k ʌ t"
+    target_phrase: "Look at the cat on my arm."
+    target_phrase_ipa: "l ʊ k ə t ð ə k æ t ɒ n m aɪ ɑː m"
+    target_phoneme_index: 8
+    panels:
+      - index: 1
+        character: "The Pet Portrait Artist"
+        dialogue: "Hold still while I find my pencils. What is that on your arm?"
+        prompt_instruction: "Point out your pet: 'Look at the cat on my arm.'"
+      - index: 2
+        intended:
+          illustration_emoji: "🐈 🎨 🖌️"
+          sound_effect: "PURR!"
+          dialogue: "What a lovely cat! I will draw those whiskers before our little model moves."
+          outcome_description: "The artist sketches the cat resting on your arm."
+        trap:
+          illustration_emoji: "🩹 🧰 😟"
+          sound_effect: "RUSTLE!"
+          dialogue: "A cut on your arm? Put the portrait on hold! I will fetch the first-aid kit."
+          outcome_description: "The artist rushes for a bandage instead of drawing your cat."
+    semantic_takeaway: "Cat uses the open front vowel /æ/; cut uses the more central /ʌ/. Moving the vowel changes a pet portrait into a first-aid visit."

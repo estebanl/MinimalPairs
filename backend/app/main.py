@@ -13,7 +13,7 @@ from .ctc_scorer import InvalidTarget, ModelUnavailable, RecordingQualityError, 
 
 app = FastAPI(
     title="Phoneme Scorer Service",
-    version="2.3.0",
+    version="2.3.1",
     description="Local phoneme CTC alignment and uncalibrated posterior confidence",
 )
 

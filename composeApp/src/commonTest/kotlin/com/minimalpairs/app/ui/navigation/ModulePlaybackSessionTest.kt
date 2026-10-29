@@ -2,6 +2,7 @@ package com.minimalpairs.app.ui.navigation
 
 import com.minimalpairs.app.core.hal.AudioPlayer
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -46,6 +47,92 @@ class ModulePlaybackSessionTest {
         runCurrent()
         assertEquals(1, loads)
         assertEquals(0, player.plays)
+    }
+
+    @Test
+    fun unavailableAndFailedLoadsReportDistinctErrorsAndCanRetry() = runTest {
+        val failures = mutableListOf<ModulePlaybackSession.Failure>()
+        val player = Player()
+        var playing = false
+        val playback = ModulePlaybackSession(this, player) { playing = it }
+        playback.play({ true }, failures::add) { null }
+        runCurrent()
+        playback.play({ true }, failures::add) { shortArrayOf() }
+        runCurrent()
+        playback.play({ true }, failures::add) { error("Cannot decode audio") }
+        runCurrent()
+        assertEquals(listOf(ModulePlaybackSession.Failure.MISSING_AUDIO,
+            ModulePlaybackSession.Failure.MISSING_AUDIO, ModulePlaybackSession.Failure.LOAD_FAILED), failures)
+        assertFalse(playing)
+        playback.play({ true }, failures::add) { shortArrayOf(1) }
+        runCurrent()
+        assertEquals(1, player.plays)
+        assertFalse(playing)
+    }
+
+    @Test
+    fun synchronousAndAsynchronousDeviceFailuresReturnToIdleAndAllowRetry() = runTest {
+        val failures = mutableListOf<ModulePlaybackSession.Failure>()
+        val player = ReportingPlayer()
+        var playing = false
+        val playback = ModulePlaybackSession(this, player) { playing = it }
+        player.throwOnPlay = true
+        playback.play({ true }, failures::add) { shortArrayOf(1) }
+        runCurrent()
+        assertFalse(playing)
+        player.throwOnPlay = false
+        playback.play({ true }, failures::add) { shortArrayOf(1) }
+        runCurrent()
+        assertTrue(playing)
+        player.fail!!()
+        runCurrent()
+        assertFalse(playing)
+        assertEquals(List(2) { ModulePlaybackSession.Failure.PLAYBACK_FAILED }, failures)
+        playback.play({ true }, failures::add) { shortArrayOf(1) }
+        runCurrent()
+        player.complete!!()
+        runCurrent()
+        assertFalse(playing)
+        assertEquals(2, failures.size)
+    }
+
+    @Test
+    fun cancelledLoadsAndLateDeviceCallbacksNeverReportErrors() = runTest {
+        val failures = mutableListOf<ModulePlaybackSession.Failure>()
+        val player = ReportingPlayer()
+        var playing = false
+        val playback = ModulePlaybackSession(this, player) { playing = it }
+        playback.play({ true }, failures::add) { throw CancellationException("Stopped") }
+        runCurrent()
+        assertTrue(failures.isEmpty())
+        playback.play({ true }, failures::add) { shortArrayOf(1) }
+        runCurrent()
+        val staleFailure = player.fail!!
+        val staleCompletion = player.complete!!
+        playback.stop()
+        playback.play({ true }, failures::add) { shortArrayOf(2) }
+        runCurrent()
+        staleFailure()
+        staleCompletion()
+        runCurrent()
+        assertTrue(playing)
+        assertTrue(failures.isEmpty())
+        playback.stop()
+        assertFalse(playing)
+    }
+
+    private class ReportingPlayer : AudioPlayer {
+        var throwOnPlay = false
+        var fail: (() -> Unit)? = null
+        var complete: (() -> Unit)? = null
+        override suspend fun play(samples: ShortArray, onComplete: () -> Unit) = error("Use feedback playback")
+        override suspend fun playWithFeedback(samples: ShortArray, onComplete: () -> Unit, onFailure: () -> Unit) {
+            if (throwOnPlay) error("Audio device unavailable")
+            complete = onComplete
+            fail = onFailure
+        }
+        override suspend fun stop() {}
+        override fun isPlaying() = false
     }
 
     private class Player : AudioPlayer {

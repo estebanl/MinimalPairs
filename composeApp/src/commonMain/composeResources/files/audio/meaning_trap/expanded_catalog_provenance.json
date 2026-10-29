@@ -1,0 +1,137 @@
+{
+  "note": "Generated reference speech for integration and example playback; not human-speaker validation.",
+  "clips": [
+    {
+      "file": "pot_vs_port_prompt.wav",
+      "text": "Welcome to the kitchen shop! What do you need for your soup?",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pot_vs_port_phrase.wav",
+      "text": "Can I have a pot, please?",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pot_vs_port_intended.wav",
+      "text": "One sturdy cooking pot! Your vegetable soup will be ready in no time.",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pot_vs_port_trap.wav",
+      "text": "Port? Here is a bottle of sweet wine. That is a rather unusual soup ingredient!",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pen_vs_pin_prompt.wav",
+      "text": "Your first fan is waiting for an autograph! What shall I pass you?",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pen_vs_pin_phrase.wav",
+      "text": "Please pass me a pen.",
+      "voice": "tutor",
+      "voice_id": "XrExE9yKIg1WjnnlVkGX",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pen_vs_pin_intended.wav",
+      "text": "Here is a marker pen. Now you can sign your masterpiece!",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "pen_vs_pin_trap.wav",
+      "text": "A pin? I can hang the poster up, but I would not try writing with this!",
+      "voice": "professor_smith",
+      "voice_id": "onwK4e9ZLuTAKqWW03F9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "cat_vs_cut_prompt.wav",
+      "text": "Hold still while I find my pencils. What is that on your arm?",
+      "voice": "cupids_florist",
+      "voice_id": "cgSgspJ2msm6clMCkdW9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "cat_vs_cut_phrase.wav",
+      "text": "Look at the cat on my arm.",
+      "voice": "tutor",
+      "voice_id": "XrExE9yKIg1WjnnlVkGX",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "cat_vs_cut_intended.wav",
+      "text": "What a lovely cat! I will draw those whiskers before our little model moves.",
+      "voice": "cupids_florist",
+      "voice_id": "cgSgspJ2msm6clMCkdW9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    },
+    {
+      "file": "cat_vs_cut_trap.wav",
+      "text": "A cut on your arm? Put the portrait on hold! I will fetch the first-aid kit.",
+      "voice": "cupids_florist",
+      "voice_id": "cgSgspJ2msm6clMCkdW9",
+      "provider": "ElevenLabs",
+      "model": "eleven_multilingual_v2",
+      "sample_rate_hz": 16000,
+      "channels": 1,
+      "sample_bits": 16
+    }
+  ]
+}

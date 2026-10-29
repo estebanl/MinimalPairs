@@ -27,6 +27,9 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assume.assumeTrue
 import kotlin.test.*
 
@@ -36,7 +39,7 @@ import kotlin.test.*
 @OptIn(ExperimentalComposeUiApi::class)
 class LiveStoriesScoringTest {
     @Test
-    fun allFourStoriesScoreRenderPlayAndPersistAgainstTheConfiguredService() = runBlocking {
+    fun allCatalogStoriesScoreRenderPlayAndPersistAgainstTheConfiguredService() = runBlocking {
         assumeTrue("Set MINIMAL_PAIRS_LIVE_STORIES=1 to run live Stories verification",
             System.getenv("MINIMAL_PAIRS_LIVE_STORIES") == "1")
         val expectedUrl = System.getenv("MINIMAL_PAIRS_LIVE_SCORER_EXPECTED_URL") ?: "http://127.0.0.1:8000"
@@ -57,6 +60,8 @@ class LiveStoriesScoringTest {
                 PhonemeScorerClient(), {}, recorder, player, progressRepository = repository)
             var expectedRecords = 0
             val timings = linkedMapOf<String, Long>()
+            val evaluations = mutableListOf<JsonObject>()
+            val rejectedReplies = mutableListOf<JsonObject>()
             val controls = System.getenv("MINIMAL_PAIRS_STORY_CONTROLS_DIR")?.let(::File)
             try {
                 eventually { !repository.state.value.loading }
@@ -90,6 +95,13 @@ class LiveStoriesScoringTest {
                             else alternate >= 80f && alternate - intended >= 15f)
                         val label = "$storyId-${if (success) "intended" else "trap"}"
                         timings[label] = (System.nanoTime() - started) / 1_000_000
+                        evaluations += buildJsonObject {
+                            put("story_id", storyId)
+                            put("branch", state.branch.name)
+                            put("intended_score", intended)
+                            put("alternate_score", alternate)
+                            put("scoring_time_ms", timings.getValue(label))
+                        }
                         val outcome = assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, success))
                         eventually { player.played.lastOrNull()?.contentEquals(outcome) == true }
                         repeat(15) { scene.render(System.nanoTime()).close(); delay(25) }
@@ -110,20 +122,36 @@ class LiveStoriesScoringTest {
                     }
                     if (controls != null) {
                         for (story in MeaningTrapCatalog.stories) {
-                            val voice = if (story.id == "pen_vs_pan") "professor_smith" else "tutor"
+                            val voice = if (story.id in setOf("pen_vs_pan", "pot_vs_port")) "professor_smith" else "tutor"
                             val fixture = File(controls, "$voice/${story.id}_trap.wav")
                             assertTrue(fixture.isFile, "Missing generated control: $fixture")
                             verify(story.id, WavCodec.decodeWavToPcm(fixture.readBytes()), false)
                         }
-                        val story = MeaningTrapCatalog.getStoryById("heart_vs_hut")!!
-                        scene.click("${story.intendedWord} vs ${story.trapWord}")
-                        eventually { !component.state.value.isPlayingAudio }
-                        record(WavCodec.decodeWavToPcm(File(controls, "tutor/heart_vs_hut_outside.wav").readBytes()))
-                        assertEquals(MeaningTrapBranch.PENDING, component.state.value.branch)
-                        assertTrue(component.state.value.feedbackIsError)
-                        assertNull(component.state.value.gopScore)
-                        assertEquals(expectedRecords, repository.state.value.modules.size)
-                        scene.capture(output, "outside-vowel-retry")
+                        val negativeControls = listOf(
+                            "heart_vs_hut" to "tutor/heart_vs_hut_outside.wav",
+                            "pot_vs_port" to "professor_smith/pot_vs_port_outside.wav",
+                            "pot_vs_port" to "professor_smith/pot_vs_port_unrelated.wav"
+                        )
+                        for ((storyId, path) in negativeControls) {
+                            val story = MeaningTrapCatalog.getStoryById(storyId)!!
+                            scene.click("${story.intendedWord} vs ${story.trapWord}")
+                            eventually { !component.state.value.isPlayingAudio }
+                            val confusionsBefore = tracker.getAllConfusions()
+                            record(WavCodec.decodeWavToPcm(File(controls, path).readBytes()))
+                            assertEquals(MeaningTrapBranch.PENDING, component.state.value.branch)
+                            assertTrue(component.state.value.feedbackIsError)
+                            assertNull(component.state.value.gopScore)
+                            assertEquals(expectedRecords, repository.state.value.modules.size)
+                            assertEquals(confusionsBefore, tracker.getAllConfusions())
+                            rejectedReplies += buildJsonObject {
+                                put("story_id", storyId)
+                                put("control", path)
+                                put("branch", component.state.value.branch.name)
+                                put("feedback", component.state.value.feedbackText)
+                                put("saved_results", repository.state.value.modules.size)
+                            }
+                            scene.capture(output, File(path).nameWithoutExtension + "-retry")
+                        }
                     }
                     record(ShortArray(16000))
                     assertTrue(component.state.value.feedbackText.contains("No clear voice"))
@@ -151,11 +179,13 @@ class LiveStoriesScoringTest {
                 if (controls != null) assertTrue(saved.groupBy { it.targetId }.values.all { records -> records.map { it.succeeded }.toSet() == setOf(true, false) })
                 File(output, "saved-scores.json").writeText(Json.encodeToString(saved))
                 File(output, "scoring-times-ms.json").writeText(Json.encodeToString(timings))
+                File(output, "evaluations.json").writeText(Json.encodeToString(evaluations))
+                File(output, "negative-controls.json").writeText(Json.encodeToString(rejectedReplies))
                 var practiceTarget: String? = null
                 ImageComposeScene(430, 1500) {
                     MinimalPairsTheme { ModuleProgressCard("Stories", saved, summarizeModules(saved), System.currentTimeMillis(), onPractice = { practiceTarget = it }) }
                 }.use { scene ->
-                    scene.click("Show all 4 activities")
+                    scene.click("Show all ${MeaningTrapCatalog.stories.size} activities")
                     for (story in MeaningTrapCatalog.stories) {
                         scene.click("Practice ${story.title}")
                         assertEquals(story.id, practiceTarget)

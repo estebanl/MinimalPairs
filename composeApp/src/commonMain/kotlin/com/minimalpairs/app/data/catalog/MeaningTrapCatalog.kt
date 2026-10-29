@@ -121,6 +121,93 @@ object MeaningTrapCatalog {
                 outcomeDescription = "Trap triggered! Tense close back /uː/ produced. Guards escort you to the dungeon."
             ),
             semanticTakeaway = "Tensing lips and raising tongue to /uː/ turns satiation ('full') into an insult ('fool')!"
+        ),
+        ComicStory(
+            id = "pot_vs_port",
+            contrastId = "o_vs_or",
+            title = "The Cooking Shop Mix-up",
+            premise = "You are buying a saucepan for a cooking class at a little kitchen shop.",
+            intendedWord = "pot",
+            intendedIpa = "p ɒ t",
+            trapWord = "port",
+            trapIpa = "p ɔː t",
+            promptCharacter = "Chef Oliver",
+            promptDialogue = "Welcome to the kitchen shop! What do you need for your soup?",
+            promptInstruction = "Ask for a pot: 'Can I have a pot, please?'",
+            targetPhrase = "Can I have a pot, please?",
+            targetPhraseIpa = "k ə n aɪ h æ v ə p ɒ t p l iː z",
+            targetPhonemeIndex = 9,
+            intendedOutcome = ComicOutcome(
+                illustrationEmoji = "🍲 🥄 🧑‍🍳",
+                soundEffect = "CLINK!",
+                dialogue = "One sturdy cooking pot! Your vegetable soup will be ready in no time.",
+                outcomeDescription = "The chef brings a cooking pot for your soup."
+            ),
+            trapOutcome = ComicOutcome(
+                illustrationEmoji = "🍷 🍾 😲",
+                soundEffect = "POP!",
+                dialogue = "Port? Here is a bottle of sweet wine. That is a rather unusual soup ingredient!",
+                outcomeDescription = "The chef brings port wine instead of a cooking pot."
+            ),
+            semanticTakeaway = "In this British English contrast, pot has the open rounded vowel /ɒ/; port has the higher, longer /ɔː/. A small vowel change swaps cookware for wine."
+        ),
+        ComicStory(
+            id = "pen_vs_pin",
+            contrastId = "e_vs_I",
+            title = "The Prickly Autograph",
+            premise = "You are signing a poster at an art fair, but you have nothing to write with.",
+            intendedWord = "pen",
+            intendedIpa = "p e n",
+            trapWord = "pin",
+            trapIpa = "p ɪ n",
+            promptCharacter = "The Art Fair Assistant",
+            promptDialogue = "Your first fan is waiting for an autograph! What shall I pass you?",
+            promptInstruction = "Ask for a pen: 'Please pass me a pen.'",
+            targetPhrase = "Please pass me a pen.",
+            targetPhraseIpa = "p l iː z p ɑː s m iː ə p e n",
+            targetPhonemeIndex = 11,
+            intendedOutcome = ComicOutcome(
+                illustrationEmoji = "🖊️ 🎨 ⭐",
+                soundEffect = "SCRIBBLE!",
+                dialogue = "Here is a marker pen. Now you can sign your masterpiece!",
+                outcomeDescription = "The assistant hands you a pen and you sign the poster."
+            ),
+            trapOutcome = ComicOutcome(
+                illustrationEmoji = "📌 🖼️ 😬",
+                soundEffect = "PRICK!",
+                dialogue = "A pin? I can hang the poster up, but I would not try writing with this!",
+                outcomeDescription = "The assistant brings a sharp pin instead of a pen."
+            ),
+            semanticTakeaway = "Pen uses the mid-front vowel /e/ and pin uses the higher /ɪ/. Keep your tongue a little lower for pen so your autograph does not turn into a pinhole."
+        ),
+        ComicStory(
+            id = "cat_vs_cut",
+            contrastId = "ae_vs_uh",
+            title = "The Portrait First-aid Kit",
+            premise = "At a pet portrait studio, your kitten has curled up on your sleeve.",
+            intendedWord = "cat",
+            intendedIpa = "k æ t",
+            trapWord = "cut",
+            trapIpa = "k ʌ t",
+            promptCharacter = "The Pet Portrait Artist",
+            promptDialogue = "Hold still while I find my pencils. What is that on your arm?",
+            promptInstruction = "Point out your pet: 'Look at the cat on my arm.'",
+            targetPhrase = "Look at the cat on my arm.",
+            targetPhraseIpa = "l ʊ k ə t ð ə k æ t ɒ n m aɪ ɑː m",
+            targetPhonemeIndex = 8,
+            intendedOutcome = ComicOutcome(
+                illustrationEmoji = "🐈 🎨 🖌️",
+                soundEffect = "PURR!",
+                dialogue = "What a lovely cat! I will draw those whiskers before our little model moves.",
+                outcomeDescription = "The artist sketches the cat resting on your arm."
+            ),
+            trapOutcome = ComicOutcome(
+                illustrationEmoji = "🩹 🧰 😟",
+                soundEffect = "RUSTLE!",
+                dialogue = "A cut on your arm? Put the portrait on hold! I will fetch the first-aid kit.",
+                outcomeDescription = "The artist rushes for a bandage instead of drawing your cat."
+            ),
+            semanticTakeaway = "Cat uses the open front vowel /æ/; cut uses the more central /ʌ/. Moving the vowel changes a pet portrait into a first-aid visit."
         )
     )
 

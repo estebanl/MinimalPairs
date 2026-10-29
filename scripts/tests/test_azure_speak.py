@@ -20,24 +20,33 @@ class Launched(Exception):
 
 
 class AzureSpeakTest(unittest.TestCase):
-    def launch(self, *arguments):
+    def launch(self, *arguments, served_version=None, expected_failure=None):
         app = {'properties': {'configuration': {'ingress': {'fqdn': 'scorer.example'}}}}
         keys = {'value': {'keys': [{'name': 'default', 'value': KEY}]}}
         responses = [Mock(returncode=0, stdout=json.dumps(value)) for value in (app, keys)]
         health = Mock(status_code=401)
         authenticated = Mock()
         authenticated.json.return_value = {'status': 'ok'}
+        http_responses = [health, authenticated]
+        if served_version is not None:
+            schema = Mock()
+            schema.json.return_value = {'info': {'version': served_version}}
+            http_responses.append(schema)
         output = io.StringIO()
         with patch.object(sys, 'argv', [str(SCRIPT), *arguments]), \
              patch.dict(os.environ, {}, clear=True), \
              patch('subprocess.run', side_effect=responses), \
-             patch('httpx.get', side_effect=[health, authenticated]), \
+             patch('httpx.get', side_effect=http_responses), \
+             patch.object(Path, 'write_text'), \
              patch('os.chdir'), \
              patch('os.execvpe', side_effect=Launched) as execute, \
              contextlib.redirect_stdout(output):
-            with self.assertRaises(Launched):
+            with self.assertRaises(expected_failure or Launched):
                 runpy.run_path(str(SCRIPT), run_name='__main__')
         self.assertNotIn(KEY, output.getvalue())
+        if expected_failure:
+            execute.assert_not_called()
+            return
         executable, command, environment = execute.call_args.args
         self.assertNotIn(KEY, ' '.join(command))
         return executable, command, environment
@@ -77,8 +86,19 @@ class AzureSpeakTest(unittest.TestCase):
         self.assertNotIn('*LiveSpeakScoringTest', command)
         self.assertEqual(environment['MINIMAL_PAIRS_LIVE_STORIES'], '1')
 
+    def test_backend_version_is_verified_before_launching_live_tests(self):
+        _, command, environment = self.launch('verify', '--module', 'stories',
+            '--expected-backend-version', '2.3.1', served_version='2.3.1')
+        self.assertIn('*LiveStoriesScoringTest', command)
+        self.assertEqual(environment['MINIMAL_PAIRS_LIVE_STORIES'], '1')
+
+    def test_old_backend_cannot_produce_a_successful_deployment_verification(self):
+        self.launch('verify', '--expected-backend-version', '2.3.1',
+                    served_version='2.3.0', expected_failure=SystemExit)
+
     def test_invalid_ios_options_fail_before_accessing_azure(self):
-        for arguments in [('ios',), ('ios', '--device', 'phone', '--cold-start'), ('run', '--device', 'phone')]:
+        for arguments in [('ios',), ('ios', '--device', 'phone', '--cold-start'), ('run', '--device', 'phone'),
+                          ('run', '--expected-backend-version', '2.3.1')]:
             with self.subTest(arguments=arguments), \
                  patch.object(sys, 'argv', [str(SCRIPT), *arguments]), \
                  patch('subprocess.run') as azure, \

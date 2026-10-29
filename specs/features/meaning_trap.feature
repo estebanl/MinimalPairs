@@ -2,6 +2,33 @@ Feature: Stories reply feedback and pronunciation branching
   Stories use full-phrase alignment to compare the vowel that changes the meaning.
   Sound confidence is experimental model output, not pronunciation accuracy.
 
+  Scenario: Recommend practice from saved sound confusions
+    Given the learner has saved listening answers or scored Stories replies
+    Then an available story is recommended for a contrast with observed mistakes
+    And its explanation identifies the contrasting sounds and saved attempt counts
+    And choosing the recommendation opens that story
+    And manual story selection remains available
+    And Progress date and contrast filters do not change the recommendation evidence
+    And example endings do not change recommendation evidence
+    And reopening restores the saved evidence and resetting progress clears it
+
+  Scenario: Offer a neutral starting story without mistakes
+    Given there are no saved mistakes for the available story contrasts
+    Then a starting story is suggested without claiming the learner has a weak sound
+
+  Scenario: Practise every catalog vowel contrast in context
+    Given the learner browses the available stories
+    Then every catalog vowel contrast has a selectable story
+    And each story provides a full target phrase, explicit vowel index, two endings, and a teaching takeaway
+    And prompt, phrase, and both ending reference recordings are bundled
+
+  Scenario: Recover from reference audio failures
+    Given prompt, phrase, or ending audio cannot load or play
+    Then a visible playback error explains how to retry
+    And the relevant playback control becomes available again
+    And existing reply feedback, scores, and practice records are preserved
+    And cancelling playback or leaving the story does not show a playback failure
+
   Scenario: Show recording and evaluation state
     Given the learner opens a story
     When the learner records a reply
@@ -34,6 +61,21 @@ Feature: Stories reply feedback and pronunciation branching
     Then no ending is chosen
     And both candidate scores and guidance to hear and record the full phrase again are shown
     And no practice result or confusion trial is recorded
+
+  Scenario: Score established British LOT and THOUGHT realizations
+    Given the declared phrase contrast is /ɒ/ versus /ɔː/
+    Then /ɒ/ can receive evidence from distinct model tokens [ɒ] or [ɔ]
+    And /ɔː/ can receive evidence from distinct model tokens [ɔː] or [oː]
+    And the two pronunciation groups are disjoint and use the same alignment in either direction
+    And public IPA labels, absolute evidence checks, and ending thresholds stay unchanged
+    And other contrasts and word scoring do not apply these groups as global aliases
+
+  Scenario: A matching vowel in unrelated speech cannot establish the prompted phrase
+    Given the recording contains a well-supported candidate vowel
+    But a majority of surrounding phrase phonemes lack 10 out of 100 local posterior support
+    Then scoring reports an uncertain alignment and asks for the full phrase again
+    And the phrase context gate never changes the selected vowel's score
+    And no ending or practice result is produced
 
   Scenario: Diffuse multilingual probabilities can still support a clear contrast
     Given the target vowel's absolute probability is below the old single-symbol confidence cutoff
