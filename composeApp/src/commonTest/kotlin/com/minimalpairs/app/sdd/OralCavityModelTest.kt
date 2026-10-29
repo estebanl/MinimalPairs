@@ -9,7 +9,7 @@ class OralCavityModelTest {
     fun clippingPreservesTheExactPlaneIntersection() {
         val normal = OralPoint(0f, 0f, 1f)
         val original = OralTriangle(OralPoint(-1f, 0f, 0f), OralPoint(1f, 0f, 0f), OralPoint(0f, 1f, 0f),
-            OralPart.TONGUE, normal, normal, normal)
+            OralPart.PALATE, normal, normal, normal)
         val mesh = listOf(original)
         assertSame(mesh, OralCavityModel.cutaway(mesh, false))
         for (left in listOf(false, true)) {
@@ -20,5 +20,12 @@ class OralCavityModelTest {
             assertEquals(.5, area, .00001)
             assertTrue(cut.flatMap { listOf(it.a, it.b, it.c) }.contains(OralPoint(0f, 0f, 0f)))
         }
+    }
+    @Test
+    fun cutawayRetainsWholeTongueInsteadOfInventingASection() {
+        val n = OralPoint(0f, 0f, 1f)
+        val tongue = OralTriangle(OralPoint(-1f, 0f, 0f), OralPoint(1f, 0f, 0f), OralPoint(0f, 1f, 0f),
+            OralPart.TONGUE, n, n, n)
+        for (left in listOf(false, true)) assertEquals(listOf(tongue), OralCavityModel.cutaway(listOf(tongue), true, left))
     }
 }

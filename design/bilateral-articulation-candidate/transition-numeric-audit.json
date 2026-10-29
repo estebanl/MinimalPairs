@@ -1,0 +1,57 @@
+[
+  {
+    "sourceSHA256": "bac1ecfc3f3e216e47d154bcb1da18883c5d8e81b54094b8e154b83e6fd62b91",
+    "destinationSHA256": "18ab7e5bb46738ee0a1b55d84a6405088db79cc3afe68696ddd80e68f51f4ef0",
+    "from": "alveolar-closure",
+    "to": "oral-neutral",
+    "sampleCount": 51,
+    "minimumCrossAreaSquared": 1.8151682414091486e-12,
+    "invalidSamples": [],
+    "passesSampledNumericGuard": true,
+    "contactAndAirwayValidated": false
+  },
+  {
+    "sourceSHA256": "340318dd7673216303a7623870cb1524d5692cdc495ae902f3bf120c17964c53",
+    "destinationSHA256": "18ab7e5bb46738ee0a1b55d84a6405088db79cc3afe68696ddd80e68f51f4ef0",
+    "from": "bilabial-closure",
+    "to": "oral-neutral",
+    "sampleCount": 51,
+    "minimumCrossAreaSquared": 1.8151682414091486e-12,
+    "invalidSamples": [],
+    "passesSampledNumericGuard": true,
+    "contactAndAirwayValidated": false
+  },
+  {
+    "sourceSHA256": "f40a98ad1778c7a210ec97aa21715cda5be74002d396a3dd967e4a4191999536",
+    "destinationSHA256": "5e9bb549d095801027cd41bd47b2f599c7cb461d95a71d1177fa84dddc9e49aa",
+    "from": "postalveolar-closure",
+    "to": "postalveolar-fricative",
+    "sampleCount": 51,
+    "minimumCrossAreaSquared": 1.8151682414091486e-12,
+    "invalidSamples": [],
+    "passesSampledNumericGuard": true,
+    "contactAndAirwayValidated": false
+  },
+  {
+    "sourceSHA256": "a8fb1ba6a4dd43ce4525d3707faede239b5cd407f7cf645fad2de2fe9f5d5f78",
+    "destinationSHA256": "18ab7e5bb46738ee0a1b55d84a6405088db79cc3afe68696ddd80e68f51f4ef0",
+    "from": "velar-closure",
+    "to": "oral-neutral",
+    "sampleCount": 51,
+    "minimumCrossAreaSquared": 1.8151682414091486e-12,
+    "invalidSamples": [],
+    "passesSampledNumericGuard": true,
+    "contactAndAirwayValidated": false
+  },
+  {
+    "sourceSHA256": "420ea3d2163e44910c38eeb6c6b635ca3abbbce4ad59233cc88107750b8d375e",
+    "destinationSHA256": "18ab7e5bb46738ee0a1b55d84a6405088db79cc3afe68696ddd80e68f51f4ef0",
+    "from": "w-onset",
+    "to": "oral-neutral",
+    "sampleCount": 51,
+    "minimumCrossAreaSquared": 1.8151682414091486e-12,
+    "invalidSamples": [],
+    "passesSampledNumericGuard": true,
+    "contactAndAirwayValidated": false
+  }
+]

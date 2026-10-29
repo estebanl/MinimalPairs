@@ -1,0 +1,229 @@
+{
+  "boundaryCount": 84,
+  "basisSHA256": "374f745f6a18f1c7934ecd718be76b2e4e992d0ba1b1204a49c3439f9dd9b626",
+  "controlsSourceSHA256": "bcd2a58ccb06d67cdbd39917042b9898a88ff9155ba42193ce99b1e7108c031b",
+  "endpoints": [
+    {
+      "key": "oral-neutral",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.2250755884317006,
+        -1.698802023244149
+      ]
+    },
+    {
+      "key": "fleece",
+      "kernelVertexCount": 16,
+      "anchor": [
+        -0.6419739993641941,
+        -2.3939675342590148
+      ]
+    },
+    {
+      "key": "kit",
+      "kernelVertexCount": 23,
+      "anchor": [
+        -0.9761423189241406,
+        -2.052715616975415
+      ]
+    },
+    {
+      "key": "dress",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.1405620445068403,
+        -1.8850144209698183
+      ]
+    },
+    {
+      "key": "trap",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.2949474242048848,
+        -1.949665299525622
+      ]
+    },
+    {
+      "key": "palm",
+      "kernelVertexCount": 10,
+      "anchor": [
+        -2.1673865081518153,
+        -3.089680641711369
+      ]
+    },
+    {
+      "key": "strut",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.2549218637156427,
+        -1.8972384641569815
+      ]
+    },
+    {
+      "key": "foot",
+      "kernelVertexCount": 19,
+      "anchor": [
+        -2.239103966424576,
+        -1.6620311546842803
+      ]
+    },
+    {
+      "key": "goose",
+      "kernelVertexCount": 13,
+      "anchor": [
+        -2.6264834975721056,
+        -2.0533255779128656
+      ]
+    },
+    {
+      "key": "lot",
+      "kernelVertexCount": 19,
+      "anchor": [
+        -1.219498618101469,
+        -2.366552081890086
+      ]
+    },
+    {
+      "key": "thought",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.241485669718084,
+        -1.6604510089209599
+      ]
+    },
+    {
+      "key": "bilabial-closure",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.2172084077797798,
+        -1.676939955802991
+      ]
+    },
+    {
+      "key": "alveolar-closure",
+      "kernelVertexCount": 8,
+      "anchor": [
+        -0.03644148276793209,
+        -3.8541277764996527
+      ]
+    },
+    {
+      "key": "velar-closure",
+      "kernelVertexCount": 6,
+      "anchor": [
+        -2.102028198110836,
+        -2.448117420835272
+      ]
+    },
+    {
+      "key": "labiodental-fricative",
+      "kernelVertexCount": 30,
+      "anchor": [
+        -1.2211253046214687,
+        -1.687876996762219
+      ]
+    },
+    {
+      "key": "dental-fricative",
+      "kernelVertexCount": 10,
+      "anchor": [
+        -2.373696600893128,
+        -1.8934172410246954
+      ]
+    },
+    {
+      "key": "alveolar-fricative",
+      "kernelVertexCount": 8,
+      "anchor": [
+        -0.035660141666456674,
+        -3.8839326187816026
+      ]
+    },
+    {
+      "key": "postalveolar-fricative",
+      "kernelVertexCount": 13,
+      "anchor": [
+        -1.3633363228913815,
+        -2.9040900753386327
+      ]
+    },
+    {
+      "key": "postalveolar-closure",
+      "kernelVertexCount": 10,
+      "anchor": [
+        -0.5367117974857987,
+        -3.234211707025607
+      ]
+    },
+    {
+      "key": "alveolar-lateral",
+      "kernelVertexCount": 8,
+      "anchor": [
+        -0.035387950976716875,
+        -3.8451011021484556
+      ]
+    },
+    {
+      "key": "rhotic-bunched",
+      "kernelVertexCount": 12,
+      "anchor": [
+        -1.7769423095348698,
+        -2.365579115152143
+      ]
+    },
+    {
+      "key": "rhotic-tip-up",
+      "kernelVertexCount": 8,
+      "anchor": [
+        -0.22026606497343493,
+        -3.840159383611442
+      ]
+    },
+    {
+      "key": "w-onset",
+      "kernelVertexCount": 14,
+      "anchor": [
+        -2.591844661921133,
+        -1.9403177937646947
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from": "bilabial-closure",
+      "to": "oral-neutral",
+      "samples": 101,
+      "minimumSignedDoubleAreaCm2": 0.011237920574901467,
+      "invalidFacesAcrossSamples": 0
+    },
+    {
+      "from": "alveolar-closure",
+      "to": "oral-neutral",
+      "samples": 101,
+      "minimumSignedDoubleAreaCm2": 0.011238025413085828,
+      "invalidFacesAcrossSamples": 0
+    },
+    {
+      "from": "velar-closure",
+      "to": "oral-neutral",
+      "samples": 101,
+      "minimumSignedDoubleAreaCm2": 0.011238025413085828,
+      "invalidFacesAcrossSamples": 0
+    },
+    {
+      "from": "postalveolar-closure",
+      "to": "postalveolar-fricative",
+      "samples": 101,
+      "minimumSignedDoubleAreaCm2": 0.012453495072939642,
+      "invalidFacesAcrossSamples": 0
+    },
+    {
+      "from": "w-onset",
+      "to": "oral-neutral",
+      "samples": 101,
+      "minimumSignedDoubleAreaCm2": 0.011238025413085828,
+      "invalidFacesAcrossSamples": 0
+    }
+  ],
+  "anatomicallyValidated": false
+}

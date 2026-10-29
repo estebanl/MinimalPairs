@@ -14,7 +14,8 @@ data class OralPoint(val x: Float, val y: Float, val z: Float) {
     }
 }
 
-enum class OralPart { PALATE, TONGUE, TEETH, LIPS, TISSUE }
+// VTLM material IDs are persisted ordinals. Append only; never reorder existing entries.
+enum class OralPart { PALATE, TONGUE, TEETH, LIPS, TISSUE, CAVITY, MUCOSA, BONE, CARTILAGE }
 data class OralTriangle(val a: OralPoint, val b: OralPoint, val c: OralPoint, val part: OralPart,
     val na: OralPoint, val nb: OralPoint, val nc: OralPoint,
     val sourceSurface: Int = -1, val isSection: Boolean = false)
@@ -34,15 +35,18 @@ data class OralView(val yaw: Float = 90f, val pitch: Float = 0f, val zoom: Float
     }
 }
 
-/** Clips against the midsagittal plane without moving any surviving anatomical vertex. */
+/** Removes near-side context. Legacy meshes retain the tongue; authored sections opt into all-part clipping. */
 object OralCavityModel {
-    fun cutaway(mesh: List<OralTriangle>, enabled: Boolean, fromLeft: Boolean = true): List<OralTriangle> {
+    fun cutaway(mesh: List<OralTriangle>, enabled: Boolean, fromLeft: Boolean = true, sectionClosedTongue: Boolean = false, authoredSections: Boolean = false): List<OralTriangle> {
+        require(!(sectionClosedTongue && authoredSections)) { "Choose generated or authored sections, not both" }
         if (!enabled) return mesh
         val sign = if (fromLeft) 1f else -1f
         data class Corner(val p: OralPoint, val n: OralPoint)
         fun mix(a: OralPoint, b: OralPoint, t: Float) = OralPoint(
             a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t)
-        return mesh.flatMap { face ->
+        val clippedMesh = mesh.flatMap { face ->
+            // Do not turn the tongue into an open ribbon or join it to unrelated jaw/throat contours.
+            if (face.part == OralPart.TONGUE && !sectionClosedTongue && !authoredSections) return@flatMap listOf(face)
             val source = listOf(Corner(face.a, face.na), Corner(face.b, face.nb), Corner(face.c, face.nc))
             val clipped = mutableListOf<Corner>()
             for (i in source.indices) {
@@ -61,5 +65,19 @@ object OralCavityModel {
                 face.copy(a = a.p, b = b.p, c = c.p, na = a.n, nb = b.n, nc = c.n)
             }
         }
+        if (authoredSections) {
+            // Midline section surfaces are authored into these meshes. Never add generated
+            // tongue caps or fall back to retaining the complete opposite-side tongue.
+            // A vertex exactly on the plane can appear twice during clipping; discard only
+            // resulting zero-area faces, without altering valid material/normal metadata.
+            return clippedMesh.filter { face ->
+                val cross = (face.b - face.a).cross(face.c - face.a)
+                cross.x * cross.x + cross.y * cross.y + cross.z * cross.z > 1e-12f
+            }
+        }
+        if (!sectionClosedTongue) return clippedMesh
+        val cap = OralTongueSection.cap(clippedMesh, fromLeft)
+        // If the input is not an eligible closed volume, keep the honest complete surface.
+        return if (cap.isEmpty()) cutaway(mesh, enabled, fromLeft, sectionClosedTongue = false) else clippedMesh + cap
     }
 }

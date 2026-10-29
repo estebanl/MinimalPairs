@@ -1,0 +1,19 @@
+{
+  "scope": "Exact current Kotlin renderer/clipper; metadata-tagged sections and actual authoredSections clip mode, no app integration",
+  "source_hashes": {
+    "OralCavityModel.kt": "b02b0b8f95672bc566b6371d08c66b82b413a10e24ff43303927fa3f84891b44",
+    "OralTongueSection.kt": "2e9eeef8e90841924bed2527b823660a98e6a3072522ba29d60af90fa57e1838",
+    "OralRasterizer.kt": "8111887c88776053c76fd960418c5456a5bbba1db33660fdecc8d4dcb7270b67"
+  },
+  "results": [
+    "front triangles=10259 sections=685 pixels=39534",
+    "positive currentClosedTongueFallbackCrosses=true",
+    "positive-current triangles=7095 sections=685 pixels=35911",
+    "positive-all-parts triangles=6102 sections=685 pixels=35911",
+    "positive-oblique triangles=6102 sections=685 pixels=32674",
+    "negative currentClosedTongueFallbackCrosses=true",
+    "negative-current triangles=7028 sections=685 pixels=35923",
+    "negative-all-parts triangles=6025 sections=685 pixels=35923",
+    "negative-oblique triangles=6025 sections=685 pixels=32582"
+  ]
+}

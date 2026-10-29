@@ -1,0 +1,1465 @@
+{
+  "clipMode": "AUTHORED_SECTIONS",
+  "sectionTriangleIndices": [
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    1436,
+    1437,
+    1438,
+    1439,
+    1440,
+    1441,
+    1442,
+    1443,
+    1444,
+    1445,
+    1446,
+    1447,
+    1448,
+    1449,
+    1450,
+    1451,
+    1452,
+    1453,
+    1454,
+    1455,
+    1456,
+    1457,
+    1458,
+    1459,
+    1460,
+    1461,
+    1462,
+    1463,
+    1464,
+    1465,
+    1466,
+    1467,
+    1468,
+    1469,
+    1470,
+    1471,
+    1472,
+    1473,
+    1474,
+    1475,
+    1476,
+    1477,
+    1478,
+    1479,
+    1480,
+    1481,
+    1482,
+    1483,
+    1484,
+    1485,
+    1486,
+    1487,
+    1488,
+    1489,
+    1490,
+    1491,
+    1492,
+    1493,
+    1494,
+    1495,
+    1496,
+    1497,
+    1498,
+    1499,
+    1500,
+    1501,
+    1502,
+    1503,
+    1504,
+    1505,
+    1506,
+    1507,
+    1508,
+    1509,
+    1510,
+    1511,
+    1512,
+    1513,
+    1514,
+    1515,
+    1516,
+    1517,
+    1518,
+    1519,
+    7460,
+    7461,
+    7462,
+    7463,
+    7464,
+    7465,
+    7466,
+    7467,
+    7468,
+    7469,
+    7470,
+    7471,
+    7472,
+    7473,
+    7474,
+    7475,
+    7476,
+    7477,
+    7478,
+    7479,
+    7480,
+    7481,
+    7482,
+    7483,
+    7484,
+    7485,
+    7486,
+    7487,
+    7488,
+    7489,
+    7490,
+    7491,
+    7492,
+    7493,
+    7494,
+    7495,
+    7496,
+    7497,
+    7498,
+    7499,
+    7500,
+    7501,
+    7502,
+    7503,
+    7504,
+    7505,
+    7506,
+    7507,
+    7508,
+    7509,
+    7510,
+    7511,
+    7512,
+    7513,
+    7514,
+    7515,
+    7516,
+    7517,
+    7518,
+    7519,
+    7520,
+    7521,
+    7522,
+    7523,
+    7524,
+    7525,
+    7526,
+    7527,
+    7528,
+    7529,
+    7530,
+    7531,
+    7532,
+    7533,
+    7534,
+    7535,
+    7536,
+    7537,
+    7538,
+    7539,
+    7540,
+    7541,
+    7542,
+    7543,
+    7544,
+    7545,
+    7546,
+    7547,
+    7548,
+    7549,
+    7550,
+    7551,
+    7552,
+    7553,
+    7554,
+    7555,
+    7556,
+    7557,
+    7558,
+    7559,
+    7560,
+    7561,
+    7562,
+    7563,
+    7564,
+    7565,
+    7566,
+    7567,
+    7568,
+    7569,
+    7570,
+    7571,
+    7572,
+    7649,
+    7650,
+    7651,
+    7652,
+    7653,
+    7654,
+    7655,
+    7656,
+    7657,
+    7727,
+    7728,
+    7729,
+    7730,
+    7731,
+    7732,
+    7733,
+    7734,
+    7735,
+    7736,
+    7737,
+    7738,
+    7739,
+    7740,
+    7741,
+    7742,
+    7743,
+    7744,
+    7745,
+    7746,
+    7747,
+    7748,
+    7749,
+    7750,
+    7751,
+    7752,
+    7753,
+    7754,
+    7755,
+    7756,
+    7757,
+    7758,
+    7759,
+    7760,
+    7761,
+    7762,
+    7763,
+    7764,
+    7765,
+    7766,
+    7767,
+    7768,
+    7769,
+    7770,
+    7771,
+    7772,
+    7773,
+    7774,
+    7775,
+    7776,
+    7777,
+    7778,
+    7779,
+    7780,
+    7781,
+    7782,
+    7783,
+    7784,
+    7785,
+    7786,
+    7787,
+    7788,
+    7789,
+    7790,
+    7791,
+    7792,
+    7793,
+    7794,
+    7795,
+    7796,
+    7797,
+    7798,
+    7799,
+    7800,
+    7801,
+    7802,
+    7803,
+    7804,
+    7805,
+    7806,
+    7807,
+    7808,
+    7809,
+    7810,
+    7811,
+    7812,
+    7813,
+    7814,
+    7815,
+    7816,
+    7817,
+    7818,
+    7899,
+    7900,
+    7901,
+    7902,
+    7903,
+    7904,
+    7905,
+    7906,
+    7907,
+    7908,
+    7909,
+    7910,
+    7911,
+    7912,
+    7913,
+    7914,
+    7915,
+    7916,
+    7917,
+    7918,
+    7919,
+    7920,
+    7921,
+    7922,
+    7923,
+    7924,
+    7925,
+    7926,
+    7927,
+    7928,
+    7929,
+    7930,
+    7931,
+    7932,
+    7933,
+    7934,
+    7935,
+    7936,
+    7937,
+    7938,
+    7939,
+    7940,
+    7941,
+    7942,
+    7943,
+    7944,
+    7945,
+    7946,
+    7947,
+    7948,
+    7949,
+    7950,
+    7951,
+    7952,
+    7953,
+    7954,
+    7955,
+    7956,
+    7957,
+    7958,
+    7959,
+    7960,
+    7961,
+    7962,
+    7963,
+    7964,
+    7965,
+    7966,
+    7967,
+    7968,
+    7969,
+    7970,
+    7971,
+    7972,
+    7973,
+    7974,
+    7975,
+    7976,
+    7977,
+    7978,
+    7979,
+    7980,
+    7981,
+    7982,
+    7983,
+    7984,
+    7985,
+    7986,
+    7987,
+    7988,
+    7989,
+    7990,
+    7991,
+    7992,
+    7993,
+    7994,
+    7995,
+    7996,
+    7997,
+    7998,
+    7999,
+    8000,
+    8001,
+    8002,
+    8003,
+    8004,
+    8005,
+    8006,
+    8007,
+    8008,
+    8009,
+    8010,
+    8011,
+    8012,
+    8013,
+    8014,
+    8015,
+    8016,
+    8017,
+    8018,
+    9003,
+    9004,
+    9005,
+    9006,
+    9007,
+    9008,
+    9009,
+    9010,
+    9011,
+    9012,
+    9013,
+    9014,
+    9015,
+    9016,
+    9017,
+    9018,
+    9019,
+    9020,
+    9021,
+    9022,
+    9023,
+    9024,
+    9025,
+    9026,
+    9027,
+    9028,
+    9029,
+    9030,
+    9031,
+    9032,
+    9033,
+    9034,
+    9035,
+    9036,
+    9037,
+    9038,
+    9039,
+    9040,
+    9041,
+    9042,
+    9043,
+    9044,
+    9045,
+    9046,
+    9047,
+    9048,
+    9049,
+    9050,
+    9051,
+    9052,
+    9053,
+    9054,
+    9055,
+    9056,
+    9057,
+    9058,
+    9059,
+    9617,
+    9618,
+    9619,
+    9620,
+    9621,
+    9622,
+    9623,
+    9624,
+    9625,
+    9626,
+    9627,
+    9628,
+    9629,
+    9630,
+    9631,
+    9632,
+    9633,
+    9634,
+    9635,
+    9636,
+    9637,
+    9638,
+    9639,
+    9640,
+    9641,
+    9642,
+    9643,
+    9644,
+    9645,
+    9646,
+    9647,
+    9648,
+    9649,
+    9650,
+    9651,
+    9652,
+    9653,
+    9654,
+    9655,
+    9656,
+    9657,
+    9658,
+    9659,
+    9660,
+    9661,
+    9662,
+    9663,
+    9664,
+    9665,
+    9666,
+    9667,
+    9914,
+    9915,
+    9916,
+    9917,
+    9918,
+    9919,
+    9920,
+    9921,
+    9922,
+    9923,
+    9924,
+    9925,
+    9926,
+    9927,
+    9928,
+    9929,
+    9930,
+    9931,
+    9932,
+    9933,
+    9934,
+    9935,
+    9936,
+    9937,
+    9938,
+    9939,
+    9940,
+    9941,
+    9942,
+    9943,
+    9944,
+    9945,
+    9946,
+    9947,
+    9948,
+    9949,
+    9950,
+    9951,
+    9952,
+    9953,
+    9954,
+    9955,
+    9956,
+    9957,
+    9958,
+    9959,
+    10206,
+    10207,
+    10208,
+    10209,
+    10210,
+    10211,
+    10212,
+    10213,
+    10214,
+    10215,
+    10216,
+    10217,
+    10218,
+    10219,
+    10220,
+    10221,
+    10222,
+    10223,
+    10224,
+    10225,
+    10226,
+    10227,
+    10228,
+    10229,
+    10230,
+    10231,
+    10232,
+    10233,
+    10234,
+    10235,
+    10236,
+    10237,
+    10238,
+    10239,
+    10240,
+    10241,
+    10242,
+    10243,
+    10244,
+    10245,
+    10246,
+    10247,
+    10248,
+    10249,
+    10250,
+    10251,
+    10252,
+    10253,
+    10254,
+    10255,
+    10256,
+    10257,
+    10258
+  ],
+  "modelFamily": "atlas-illustrative-v1",
+  "format": "VTLM v1; material IDs0-8",
+  "status": "UNREVIEWED_DO_NOT_ENABLE",
+  "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+  "sourceBasisSHA256": "3a7956f066786c3d8d3f9503250d4a55f8735ab7c420282e3c357252a0586bc1",
+  "files": [
+    {
+      "key": "oral-neutral",
+      "path": "oral-neutral.vtlm",
+      "sha256": "18ab7e5bb46738ee0a1b55d84a6405088db79cc3afe68696ddd80e68f51f4ef0",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {},
+      "finite": true,
+      "tipMaxZ_cm": -1.5008000135421753,
+      "backMaxZ_cm": -1.0104000568389893,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "fleece",
+      "path": "fleece.vtlm",
+      "sha256": "fc73892b4286aad9d650c20178ee819cc76db2cee3b1db18489372b1d44befa7",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": -3,
+        "body": 1.0,
+        "body_x": 0.4,
+        "body_width": 1.4
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.9435610125388842,
+      "backMaxZ_cm": -0.9143141598216642,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "kit",
+      "path": "kit.vtlm",
+      "sha256": "5ec77cc7e264844414955d5d1d3fb45f99078ed800c7d69a7b3841ef61b70d72",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": -1.5,
+        "body": 0.65,
+        "body_x": 0.3,
+        "body_width": 1.5
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.1596211681734403,
+      "backMaxZ_cm": -0.9304341444691049,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "dress",
+      "path": "dress.vtlm",
+      "sha256": "aa5497700af0e03c14e385cdc73ba089d182dc4410fa124df9645226ce51ce2f",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 1,
+        "body": 0.35,
+        "body_x": 0.4,
+        "body_width": 1.6
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.3541316263758616,
+      "backMaxZ_cm": -0.99413937437061,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "trap",
+      "path": "trap.vtlm",
+      "sha256": "35612936f369df4e4aab977ad5b5ff0b81929639a78b1bceb1ee1e6f53a67599",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 5,
+        "body": -0.35,
+        "body_x": 0.3,
+        "body_width": 2
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.9166478324626146,
+      "backMaxZ_cm": -1.1809181213833084,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "palm",
+      "path": "palm.vtlm",
+      "sha256": "adb1f9e2e81bd5d87942916ac642bcfe87fb26b29481fb64603a5964ac1fd727",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 7,
+        "body": -0.65,
+        "body_x": -1.5,
+        "body_width": 2,
+        "back": 0.3
+      },
+      "finite": true,
+      "tipMaxZ_cm": -2.049616541717344,
+      "backMaxZ_cm": -1.711433952311397,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "strut",
+      "path": "strut.vtlm",
+      "sha256": "a34dfcf1d673bc5c18a1f5e05da117bb306887701a0224d506f4e4cf8721861e",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 3,
+        "body": -0.3,
+        "body_x": -0.7,
+        "body_width": 2
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.6927619373891323,
+      "backMaxZ_cm": -1.2496151427460742,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "foot",
+      "path": "foot.vtlm",
+      "sha256": "2fbdc3f76d98c9d223a369b36e9bbeb5cd6a9ca80ff17d843ea7784547636850",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": -1,
+        "body": 0.85,
+        "body_x": -2.4,
+        "body_width": 1.6,
+        "round": 0.3
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4599384540443145,
+      "backMaxZ_cm": -0.18143222778393353,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "goose",
+      "path": "goose.vtlm",
+      "sha256": "9e009fc7335d180ea62f37c6e74bc9448ee774431b461a28fe7ac1ae871b1f0c",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": -2,
+        "body": 1.25,
+        "body_x": -2.6,
+        "body_width": 1.4,
+        "round": 0.55
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4215458024401988,
+      "backMaxZ_cm": 0.16931438016662215,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "lot",
+      "path": "lot.vtlm",
+      "sha256": "5fe09199bad69f7801a38704697b8c9aa28cca9a1be10c896de20763970457d5",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 6,
+        "body": -0.45,
+        "body_x": -1.8,
+        "body_width": 2,
+        "round": 0.35
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.7593196112114935,
+      "backMaxZ_cm": -1.5529656157798155,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "thought",
+      "path": "thought.vtlm",
+      "sha256": "003b5f408f5967eecccb9a2de9ec9bb6501e411f60bbeab1970b1bb59bc836c1",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "jaw": 2,
+        "body": 0.2,
+        "body_x": -2.0,
+        "body_width": 1.7,
+        "round": 0.4
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.5778899683179646,
+      "backMaxZ_cm": -0.8440828713751971,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "bilabial-closure",
+      "path": "bilabial-closure.vtlm",
+      "sha256": "340318dd7673216303a7623870cb1524d5692cdc495ae902f3bf120c17964c53",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "close": 1.0,
+        "jaw": -1
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4612494086816827,
+      "backMaxZ_cm": -0.9936437342646207,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "alveolar-closure",
+      "path": "alveolar-closure.vtlm",
+      "sha256": "bac1ecfc3f3e216e47d154bcb1da18883c5d8e81b54094b8e154b83e6fd62b91",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 0.4,
+        "tip_retract": 0,
+        "jaw": -1,
+        "contact": "alveolar"
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.5569870644457304,
+      "backMaxZ_cm": -0.9936437342646198,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "velar-closure",
+      "path": "velar-closure.vtlm",
+      "sha256": "a8fb1ba6a4dd43ce4525d3707faede239b5cd407f7cf645fad2de2fe9f5d5f78",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "body": 2.1,
+        "body_x": -3.4,
+        "body_width": 1.1,
+        "jaw": -1,
+        "contact": "velar"
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4612494074462448,
+      "backMaxZ_cm": 0.27065294894504155,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "labiodental-fricative",
+      "path": "labiodental-fricative.vtlm",
+      "sha256": "5e6441b73a80a5a0263aa9d0786d95c3342210eb76a09c573f818b7b2f0fe583",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "labiodental": 1,
+        "jaw": -0.5
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4810297535218269,
+      "backMaxZ_cm": -1.0020247036663037,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "dental-fricative",
+      "path": "dental-fricative.vtlm",
+      "sha256": "5f200ed0b71ac0729d1d626b2091768b0082d24eb2a7b7d20c8452c5d0163fc9",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "protrude": 0.65,
+        "thin": 0.9,
+        "jaw": -0.5
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.6159000282047271,
+      "backMaxZ_cm": -1.0020247036663046,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "alveolar-fricative",
+      "path": "alveolar-fricative.vtlm",
+      "sha256": "4ff34f394fa8e886f66381d986db9abcff9d5bebe253ec74f8ffac995b880912",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 2.25,
+        "tip_retract": 0.35,
+        "jaw": -1,
+        "groove": 0.12
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.6963506295516844,
+      "backMaxZ_cm": -1.1136437342646173,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "postalveolar-fricative",
+      "path": "postalveolar-fricative.vtlm",
+      "sha256": "5e9bb549d095801027cd41bd47b2f599c7cb461d95a71d1177fa84dddc9e49aa",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 1.5,
+        "tip_retract": 0.35,
+        "body": 0.8,
+        "body_x": 0.3,
+        "body_width": 1.4,
+        "round": 0.15
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.5887129108240567,
+      "backMaxZ_cm": -0.9636007599540148,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "postalveolar-closure",
+      "path": "postalveolar-closure.vtlm",
+      "sha256": "f40a98ad1778c7a210ec97aa21715cda5be74002d396a3dd967e4a4191999536",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 1.2,
+        "tip_retract": 0.3,
+        "body": 1.5,
+        "body_x": 0.75,
+        "body_width": 1.0,
+        "contact": "postalveolar"
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.5942824100944832,
+      "backMaxZ_cm": -1.009837991375159,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "alveolar-lateral",
+      "path": "alveolar-lateral.vtlm",
+      "sha256": "56356fc01ec9ef9215c05f06c69fd2e32de74755f5f5dab9f0629a25e22e9e5d",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 2.6,
+        "tip_retract": 0.35,
+        "lateral": 0.5,
+        "jaw": -1
+      },
+      "finite": true,
+      "tipMaxZ_cm": -0.5892626285388822,
+      "backMaxZ_cm": -0.9936437342646172,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "rhotic-bunched",
+      "path": "rhotic-bunched.vtlm",
+      "sha256": "3fe6fe0b9565e66700af7ccff0e97625f32864b1edb6190ea8a18e84767cda04",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "body": 0.85,
+        "body_x": -1.2,
+        "body_width": 1.0,
+        "back": 0.3,
+        "round": 0.12
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.613135623886192,
+      "backMaxZ_cm": -0.3891929032095698,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "rhotic-tip-up",
+      "path": "rhotic-tip-up.vtlm",
+      "sha256": "59b13ddd57714b2e78ad032bd5c3214193c019a746fb3146cb96dc1b8e15339d",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "tip": 0.9,
+        "tip_retract": 0.4,
+        "back": 0.3,
+        "round": 0.12
+      },
+      "finite": true,
+      "tipMaxZ_cm": null,
+      "backMaxZ_cm": -0.9768000245093722,
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "key": "w-onset",
+      "path": "w-onset.vtlm",
+      "sha256": "420ea3d2163e44910c38eeb6c6b635ca3abbbce4ad59233cc88107750b8d375e",
+      "bytes": 563532,
+      "topologyHash": "924ff2bf1181b6bb82798149b998801c0a71692fa138eb7a689926f51ddcba23",
+      "controls": {
+        "body": 1.1,
+        "body_x": -2.6,
+        "body_width": 1.4,
+        "round": 0.6,
+        "jaw": -2
+      },
+      "finite": true,
+      "tipMaxZ_cm": -1.4215594104773628,
+      "backMaxZ_cm": 0.025993861341703894,
+      "reviewStatus": "UNREVIEWED"
+    }
+  ],
+  "targets": [
+    {
+      "phoneme": "iː",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/fleece.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ɪ",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/kit.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "e",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/dress.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "æ",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/trap.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ɑː",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/palm.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ʌ",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/strut.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ʊ",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/foot.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "uː",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/goose.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ɒ",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/lot.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ɔː",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/thought.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "p",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/bilabial-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "b",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/bilabial-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "t",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/alveolar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "d",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/alveolar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "k",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/velar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ɡ",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/velar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "f",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/labiodental-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "v",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/labiodental-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "θ",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/dental-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ð",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/dental-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "s",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/alveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "z",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/alveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ʃ",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/postalveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "ʒ",
+      "phases": [
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/postalveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "tʃ",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/postalveolar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/postalveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "dʒ",
+      "phases": [
+        {
+          "name": "closure",
+          "assetPath": "files/anatomy/postalveolar-closure.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "friction",
+          "assetPath": "files/anatomy/postalveolar-fricative.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "l",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/alveolar-lateral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "r",
+      "phases": [
+        {
+          "name": "target",
+          "assetPath": "files/anatomy/rhotic-bunched.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    },
+    {
+      "phoneme": "w",
+      "phases": [
+        {
+          "name": "onset",
+          "assetPath": "files/anatomy/w-onset.vtlm",
+          "transitionToNextMs": 500
+        },
+        {
+          "name": "release",
+          "assetPath": "files/anatomy/oral-neutral.vtlm",
+          "transitionToNextMs": 0
+        }
+      ],
+      "reviewStatus": "UNREVIEWED"
+    }
+  ],
+  "limitations": [
+    "No clinical/phonetic expert review",
+    "No proof of correct closure or airflow",
+    "Timings illustrative, not audio synchronized",
+    "Voicing pairs share visible oral shape",
+    "W release is generic demonstration, not word-specific coarticulation",
+    "R tip-up is a separate alternative, not an animation phase",
+    "Not bundled in app resources or active registry"
+  ]
+}

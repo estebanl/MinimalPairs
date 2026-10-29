@@ -1,0 +1,63 @@
+{
+  "timestamp_utc": "2026-10-29T22:20:16Z",
+  "scope": "Standalone JVM execution of actual current app ArticulationClip decoder, interpolation and authored half-space clipper; no Compose or native-device execution",
+  "manifest_sha256": "9ff0d18af9fe5b64044e1914e4c3039d355d516ae757ad4acbcb4b6bbfbe7d24",
+  "source_sha256": {
+    "ArticulationPlayback.kt": "3374f2445e5f13e7be019220276a0777c41be07a4e6a3ab2ba236d10299aa1d5",
+    "OralCavityModel.kt": "b02b0b8f95672bc566b6371d08c66b82b413a10e24ff43303927fa3f84891b44",
+    "OralTongueSection.kt": "2e9eeef8e90841924bed2527b823660a98e6a3072522ba29d60af90fa57e1838",
+    "VocalTractLabMeshes.kt": "8fce9c6cc05376104b915546d228ec2322d8cb5718040886a3b558abb4b5f399"
+  },
+  "verified_file_count": 23,
+  "verified_target_count": 29,
+  "samples": 479,
+  "cutaway_signs_per_sample": 2,
+  "section_triangles_per_sample": 685,
+  "tests": [
+    "Manifest asset SHA256 and byte counts match all23 files",
+    "Actual decoder accepts all23 assets",
+    "All29 target specs use identical topology across phases",
+    "Positions and normals finite; triangles nondegenerate through479 samples",
+    "Both cutaway signs retain all685 authored sections and no wrong-side vertices",
+    "Registry remains empty; specs remain experimental during diagnostic"
+  ],
+  "limitations": [
+    "No anatomical or phonetic expert review",
+    "No proof of correct tongue/palate/lip contacts or airflow",
+    "No exhaustive self-intersection or intermediate inversion proof",
+    "No Compose UI, native build or device performance claim"
+  ],
+  "output": [
+    "FILES PASS: 23 real assets; 685 sections each",
+    "TARGET PASS: i\u02d0 phases=1 samples=1",
+    "TARGET PASS: \u026a phases=1 samples=1",
+    "TARGET PASS: e phases=1 samples=1",
+    "TARGET PASS: \u00e6 phases=1 samples=1",
+    "TARGET PASS: \u0251\u02d0 phases=1 samples=1",
+    "TARGET PASS: \u028c phases=1 samples=1",
+    "TARGET PASS: \u028a phases=1 samples=1",
+    "TARGET PASS: u\u02d0 phases=1 samples=1",
+    "TARGET PASS: \u0252 phases=1 samples=1",
+    "TARGET PASS: \u0254\u02d0 phases=1 samples=1",
+    "TARGET PASS: p phases=2 samples=51",
+    "TARGET PASS: b phases=2 samples=51",
+    "TARGET PASS: t phases=2 samples=51",
+    "TARGET PASS: d phases=2 samples=51",
+    "TARGET PASS: k phases=2 samples=51",
+    "TARGET PASS: \u0261 phases=2 samples=51",
+    "TARGET PASS: f phases=1 samples=1",
+    "TARGET PASS: v phases=1 samples=1",
+    "TARGET PASS: \u03b8 phases=1 samples=1",
+    "TARGET PASS: \u00f0 phases=1 samples=1",
+    "TARGET PASS: s phases=1 samples=1",
+    "TARGET PASS: z phases=1 samples=1",
+    "TARGET PASS: \u0283 phases=1 samples=1",
+    "TARGET PASS: \u0292 phases=1 samples=1",
+    "TARGET PASS: t\u0283 phases=2 samples=51",
+    "TARGET PASS: d\u0292 phases=2 samples=51",
+    "TARGET PASS: l phases=1 samples=1",
+    "TARGET PASS: r phases=1 samples=1",
+    "TARGET PASS: w phases=2 samples=51",
+    "PASS: 29 targets; 479 samples; both cutaway signs; registry remains null"
+  ]
+}
