@@ -56,9 +56,19 @@ The behavior contract is in [`specs/features/progress.feature`](specs/features/p
 
 For a runtime check of navigation and persistence after an app restart, follow the [Progress simulator smoke test](docs/PROGRESS_SMOKE_TEST.md).
 
+### Android app
+
+`androidApp/` is a launcher app that hosts the shared library. Build and install it on a connected device or emulator with `./gradlew :androidApp:installDebug` (requires the Android SDK). To enable server scoring, pass the scorer connection once at launch; it is kept in app-private storage for later launches from the app icon:
+
+```
+adb shell am start -n com.minimalpairs.android/.MainActivity --es scorer_base_url <url> --es scorer_function_key <key>
+```
+
+Pass `--ez scorer_clear true` to remove a saved connection. Without one, Speak uses the labeled offline acoustic estimate.
+
 ### Android integration
 
-The Android target is a library, not a standalone launcher app. A host Activity should provide a lifecycle-aware Decompose `ComponentContext` and render `MinimalPairsApp(componentContext)`. Hosts managing the root themselves can call `createAndroidRootComponent(context, componentContext)` and pass the result to `RootScreen`. Both entry points initialize progress storage with the application context before creating the root. Destroy the supplied component lifecycle when the host is finished so database and audio resources are released.
+The `composeApp` Android target is a library. A host Activity should provide a lifecycle-aware Decompose `ComponentContext` and render `MinimalPairsApp(componentContext)`. Hosts managing the root themselves can call `createAndroidRootComponent(context, componentContext)` and pass the result to `RootScreen`. Both entry points initialize progress storage with the application context before creating the root. Destroy the supplied component lifecycle when the host is finished so database and audio resources are released.
 
 Listening streaks and reviews exclude speaking, Stories, and Rhythm. Histories store scores and target metadata, not recorded audio. Exporting a backup and importing it on another device provides manual transfer. Automatic cloud synchronization and account infrastructure are not implemented.
 
