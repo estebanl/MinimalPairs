@@ -36,3 +36,13 @@ target ranges, and directional guidance. `AcousticPlacementComparisonUiTest`
 checks unavailable/live/reviewed states, sound changes and narrow layouts in both
 themes with enlarged text, and writes screenshots to
 `composeApp/build/reports/mouth-position/comparison-*.png`.
+
+## Rendering
+
+`OralRasterizer` draws the reference mesh with a per-pixel depth buffer on a
+background thread, and the card shows the finished frame as a bitmap. Earlier
+builds sorted whole triangles back to front, which let teeth, lips and tongue
+draw through each other when the model was rotated. The previous frame stays on
+screen while the next one renders, so dragging never shows a blank view.
+`OralRasterizerTest` checks occlusion in both draw orders and per-pixel
+resolution of intersecting surfaces.

@@ -16,7 +16,8 @@ data class OralPoint(val x: Float, val y: Float, val z: Float) {
 
 enum class OralPart { PALATE, TONGUE, TEETH, LIPS, TISSUE }
 data class OralTriangle(val a: OralPoint, val b: OralPoint, val c: OralPoint, val part: OralPart,
-    val na: OralPoint, val nb: OralPoint, val nc: OralPoint)
+    val na: OralPoint, val nb: OralPoint, val nc: OralPoint,
+    val sourceSurface: Int = -1, val isSection: Boolean = false)
 data class OralView(val yaw: Float = 90f, val pitch: Float = 0f, val zoom: Float = 1f) {
     fun rotate(point: OralPoint): OralPoint {
         val yawRadians = yaw * PI.toFloat() / 180f
@@ -57,7 +58,7 @@ object OralCavityModel {
             }
             (1 until clipped.size - 1).map { i ->
                 val a = clipped[0]; val b = clipped[i]; val c = clipped[i + 1]
-                OralTriangle(a.p, b.p, c.p, face.part, a.n, b.n, c.n)
+                face.copy(a = a.p, b = b.p, c = c.p, na = a.n, nb = b.n, nc = c.n)
             }
         }
     }

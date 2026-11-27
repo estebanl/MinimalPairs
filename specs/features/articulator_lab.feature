@@ -180,3 +180,23 @@ Feature: Articulator Lab guided speaking practice
     Then its front and side reference images have transparent backgrounds
     And light teeth and anatomy remain visible
     And Mouth position and Camera do not add a white backing behind the artwork
+
+  Scenario: Inspect shared consonant gestures without inventing voicing geometry
+    Given I select a consonant practice target with a source gesture
+    When I choose 3D model
+    Then the target has an explicitly unreviewed teaching snapshot in fixed source context
+    And voiced and voiceless pairs share oral geometry with a visible explanation
+    And example audio, scoring and microphone data do not deform the model
+    And the model never claims to show a word-synchronized articulation
+
+  Scenario: Inspect affricate phases separately
+    Given /tʃ/ or /dʒ/ is selected
+    When I switch between Affricate closure and Fricative release
+    Then the corresponding source geometry replaces the preceding phase
+    And a loading phase never labels stale geometry as the new phase
+
+  Scenario: Keep unmatched rhotic coverage explicit
+    Given /r/ is selected
+    When I open 3D model
+    Then the app explains that no matching English source preset is available
+    And placement guidance remains available without displaying a different sound's model

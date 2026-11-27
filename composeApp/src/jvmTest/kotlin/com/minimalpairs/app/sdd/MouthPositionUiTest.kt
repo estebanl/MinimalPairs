@@ -20,6 +20,7 @@ import com.minimalpairs.app.core.hal.AudioRecorderState
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import com.minimalpairs.app.data.catalog.VowelContrastsCatalog
 import com.minimalpairs.app.ui.components.OralCavityReferenceCard
+import com.minimalpairs.app.ui.components.awaitOralFrame
 import com.minimalpairs.app.ui.components.MouthPositionReferenceCard
 import com.minimalpairs.app.ui.navigation.ArticulatorLabComponent
 import com.minimalpairs.app.ui.navigation.ArticulatorLabUiState
@@ -170,7 +171,7 @@ class MouthPositionUiTest {
                     scene.awaitModel("uː")
                     for (preset in listOf("Reset view", "Front", "Side", "Zoom in")) {
                         scene.click(preset)
-                        scene.render().close()
+                        scene.awaitOralFrame()
                         val image = scene.render()
                         val file = File("build/reports/mouth-position/model-$width-$fontScale-$dark-${preset.replace(' ', '-')}.png")
                         file.parentFile.mkdirs()
@@ -225,6 +226,7 @@ class MouthPositionUiTest {
                     if (VocalTractLabMeshes.isDerived(phoneme)) {
                         assertTrue(scene.nodes().any { it.text()?.contains("Approximate and unvalidated") == true })
                     }
+                    scene.awaitOralFrame()
                     val preview = scene.render()
                     val previewFile = File("build/reports/mouth-position/model-vowel-${VocalTractLabMeshes.sourceShapes.keys.indexOf(phoneme)}.png")
                     previewFile.parentFile.mkdirs()

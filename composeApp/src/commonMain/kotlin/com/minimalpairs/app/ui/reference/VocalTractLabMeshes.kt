@@ -25,11 +25,19 @@ object VocalTractLabMeshes {
 
     suspend fun load(phoneme: String): List<OralTriangle>? {
         val shape = sourceShapes[phoneme] ?: return null
-        return mutex.withLock {
-            cache[shape] ?: withContext(Dispatchers.Default) {
-                decode(Res.readBytes("files/vtl/${assetFiles.getValue(shape)}.vtlm"))
-            }.also { cache[shape] = it }
-        }
+        return loadAsset(assetFiles.getValue(shape))
+    }
+
+    suspend fun loadConsonant(phoneme: String, phase: Int = 0): List<OralTriangle>? {
+        val reference = ConsonantModelReferences.forPhoneme(phoneme) ?: return null
+        val selected = reference.phases.getOrNull(phase) ?: return null
+        return loadAsset(selected.assetKey)
+    }
+
+    private suspend fun loadAsset(assetKey: String): List<OralTriangle> = mutex.withLock {
+        cache[assetKey] ?: withContext(Dispatchers.Default) {
+            decode(Res.readBytes("files/vtl/$assetKey.vtlm"))
+        }.also { cache[assetKey] = it }
     }
 
     /** Versioned, bounds-checked little-endian indexed meshes. Coordinates in source cm. */
@@ -58,7 +66,7 @@ object VocalTractLabMeshes {
         val count = int()
         require(count in 1..32)
         val faces = mutableListOf<OralTriangle>()
-        repeat(count) {
+        repeat(count) { surfaceIndex ->
             val part = OralPart.entries.getOrNull(int()) ?: error("Unknown mesh material")
             val vertexCount = int(); val triangleCount = int()
             require(vertexCount in 3..10000 && triangleCount in 1..20000)
@@ -66,7 +74,8 @@ object VocalTractLabMeshes {
             val points = List(vertexCount) { point() }
             repeat(triangleCount) {
                 val indices = List(3) { int().also { require(it in points.indices) } }
-                faces += OralTriangle(points[indices[0]], points[indices[1]], points[indices[2]], part, normal(), normal(), normal())
+                faces += OralTriangle(points[indices[0]], points[indices[1]], points[indices[2]], part, normal(), normal(), normal(),
+                    sourceSurface = if (count == 11) surfaceIndex else -1)
             }
         }
         require(offset == bytes.size) { "Unexpected trailing mesh data" }
