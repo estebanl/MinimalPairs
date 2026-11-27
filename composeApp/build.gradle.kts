@@ -26,6 +26,11 @@ kotlin {
 
         withHostTest {
         }
+
+        // Package Compose resources (images, audio, JSON) into consuming Android apps.
+        androidResources {
+            enable = true
+        }
     }
 
     jvm()
