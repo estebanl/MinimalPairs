@@ -4,7 +4,7 @@
 
 - `composeApp/src/commonMain/` holds shared Kotlin/Compose UI, domain logic, data storage, and `composeResources/` assets. Platform implementations live in `androidMain`, `iosMain`, and `jvmMain`.
 - `composeApp/src/commonTest/` contains shared tests; `jvmTest/` adds persistence and rendered UI checks. Room schema snapshots live in `composeApp/schemas/`.
-- `iosApp/` contains the Xcode host application. The Android target is a library requiring a host Activity.
+- `iosApp/` contains the Xcode host application. `androidApp/` is the Android launcher app hosting the `composeApp` library.
 - `backend/app/main.py` implements the FastAPI phoneme scorer; `backend/tests/` contains API tests.
 - `specs/` defines behavior and contracts; `docs/` provides operational guides. `scripts/`, `design/`, and `third_party/` hold tooling, design references, and vendored resources.
 
@@ -16,6 +16,7 @@ Use the Gradle wrapper from the repository root. The JVM toolchain targets Java 
 - `./gradlew :composeApp:jvmTest` — run shared and JVM-specific tests.
 - `./gradlew :composeApp:testAndroidHostTest` — run Android host tests.
 - `./gradlew :composeApp:compileAndroidMain` — compile the Android library.
+- `./gradlew :androidApp:assembleDebug` — build the Android app APK (`:androidApp:installDebug` installs it on a connected device).
 - `./gradlew :composeApp:compileKotlinIosSimulatorArm64` — compile Kotlin for the Apple Silicon iOS simulator.
 
 From `backend/`, install dependencies in a virtual environment with `python -m pip install -r requirements.txt`. Run `python -m uvicorn app.main:app --reload` for local development and `python -m pytest tests` for API tests.
