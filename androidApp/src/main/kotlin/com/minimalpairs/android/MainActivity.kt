@@ -1,5 +1,6 @@
 package com.minimalpairs.android
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -49,7 +50,7 @@ internal object ScorerConnectionStore {
     private const val KEY_CLEAR = "scorer_clear"
 
     fun apply(activity: ComponentActivity, intent: Intent?) {
-        val prefs = activity.getSharedPreferences(PREFS, ComponentActivity.MODE_PRIVATE)
+        val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (intent?.getBooleanExtra(KEY_CLEAR, false) == true) {
             prefs.edit().clear().apply()
         } else {
