@@ -15,7 +15,7 @@ import com.arkivanov.essenty.lifecycle.resume
 import com.minimalpairs.app.core.hal.AudioPlayer
 import com.minimalpairs.app.core.hal.AudioRecorder
 import com.minimalpairs.app.core.hal.AudioRecorderState
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.audio.BundledAudioRepository
 import com.minimalpairs.app.data.local.AppDatabase
 import com.minimalpairs.app.data.local.createDatabase
 import com.minimalpairs.app.data.progress.ProgressRepository
@@ -80,7 +80,7 @@ class LiveSpeakScoringTest {
                         scene.render(System.nanoTime()).close()
                         scene.click("${case.word} /${case.phoneme}/")
                         scene.render(System.nanoTime()).close()
-                        val example = assertNotNull(ElevenLabsAudioRepository.loadWordPcm(case.word))
+                        val example = assertNotNull(BundledAudioRepository.loadWordPcm(case.word))
                         val retainedMic = System.getenv("MINIMAL_PAIRS_MIC_REPLAY_WAV")
                         val expected = if (case.word == "pear" && retainedMic != null)
                             com.minimalpairs.app.core.dsp.WavCodec.decodeWavToPcm(File(retainedMic).readBytes())

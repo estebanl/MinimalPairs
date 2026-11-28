@@ -1,6 +1,6 @@
 package com.minimalpairs.app.sdd
 
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.audio.BundledAudioRepository
 import com.minimalpairs.app.data.catalog.ListeningContrastsCatalog
 import java.io.ByteArrayInputStream
 import javax.sound.sampled.AudioFormat
@@ -23,7 +23,7 @@ class WordAudioResourcesTest {
         assertTrue(words.isNotEmpty())
         for (word in words) {
             val bytes = Res.readBytes("files/audio/words/$word.wav")
-            val samples = assertNotNull(ElevenLabsAudioRepository.loadWordPcm(word), word)
+            val samples = assertNotNull(BundledAudioRepository.loadWordPcm(word), word)
             assertTrue(samples.isNotEmpty(), "$word must contain audio")
             assertTrue(samples.any { it.toInt() != 0 }, "$word must not be silent")
             AudioSystem.getAudioInputStream(ByteArrayInputStream(bytes)).use { audio ->

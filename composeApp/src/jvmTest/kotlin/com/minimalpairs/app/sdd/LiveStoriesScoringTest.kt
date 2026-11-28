@@ -10,7 +10,7 @@ import com.arkivanov.essenty.lifecycle.*
 import com.minimalpairs.app.core.dsp.WavCodec
 import com.minimalpairs.app.core.hal.*
 import com.minimalpairs.app.core.model.MeaningTrapBranch
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.audio.BundledAudioRepository
 import com.minimalpairs.app.data.catalog.MeaningTrapCatalog
 import com.minimalpairs.app.data.local.AppDatabase
 import com.minimalpairs.app.data.local.ModulePracticeRecordEntity
@@ -70,7 +70,7 @@ class LiveStoriesScoringTest {
                     for (base in MeaningTrapCatalog.stories) {
                         scene.click("${base.intendedWord} vs ${base.trapWord}")
                         eventually { component.state.value.activeStory.id == base.id && !component.state.value.isPlayingAudio }
-                        val reference = assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(base.id))
+                        val reference = assertNotNull(BundledAudioRepository.loadMeaningTrapPhrasePcm(base.id))
                         for (turn in 1..3) {
                             assertEquals(turn, component.state.value.turnNumber)
                             val story = component.state.value.activeStory
@@ -198,7 +198,7 @@ class LiveStoriesScoringTest {
                         val story = MeaningTrapCatalog.getStoryById(storyId)!!
                         scene.click("${story.intendedWord} vs ${story.trapWord}")
                         eventually { component.state.value.activeStory.id == storyId && !component.state.value.isPlayingAudio }
-                        val reference = assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId))
+                        val reference = assertNotNull(BundledAudioRepository.loadMeaningTrapPhrasePcm(storyId))
                         scene.click("Hear phrase")
                         eventually { player.played.lastOrNull()?.contentEquals(reference) == true }
                         val started = System.nanoTime()
@@ -221,7 +221,7 @@ class LiveStoriesScoringTest {
                             put("alternate_score", alternate)
                             put("scoring_time_ms", timings.getValue(label))
                         }
-                        val outcome = assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, success))
+                        val outcome = assertNotNull(BundledAudioRepository.loadMeaningTrapOutcomePcm(storyId, success))
                         eventually { player.played.lastOrNull()?.contentEquals(outcome) == true }
                         repeat(15) { scene.render(System.nanoTime()).close(); delay(25) }
                         assertTrue(scene.nodes().any { it.text() == "Sound confidence · ${story.intendedWord}: ${intended.toInt()}/100" })
@@ -244,7 +244,7 @@ class LiveStoriesScoringTest {
                         println("STORIES_LIVE $label intended=$intended alternate=$alternate saved=true outcome_audio=true reply_replay=true")
                     }
                     for (story in MeaningTrapCatalog.stories) {
-                        verify(story.id, assertNotNull(ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(story.id)), true)
+                        verify(story.id, assertNotNull(BundledAudioRepository.loadMeaningTrapPhrasePcm(story.id)), true)
                     }
                     if (controls != null) {
                         for (story in MeaningTrapCatalog.stories) {

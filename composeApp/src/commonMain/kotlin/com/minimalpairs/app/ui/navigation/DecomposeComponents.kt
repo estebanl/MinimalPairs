@@ -28,7 +28,7 @@ import com.minimalpairs.app.core.model.DrillType
 import com.minimalpairs.app.core.model.ListeningContrast
 import com.minimalpairs.app.core.model.MinimalPairWord
 import com.minimalpairs.app.core.model.PlaybackSpeed
-import com.minimalpairs.app.data.audio.ElevenLabsAudioRepository
+import com.minimalpairs.app.data.audio.BundledAudioRepository
 import com.minimalpairs.app.data.audio.BundledStoryAudioSource
 import com.minimalpairs.app.data.audio.StoryAudioClip
 import com.minimalpairs.app.data.audio.StoryAudioSource
@@ -276,7 +276,7 @@ class DefaultEarTrainerComponent(
     private val audioDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val timeSource: TimeSource = TimeSource.Monotonic,
     private val random: Random = Random.Default,
-    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm,
+    private val loadWordPcm: suspend (String) -> ShortArray? = BundledAudioRepository::loadWordPcm,
     private val progressRepository: ProgressRepository? = null
 ) : EarTrainerComponent, ComponentContext by componentContext {
 
@@ -621,7 +621,7 @@ class DefaultArticulatorLabComponent(
     private val onScored: (SpeakingRecordEntity) -> Unit = { progressRepository?.recordSpeaking(it) },
     private val initialTargetPhoneme: String? = null,
     private val loadPhonemePcm: suspend (String) -> ShortArray? = PhonemeAudioRepository::loadPcm,
-    private val loadWordPcm: suspend (String) -> ShortArray? = ElevenLabsAudioRepository::loadWordPcm
+    private val loadWordPcm: suspend (String) -> ShortArray? = BundledAudioRepository::loadWordPcm
 ) : ArticulatorLabComponent, ComponentContext by componentContext {
 
     private var contrast = contrastId?.let { ListeningContrastsCatalog.getContrastById(it) }
@@ -1290,9 +1290,9 @@ class DefaultProsodyComponent(
     override fun playReferenceAudio() {
         val pattern = _state.value.activePattern
         playback.play({ !_state.value.isRecording && !recording.busy }) {
-            val elevenLabsSpeech = ElevenLabsAudioRepository.loadProsodyPcm(pattern.id)
-            val speechSamples = if (elevenLabsSpeech != null && elevenLabsSpeech.isNotEmpty()) {
-                elevenLabsSpeech
+            val bundledSpeech = BundledAudioRepository.loadProsodyPcm(pattern.id)
+            val speechSamples = if (bundledSpeech != null && bundledSpeech.isNotEmpty()) {
+                bundledSpeech
             } else {
                 val totalSamples = 16000 * 2 // 2 seconds fallback
                 val syntheticSpeech = ShortArray(totalSamples)
