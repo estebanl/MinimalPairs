@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalUriHandler
 import minimalpairs.composeapp.generated.resources.Res
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
@@ -118,9 +117,8 @@ fun LabModeTabs(selected: Int, onSelect: (Int) -> Unit, vowelModes: Boolean = tr
 fun LabRecordingCredits(wordExamples: Boolean = false) {
     var showCredits by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf("") }
-    val uriHandler = LocalUriHandler.current
     LaunchedEffect(showCredits, wordExamples) {
-        if (showCredits) credits = if (wordExamples) "Word examples generated with ElevenLabs. These recordings are also used in Listen.\n\nhttps://elevenlabs.io/"
+        if (showCredits) credits = if (wordExamples) "Word examples are AI-generated speech. These recordings are also used in Listen."
         else Res.readBytes("files/audio/phonemes/CREDITS.txt").decodeToString()
     }
     if (showCredits) {
@@ -130,9 +128,6 @@ fun LabRecordingCredits(wordExamples: Boolean = false) {
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(credits, style = MaterialTheme.typography.bodySmall)
-                    TextButton(onClick = { uriHandler.openUri("https://elevenlabs.io/") }) {
-                        Text("About ElevenLabs")
-                    }
                 }
             },
             confirmButton = { TextButton(onClick = { showCredits = false }) { Text("Close") } }

@@ -21,7 +21,7 @@ class PhonemeAudioResourcesTest {
             for (pair in contrast.pairs) {
                 for (word in listOf(pair.word1, pair.word2)) {
                     val samples = assertNotNull(
-                        com.minimalpairs.app.data.audio.ElevenLabsAudioRepository.loadWordPcm(word), word)
+                        com.minimalpairs.app.data.audio.BundledAudioRepository.loadWordPcm(word), word)
                     assertTrue(samples.any { it.toInt() != 0 }, "$word must not be silent")
                 }
             }

@@ -4,7 +4,7 @@ import com.minimalpairs.app.core.dsp.WavCodec
 import kotlinx.coroutines.CancellationException
 import minimalpairs.composeapp.generated.resources.Res
 
-/** ElevenLabs-generated isolated vowel examples. See audio/phonemes/NOTICE.md for attribution. */
+/** AI-generated isolated vowel examples. See audio/phonemes/NOTICE.md for attribution. */
 object PhonemeAudioRepository {
     private val files = mapOf(
         "iː" to "i_long", "ɪ" to "ih", "æ" to "ae", "e" to "eh",

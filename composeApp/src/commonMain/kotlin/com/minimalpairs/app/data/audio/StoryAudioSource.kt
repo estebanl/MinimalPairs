@@ -8,9 +8,9 @@ fun interface StoryAudioSource {
 
 object BundledStoryAudioSource : StoryAudioSource {
     override suspend fun load(storyId: String, clip: StoryAudioClip): ShortArray? = when (clip) {
-        StoryAudioClip.PROMPT -> ElevenLabsAudioRepository.loadMeaningTrapPromptPcm(storyId)
-        StoryAudioClip.PHRASE -> ElevenLabsAudioRepository.loadMeaningTrapPhrasePcm(storyId)
-        StoryAudioClip.INTENDED -> ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, true)
-        StoryAudioClip.TRAP -> ElevenLabsAudioRepository.loadMeaningTrapOutcomePcm(storyId, false)
+        StoryAudioClip.PROMPT -> BundledAudioRepository.loadMeaningTrapPromptPcm(storyId)
+        StoryAudioClip.PHRASE -> BundledAudioRepository.loadMeaningTrapPhrasePcm(storyId)
+        StoryAudioClip.INTENDED -> BundledAudioRepository.loadMeaningTrapOutcomePcm(storyId, true)
+        StoryAudioClip.TRAP -> BundledAudioRepository.loadMeaningTrapOutcomePcm(storyId, false)
     }
 }

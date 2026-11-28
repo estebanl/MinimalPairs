@@ -106,11 +106,11 @@ Feature: Articulator Lab guided speaking practice
   Scenario: Listen to isolated recorded vowels offline
     Given any vowel contrast is selected in the articulator lab
     When the learner plays either target's example
-    Then the matching bundled ElevenLabs vowel example plays without a network request
+    Then the matching bundled vowel example plays without a network request
     And no synthetic formant tone is substituted if the recording is unavailable
     And an unavailable recording shows a recoverable error
     And example playback does not replace the learner's score or saved recording
-    And ElevenLabs generation credits are accessible
+    And recording credits are accessible
 
   Scenario: Sound map explains measurements and highlights the practice target
     Given a sound pair and a selected practice vowel

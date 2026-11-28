@@ -85,7 +85,7 @@ to select the intended ending. On 2026-10-28, the intended/alternate scores were
 99.0/1.0 (sheep/ship), 95.3/4.7 (pen/pan), 98.1/1.9 (heart/hut), and 94.2/5.8
 (full/fool). App audio resources and the checkpoint were unchanged.
 
-Extra controls can be generated explicitly using the existing ElevenLabs project
+Extra controls can be generated explicitly using the existing speech-generation
 connection with `scripts/generate_story_controls.py --voice tutor` and
 `--voice professor_smith`, run with the model virtual environment's Python.
 These use Flash v2 pronunciation tags for intended, alternate, and third-vowel
